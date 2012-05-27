@@ -1,0 +1,151 @@
+0 Greetings
+:::::::::::
+
+Hi! Thank you for considering the README file.
+
+CONTENTS
+
+1 What is the sca-toolsuite?
+2 Why using the sca-toolsuite?
+3 License
+4 Documentation
+5 Installation
+6 Examples
+7 Thanks to
+8 Links
+9 Contact
+
+1 What is the sca-toolsuite?
+::::::::::::::::::::::::::::
+
+The abbreviation `sca' stands for `sandpile cellular automata'. These are the
+cellular automata as introduced by Bak, Tang and Wiesenfeld in 1987. For more
+information about cellular automata, please consider [1].
+
+This toolsuite provides the user with a number of tools to
+
+  * create, read or write sandpile grids
+  * exporting them to ODS format (and TGA planned)
+  * do math with them like in C++
+  * compute the stabilization algorithm
+  * compute the random walk
+
+Most of the tools can be combined using UNIX pipes (see examples in point 5).
+
+2 Why using the sca-toolsuite?
+::::::::::::::::::::::::::::::
+
+Here are good reasons:
+
+  * The sca-toolsuite has one of the fastest algorithms I know. The fastest
+    known algorithm were the parallel and sequential stack algorithm by
+    Sebastian Frehmel [4], ported to C++ by Johannes Lorenz. Our algorithm is
+    based on those, but it is sequential. The reason for the speedup is that
+    avalanches are developped in multiple levels, where in each level, each
+    cell on the grid is assured to only fire once. This makes branch
+    prediction and memory usage much easier.
+
+    A comparison on an Intel (R) Core i7 (R) 2600 with 8MB L3 cache:
+
+	sequential stack, C++ (2011):		1.17 s
+	parallel stack, C++ (2011):		0.65 s (8 threads)
+	our (sequential) algorithm (2012):	0.44 s
+
+    Note: We did not log avalanches here in any ways. For detailled avalanche
+    logging, our speedup is much higher, since avalanches can be thrown
+
+  * It is much more than only the random throw algorithm. My main objective
+    was helping science. When I was trying to find theoretical properties of
+    the sandpile model, I often needed practical tools. The following is only
+    a very small subset of what you can do with this toolsuite
+
+      * giving multiple special start configuration(s) for random throwing,
+      * pre-defining the `random' for random throwing,
+      * modifying or defining grids by equation in x,y and value
+
+    A lot of flexibility is given by being able to pipe input and output.
+
+  * The code is very bug safe. All algorithms were designed both easy and
+    fast. Also, we propose the file src/test.sh to test all our programs.
+
+  * We give a good documentation: doxygen and --help for all C++ programs.
+
+3 License
+:::::::::
+
+Please see the COPYING file.
+
+4 Documentation
+:::::::::::::::
+
+You can
+
+  * find anything about Documentation in the DOCUMENTATION file.
+  * read the FAQ
+  * contact me: see `9 Contact'
+
+5 Installation
+::::::::::::::
+
+Please see the INSTALL file.
+
+6 Examples
+::::::::::
+
+There are lots of examples in the file src/test.sh. Here is a small selection:
+
+# use the coords script
+core/create 8 8 | math/add `./coords 8 3 5` `./coords 8 5 3`
+
+# manipulate grid via sequences or equations
+core/create 8 8 1 | io/field_to_seq | sed 's/ [^ ]* / /g' | io/seq_to_field 8 8
+core/create 9 9 0 | math/equation 'x=y||x=8-y'
+core/create 20 20 0 | math/equation '(x-8)*(x-8)+(y-8)*(y-8)>16'
+
+# moving a rectangle
+core/create 10 10 | math/equation 'x<=4&&y<=4' | io/field_to_seq | math/calc "x+1+10" | io/seq_to_field 10 10
+
+# show 1D avalanche graphically
+core/create 9 9 3 | math/add `./coords 9 4 4` | algo/fix l `./coords 9 4 4` | io/avalanches_bin2human 9 | io/seq_to_field 9 9
+
+# using a filter to show which cells decreased
+core/create 7 7 3 | algo/throw `./coords 7 3 3` | math/equation "v<=2"
+
+# export to ODS format (OpenOffice)
+core/create 4 4 4 | io/to_ods four
+
+# random throw
+core/create 1000 1000 | algo/random_throw random 2150000 42 > end_configuration.txt
+core/create 8 8 | algo/random_throw random 128 42 l | io/avalanches_bin2human 8 ids
+
+# use the fix command for grids with multiple fields with 4 or more grains
+core/create 8 8 8888 | algo/fix s
+
+# burning test
+core/create 8 8 1 | algo/is_recurrent
+core/create 8 8 2 | algo/burning_test | io/avalanches_bin2human 8  | io/seq_to_field 8 8
+
+7 Thanks to
+:::::::::::
+
+In alphabetical order, I thank:
+* Dr Thomas Worsch [2] @ the University of Karlsruhe [3].
+* Philipp Lorenz.
+* Sebastian Frehmel, his diploma thesis at [4].
+* The helpful people of ##spirit at irc.freenode.net.
+
+8 Links
+:::::::
+
+[1] http://en.wikipedia.org/wiki/Bak%E2%80%93Tang%E2%80%93Wiesenfeld_sandpile
+[2] http://liinwww.ira.uka.de/~thw/
+[3] http://www.kit.edu/index.php
+[4] http://www.sebastianfrehmel.de/studium/diplomarbeit/
+
+9 Contact
+:::::::::
+
+Feel free to give feedback. My e-mail address is shown if you execute this:
+
+  printf "\x6a\x6f\x68\x61\x6e\x6e\x65\x73\x40\x6c\x6f\x72\x65\x6e\x7a\x2d\x70\x72\x69\x76\x61\x7\x4\x74\x2e\x6e\x65\x74\x0a"
+

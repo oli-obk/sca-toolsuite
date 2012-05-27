@@ -1,0 +1,2 @@
+#!/bin/sh
+math/comb sub "$*" | core/all_equals 0

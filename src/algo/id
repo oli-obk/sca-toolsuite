@@ -1,0 +1,2 @@
+#!/bin/sh
+core/create $1 $2 6 | math/sub2 "core/create $1 $2 6 | algo/fix s" | algo/fix s

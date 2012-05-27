@@ -1,0 +1,2 @@
+#!/bin/sh
+math/add $1 | algo/relax s $1 $2

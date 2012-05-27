@@ -1,0 +1,2 @@
+#!/bin/sh
+algo/relax s $1 $2

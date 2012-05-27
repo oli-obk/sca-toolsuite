@@ -1,0 +1,21 @@
+#!/bin/sh
+
+usage ()
+{
+	echo "Transforms coordinates from <x> <y> to default coordinate format."
+	echo "Usage: $0 <width> <x> <y>, where"
+	echo " * width is the width of the grid"
+	echo " * x is the column number beginning on left side at zero"
+	echo " * y is the row number beginning on top side at zero"
+}
+
+if [ $# != 3 ]
+then
+	usage
+	exit
+else
+	WIDTH=$1
+	X=$2
+	Y=$3
+	echo $(( Y * WIDTH + X ))
+fi

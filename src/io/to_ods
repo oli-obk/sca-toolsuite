@@ -1,0 +1,14 @@
+#!/bin/sh
+usage ()
+{
+	echo "Converts a grid into an ODS table file for OpenOffice"
+	echo "usage: $0 <name>"
+	echo "name shall have no file ending"
+}
+
+if [ $# != 1 ]; then
+	usage
+	exit
+else
+	sed 's/ /,/g' > $1.csv | oocalc --convert-to ods $1.csv >/dev/null
+fi

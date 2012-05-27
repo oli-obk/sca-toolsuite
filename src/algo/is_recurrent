@@ -1,0 +1,13 @@
+#!/bin/sh
+
+#RETURN_VALUE=./algo/burning_test>/dev/null
+./algo/burning_test>/dev/null
+RETURN_VALUE=$?
+
+if [ $RETURN_VALUE == 0 ]; then
+	echo recurrent 
+else
+	echo transient
+fi
+
+exit $RETURN_VALUE

@@ -1,0 +1,12 @@
+INSTALLATION
+::::::::::::
+
+In this directory, type:
+
+  ./configure CXXFLAGS="-O3 -Wall"
+  make
+
+In case you are interested in gdb's or valgrind's output, use CXXFLAGS=-g.
+If you need more information about how to configure, type
+`./configure --help'.
+

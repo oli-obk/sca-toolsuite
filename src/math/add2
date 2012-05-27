@@ -1,0 +1,2 @@
+#!/bin/sh
+math/comb add "$*"

@@ -1,0 +1,25 @@
+0 Introduction
+::::::::::::::
+
+This file contains questions often asked by others.
+Or questions I think others might ask.
+
+Q: Is there no other COPYING restriction than GPL3?
+A: Yes. This code was made by me in my free time, and I did not copy any line
+   of code from other projects. This code was not written for any institution.
+
+Q: I miss the ternary operator in the equation solver...
+A: It might be comfortable, but I think you can always find a solution without
+   using it. The reason I did not integrate it was not to overcomplicate the
+   source code.
+
+Q: I need --help as a filename...
+A: Try to pass ./--help to the program.
+
+Q: Is there a project file for my code editor?
+A: If you are using qt creator: Yes. Use src/sca-toolsuite.pro.
+
+Q: Is Qt necessary?
+A: No, the .pro file is only for people who use qt creator for coding. The
+   Makefile generation is done by autotools.
+
