@@ -56,7 +56,7 @@ call_test "Testing algo/fix (special)" 1 "core/create 3 3 4 | algo/relax s `./co
 call_test "Testing algo/relax s" 1 "core/create 9 9 3 | math/add `./coords 9 4 4` | algo/relax s | math/equation \$EQ_3_P_1 | core/all_equals 1"
 call_test "Testing algo/relax l" 1 "core/create 9 9 3 | math/add `./coords 9 4 4` | algo/relax l `./coords 9 4 4` | io/avalanches_bin2human 9 | io/seq_to_field 9 9  | math/equation 'v-min(min(x+1,9-x),min(y+1,9-y))' | core/all_equals 0"
 
-call_test "Testing math/calc (1)" 1 "echo 0 | math/calc '!0&&1==1&&1!=0&&1>=1&&1<=1&&!(1<1)&&!(1>1)&&1+1=+2&&1-4=-3&&8%3=2&&2*2=4&&9/3=3&&(0||1)=1&&(0||0)=0&&min(3,2)=2&&min(2,3)=2&&max(2,3)=3&&max(3,2)=3'"
+call_test "Testing math/calc (1)" 1 "[ `echo 0 | math/calc '!0&&1==1&&1!=0&&1>=1&&1<=1&&!(1<1)&&!(1>1)&&1+1=+2&&1-4=-3&&8%3=2&&2*2=4&&9/3=3&&(0||1)=1&&(0||0)=0&&min(3,2)=2&&min(2,3)=2&&max(2,3)=3&&max(3,2)=3'` == '1' ]"
 call_test "Testing math/calc (2)" 1 "core/create 2 2 0 | math/add 0 1 2 | io/field_to_seq | math/calc 'x+1' | io/seq_to_field 2 2 | math/add 0 | core/all_equals 1"
 
 call_test "Testing math/comb add" 1 "core/create 2 2 1 | math/comb add \"core/create 2 2 2\" | core/all_equals 3"
