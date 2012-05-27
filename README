@@ -1,7 +1,7 @@
 0 Greetings
 :::::::::::
 
-Hi! Thank you for considering the README file.
+Welcome! Thank you for considering the README file.
 
 CONTENTS
 
@@ -145,7 +145,8 @@ In alphabetical order, I thank:
 9 Contact
 :::::::::
 
-Feel free to give feedback. My e-mail address is shown if you execute this:
+Feel free to give feedback. My e-mail address is shown if you execute this in
+a shell:
 
   printf "\x6a\x6f\x68\x61\x6e\x6e\x65\x73\x40\x6c\x6f\x72\x65\x6e\x7a\x2d\x70\x72\x69\x76\x61\x7\x4\x74\x2e\x6e\x65\x74\x0a"
 
