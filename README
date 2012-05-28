@@ -52,12 +52,13 @@ Here are good reasons:
 	our (sequential) algorithm (2012):	0.44 s
 
     Note: We did not log avalanches here in any ways. For detailled avalanche
-    logging, our speedup is much higher, since avalanches can be thrown
+    logging, our speedup is much higher, since n^2 avalanches can be thrown at
+    once.
 
   * It is much more than only the random throw algorithm. My main objective
     was helping science. When I was trying to find theoretical properties of
     the sandpile model, I often needed practical tools. The following is only
-    a very small subset of what you can do with this toolsuite
+    a very small subset of what you can do with this toolsuite:
 
       * giving multiple special start configuration(s) for random throwing,
       * pre-defining the `random' for random throwing,
@@ -65,7 +66,7 @@ Here are good reasons:
 
     A lot of flexibility is given by being able to pipe input and output.
 
-  * The code is very bug safe. All algorithms were designed both easy and
+  * The code is quite bug safe. All algorithms were designed both easy and
     fast. Also, we propose the file src/test.sh to test all our programs.
 
   * We give a good documentation: doxygen and --help for all C++ programs.
@@ -129,10 +130,11 @@ core/create 8 8 2 | algo/burning_test | io/avalanches_bin2human 8  | io/seq_to_f
 :::::::::::
 
 In alphabetical order, I thank:
-* Dr Thomas Worsch [2] @ the University of Karlsruhe [3].
-* Philipp Lorenz.
-* Sebastian Frehmel, his diploma thesis at [4].
-* The helpful people of ##spirit at irc.freenode.net.
+
+  * Dr Thomas Worsch [2] @ the University of Karlsruhe [3].
+  * Philipp Lorenz.
+  * Sebastian Frehmel, his diploma thesis at [4].
+  * The helpful people of ##spirit at irc.freenode.net.
 
 8 Links
 :::::::
