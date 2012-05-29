@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 {
 	HelpStruct help;
 	help.syntax = "io/scat [<infile>]";
-	help.description = "reads grid from stdin and writes it to stdout. useful for formatting.";
+	help.description = "Reads grid from stdin and writes it to stdout. Useful for formatting.";
 	help.input = "input grid, or none if a file was given as an argument";
 	help.output = "the same grid";
 	help.add_param("infile", "specifies a file to read a grid from");

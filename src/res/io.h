@@ -109,6 +109,12 @@ inline void write_number(FILE* fp, int int_to_write) {
 */
 void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim, void (*PRINTFUNC)(FILE*, int) = write_number);
 
+/**
+	Executes shell command and pipes output to stdout.
+	Useful to get more than one input into your program.
+	@param shell_command Command to be executed with sh -c. Can contain any shell syntax.
+	@return true iff new process could be started
+*/
 bool get_input(const char* shell_command);
 
 #include <boost/graph/adjacency_list.hpp>
@@ -116,6 +122,7 @@ using namespace boost;
 typedef boost::adjacency_list<
 		vecS,vecS,directedS, property<vertex_index_t, int>
 	> graph_t;
+//! to be documented
 void create_boost_graph(FILE* fp, graph_t* boost_graph);
 
 #endif // IO_H
