@@ -34,7 +34,6 @@ class MyProgram : public Program
 		 l_hint(&grid, &dim, hint, &container, stdout);
 		else
 		 lx_hint(&grid, &dim, hint, &container, stdout, times);
-
 	}
 
 	int main()

@@ -12,7 +12,9 @@ HEADERS += res/io.h res/stack_algorithm.h \
 	res/general.h \
 	res/stack_algorithm_2.h \
 	res/equation_solver.h \
-	res/rotor_algorithm.h
+	res/rotor_algorithm.h \
+    res/image.h \
+    res/asm_basic.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \
@@ -33,7 +35,11 @@ SOURCES += algo/relax.cpp \
 	math/comb.cpp \
 	rotor/rotor.cpp \
 	math/calc.cpp \
-	algo/random_throw.cpp
+	algo/random_throw.cpp \
+    io/convert.cpp \
+    res/image.cpp \
+    algo/id.cpp \
+    io/to_tga.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL \
 	../README \

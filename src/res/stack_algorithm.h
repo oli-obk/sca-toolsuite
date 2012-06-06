@@ -151,6 +151,7 @@ inline void l_hint(std::vector<int>* grid, const dimension* dim, int hint, Avala
 	(*grid)[hint]++;
 }
 
+#if 0
 template<class AvalancheContainer>
 inline void l2_hint(std::vector<int>* grid, const dimension* dim, int hint, AvalancheContainer* array, FILE* avalanche_fp)
 {
@@ -162,6 +163,7 @@ inline void l2_hint(std::vector<int>* grid, const dimension* dim, int hint, Aval
 	array->write_separator(avalanche_fp);
 	(*grid)[hint]++;
 }
+#endif
 
 //! Class for fix algorithm in order to log avalanches binary
 class FixLogL {
@@ -208,6 +210,44 @@ public:
 	inline void write_separator() const {}
 };
 
+template<class AvalancheContainer, class ResultType>
+inline void do_fix(std::vector<int>* grid, const dimension* dim, AvalancheContainer* array, ResultType* result_logger)
+{
+	unsigned int fire_times;
+	const int INVERT_BIT = (1 << 31);
+	const int GRAIN_BITS = (-1) ^ INVERT_BIT;
+
+	result_logger->write_avalanche_counter();
+
+	do {
+		const int cur_element = array->pop();
+		//printf("cur: %d\n",cur_element);
+
+		(*grid)[cur_element] &= GRAIN_BITS;
+		fire_times = (*grid)[cur_element] >>2; // keep up invariant: elements in array are already decreased
+		(*grid)[cur_element] -= (fire_times<<2);
+
+		result_logger->write_int_to_file(&cur_element, &fire_times);
+
+		if(((*grid)[cur_element+1]+=fire_times) > 3) {
+			(*grid)[cur_element+1] |= INVERT_BIT;
+			array->push(cur_element+1);
+		}
+		if(((*grid)[cur_element-1]+=fire_times) > 3) {
+			(*grid)[cur_element-1] |= INVERT_BIT;
+			array->push(cur_element-1);
+		}
+		if(((*grid)[cur_element+dim->width]+=fire_times) > 3) {
+			(*grid)[cur_element+dim->width] |= INVERT_BIT;
+			array->push(cur_element+dim->width);
+		}
+		if(((*grid)[cur_element-dim->width]+=fire_times) > 3) {
+			(*grid)[cur_element-dim->width] |= INVERT_BIT;
+			array->push(cur_element-dim->width);
+		}
+	} while( ! array->empty() );
+}
+
 /**
 	This is the alternative algorithm for sandpiles with many more than 3 grains.
 	Proposed by Sebastian Frehmel in his Diploma Thesis.
@@ -216,44 +256,29 @@ public:
 template<class AvalancheContainer, class ResultType>
 inline void fix(std::vector<int>* grid, const dimension* dim, int hint, AvalancheContainer* array, ResultType* result_logger)
 {
-	unsigned int fire_times;
-	const int INVERT_BIT = (1 << 31);
-	const int GRAIN_BITS = (-1) ^ INVERT_BIT;
+	//printf("hint: %d\n",hint);
 	if((*grid)[hint]>3)
 	{
 		array->push(hint);
-		result_logger->write_avalanche_counter();
-
-		do {
-			const int cur_element = array->pop();
-			//result_logger->write_int_to_file(&cur_element);
-
-			(*grid)[cur_element] &= GRAIN_BITS;
-			fire_times = (*grid)[cur_element] >>2; // keep up invariant: elements in array are already decreased
-			(*grid)[cur_element] -= (fire_times<<2);
-
-			result_logger->write_int_to_file(&cur_element, &fire_times);
-
-			if(((*grid)[cur_element+1]+=fire_times) > 3) {
-				(*grid)[cur_element+1] |= INVERT_BIT;
-				array->push(cur_element+1);
-			}
-			if(((*grid)[cur_element-1]+=fire_times) > 3) {
-				(*grid)[cur_element-1] |= INVERT_BIT;
-				array->push(cur_element-1);
-			}
-			if(((*grid)[cur_element+dim->width]+=fire_times) > 3) {
-				(*grid)[cur_element+dim->width] |= INVERT_BIT;
-				array->push(cur_element+dim->width);
-			}
-			if(((*grid)[cur_element-dim->width]+=fire_times) > 3) {
-				(*grid)[cur_element-dim->width] |= INVERT_BIT;
-				array->push(cur_element-dim->width);
-			}
-		} while( ! array->empty() );
+		do_fix(grid, dim, array, result_logger);
 	}
 	result_logger->write_separator();
 	array->flush(); // note: empty does not always imply being flushed!
 }
 
+template<class AvalancheContainer, class ResultType>
+inline void fix(std::vector<int>* grid, const dimension* dim, AvalancheContainer* array, ResultType* result_logger)
+{
+	const int INVERT_BIT = (1 << 31);
 
+	for(unsigned int count = 0; count < dim->area(); ++count)
+	{
+		if(! is_border(dim, count)) {
+			array->push(count); // panic: every cell is assumed to be higher than 3
+			(*grid)[count] |= INVERT_BIT; // don't push this one twice
+		}
+	}
+
+	// note: hint does not matter for correctness
+	do_fix(grid, dim, array, result_logger);
+}

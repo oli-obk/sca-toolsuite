@@ -79,13 +79,21 @@ call_test "Testing algo/burning_test" 1 "core/create 2 2 3 | algo/burning_test |
 call_test "Testing algo/is_recurrent (1)" 1 "[ `core/create 10 10 2 | algo/is_recurrent` == 'recurrent' ]"
 call_test "Testing algo/is_recurrent (2)" 1 "[ `core/create 10 10 1 | algo/is_recurrent` == 'transient' ]"
 
-call_test "Testing algo/random_throw (input)" "core/create 9 9 3 | math/add `./coords 9 4 4` | io/field_to_seq | algo/random_throw input 9 9 s | math/equation \$EQ_3_P_1 | core/all_equals 1"
-call_test "Testing algo/random_throw (random)" "core/create 9 9 0 | algo/random_throw random 1 42 | math/equation 'x<=1' | core/all_equals 1"
+call_test "Testing algo/random_throw (input)" 1 "core/create 9 9 3 | math/add `./coords 9 4 4` | io/field_to_seq | algo/random_throw input 9 9 s | math/equation \$EQ_3_P_1 | core/all_equals 1"
+call_test "Testing algo/random_throw (random)" 1 "core/create 9 9 0 | algo/random_throw random 1 42 | math/equation 'v<=1' | core/all_equals 1"
+
+call_test "Testing io/to_tga (0=green, 3=red)" 1 "algo/id 50 50 | io/to_tga 00ff00 ff0000 > /dev/null"
+
+# rotor stuff
+call_test "Testing rotor/rotor" 1 "core/create 10 10 0 | rotor/rotor s 'core/create 10 10 100' | core/diff2 \"core/create 10 10 0 | algo/S | rotor/rotor s 'core/create 10 10 100'\""
+call_test "Testing io/convert" 1 "core/create 3 3 3 | io/convert numbers rotors | io/convert rotors numbers | core/all_equals 3"
+call_test "Testing rotor/xrotor" 1 "core/create 3 3 3 | io/convert numbers rotors | rotor/xrotor s 'core/create 3 3 0' | io/convert rotors numbers | core/all_equals 3"
 
 # scripts
 call_test "Testing math/add2" 1 "core/create 2 2 1 | math/add2 \"core/create 2 2 2\" | core/all_equals 3"
 call_test "Testing math/sub2" 1 "core/create 2 2 1 | math/sub2 \"core/create 2 2 2\" | core/all_equals -1"
-call_test "Testing core/diff2" "core/create 9 9 3 | core/diff2 core/create 9 9 3"
+call_test "Testing core/diff2" 1 "core/create 9 9 3 | core/diff2 core/create 9 9 3"
+
 
 call_test "Testing io/to_ods" 0 "core/create 9 4 4 | io/to_ods tmp"
 

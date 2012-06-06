@@ -52,7 +52,8 @@ inline int arrow_2_int(char read_char)
 		case 'v': return 2;
 		case '<': return 3;
 		default: {
-			std::string error = "Invalid arrow sign read: " + read_char;
+			std::string error = "Invalid arrow sign read: ";
+			error += read_char;
 			throw error;
 		}
 	}
@@ -63,7 +64,8 @@ inline int int_2_arrow(int* int_value)
 	static const int arrow_palette[4] = { '^', '>', 'v', '<' }; // TODO: ll, tt ?
 	//printf("\nint: %d\n", *int_value);
 	if(*int_value != *int_value % 4) { // TODO: -3
-		std::string error = "Integer could not be converted to arrow: " + (char)*int_value;
+		std::string error = "Integer could not be converted to arrow: ";
+		error += (char)*int_value;
 		throw error;
 	}
 	else return arrow_palette[*int_value];
@@ -89,7 +91,7 @@ inline bool read_number(FILE* fp, int* read_symbol) {
 	@param dim the real dimension of the grid, i.e. including border
 	@param SCANFUNC function which converts chars to numbers for internal handling
 */
-void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, bool SCANFUNC(FILE*, int*) = read_number);
+void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, bool (*SCANFUNC)(FILE*, int*) = &read_number);
 
 inline void write_arrow(FILE* fp, int int_to_write) {
 	fprintf(fp, "%c", (char)int_2_arrow(&int_to_write));
@@ -107,7 +109,7 @@ inline void write_number(FILE* fp, int int_to_write) {
 	@param dim shall contain real dimension of the grid, i.e. including border
 	@param PRINTFUNC function which converts numbers to chars for readability
 */
-void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim, void (*PRINTFUNC)(FILE*, int) = write_number);
+void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim, void (*PRINTFUNC)(FILE*, int) = &write_number);
 
 /**
 	Executes shell command and pipes output to stdout.

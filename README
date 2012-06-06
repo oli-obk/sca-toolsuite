@@ -25,7 +25,7 @@ information about cellular automata, please consider [1].
 This toolsuite provides the user with a number of tools to
 
   * create, read or write sandpile grids
-  * exporting them to ODS format (and TGA planned)
+  * exporting them to TGA and ODS format
   * do math with them like in C++
   * compute the stabilization algorithm
   * compute the random walk
@@ -150,5 +150,5 @@ In alphabetical order, I thank:
 Feel free to give feedback. My e-mail address is shown if you execute this in
 a shell:
 
-  printf "\x6a\x6f\x68\x61\x6e\x6e\x65\x73\x40\x6c\x6f\x72\x65\x6e\x7a\x2d\x70\x72\x69\x76\x61\x7\x4\x74\x2e\x6e\x65\x74\x0a"
+  printf "\x6a\x6f\x68\x61\x6e\x6e\x65\x73\x40\x6c\x6f\x72\x65\x6e\x7a\x2d\x70\x72\x69\x76\x61\x74\x2e\x6e\x65\x74\x0a"
 

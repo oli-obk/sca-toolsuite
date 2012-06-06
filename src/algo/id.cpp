@@ -21,55 +21,23 @@
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
+#include "asm_basic.h"
 #include "io.h"
-#include "stack_algorithm.h"
-
-template<class AvalancheContainer, class Logger>
-void run(std::vector<int>& grid, const dimension& dim, int hint=-1)
-{
-	AvalancheContainer container(dim.area_without_border());
-	Logger logger(stdout);
-	if(hint == -1)
-	{
-		fix(&grid, &dim, &container, &logger);
-	}
-	else
-	 fix(&grid, &dim, human2internal(hint, dim.width), &container, &logger);
-}
 
 class MyProgram : public Program
 {
 	int main()
 	{
-		FILE* read_fp = stdin;
-		int hint = -1;
-		char output_type = 's';
-
-		switch(argc) {
-			case 3: hint = atoi(argv[2]);
-			case 2:
-				output_type = argv[1][0];
-				assert_usage(!argv[1][1] &&
-					(output_type=='l'||output_type=='s'));
-				break;
-			default:
-				exit_usage();
-				return 1;
-		}
+		assert_usage(argc == 3);
 
 		std::vector<int> grid;
 		dimension dim;
+		dim.width = atoi(argv[1]) + 2;
+		dim.height = atoi(argv[2]) + 2;
 
-		read_grid(read_fp, &grid, &dim);
+		get_identity(&grid, &dim);
+		write_grid(stdout, &grid, &dim);
 
-		switch(output_type) {
-			case 'l': ::run<ArrayStack, FixLogL>(grid, dim, hint); break;
-		//	case 'h': run<ArrayStack, FixLogLHuman>(grid, dim, hint); break;
-			case 's':
-				::run<ArrayStack, FixLogS>(grid, dim, hint);
-				write_grid(stdout, &grid, &dim);
-				break;
-		}
 		return 0;
 	}
 };
@@ -77,15 +45,10 @@ class MyProgram : public Program
 int main(int argc, char** argv)
 {
 	HelpStruct help;
-	help.description = "Runs the stabilisation algorithm until grid is stable.\n"
-		"Algorithm runs correctly on every configuration >= 0.";
-	help.input = "input grid";
-	help.syntax = "algo/fix s|l [<hint>]";
-	help.add_param("s|l", "s calculates resulting grid, l the number each cell fires");
-	help.add_param("<hint>", "only ensures that cell at hint will be fired");
+	help.syntax = "math/id <width> <height>";
+	help.description = "Creates the identity element of ASM group.";
+	help.output = "grid containing the identity";
 
-	MyProgram program;
-	return program.run(argc, argv, &help);
+	MyProgram p;
+	return p.run(argc, argv, &help);
 }
-
-
