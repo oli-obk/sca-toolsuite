@@ -1,0 +1,2 @@
+#!/bin/sh
+io/convert rotors numbers | rotor/rotor $1 "$2" | io/convert numbers rotors
