@@ -83,7 +83,8 @@ template<class AvalancheContainer, class ResultType>
 inline void rotor_fix_naive(std::vector<int>* grid, std::vector<int>* chips,
 	const dimension* dim, AvalancheContainer* array, ResultType* result_logger)
 {
-	const int PALETTE[7] = { -dim->width, 1, dim->width, -1, -dim->width, 1, dim->width };
+	const int PALETTE[4] = { -dim->width, 1, dim->width, -1 };
+	const unsigned int ONCE = 1;
 	//unsigned int area = dim->area();
 	int cur_field;
 	for(unsigned int y = 1; y<(dim->height-1); y++)
@@ -98,7 +99,7 @@ inline void rotor_fix_naive(std::vector<int>* grid, std::vector<int>* chips,
 			do
 			{
 			//	printf("cur field: %d\n",cur_field);
-
+				result_logger->write_int_to_file(&cur_field, &ONCE);
 				cur_field += PALETTE[(++(*grid)[cur_field])%=4];
 			}
 			while((*grid)[cur_field]>=0); // = not border

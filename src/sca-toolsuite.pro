@@ -39,7 +39,8 @@ SOURCES += algo/relax.cpp \
     io/convert.cpp \
     res/image.cpp \
     algo/id.cpp \
-    io/to_tga.cpp
+    io/to_tga.cpp \
+    algo/super.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL \
 	../README \

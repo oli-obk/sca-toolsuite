@@ -33,7 +33,7 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 tools_PROGRAMS = relax$(EXEEXT) fix$(EXEEXT) random_throw$(EXEEXT) \
-	burning_test$(EXEEXT) id$(EXEEXT)
+	burning_test$(EXEEXT) id$(EXEEXT) super$(EXEEXT)
 subdir = src/algo
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -61,6 +61,9 @@ random_throw_LDADD = $(LDADD)
 am_relax_OBJECTS = relax.$(OBJEXT) io.$(OBJEXT)
 relax_OBJECTS = $(am_relax_OBJECTS)
 relax_LDADD = $(LDADD)
+am_super_OBJECTS = super.$(OBJEXT) io.$(OBJEXT)
+super_OBJECTS = $(am_super_OBJECTS)
+super_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -71,9 +74,9 @@ CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
 SOURCES = $(burning_test_SOURCES) $(fix_SOURCES) $(id_SOURCES) \
-	$(random_throw_SOURCES) $(relax_SOURCES)
+	$(random_throw_SOURCES) $(relax_SOURCES) $(super_SOURCES)
 DIST_SOURCES = $(burning_test_SOURCES) $(fix_SOURCES) $(id_SOURCES) \
-	$(random_throw_SOURCES) $(relax_SOURCES)
+	$(random_throw_SOURCES) $(relax_SOURCES) $(super_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -174,6 +177,7 @@ fix_SOURCES = fix.cpp ../res/io.cpp
 random_throw_SOURCES = random_throw.cpp ../res/io.cpp
 burning_test_SOURCES = burning_test.cpp ../res/io.cpp
 id_SOURCES = id.cpp ../res/io.cpp
+super_SOURCES = super.cpp ../res/io.cpp
 EXTRA_DIST = l s L S throw is_recurrent
 all: all-am
 
@@ -261,6 +265,9 @@ random_throw$(EXEEXT): $(random_throw_OBJECTS) $(random_throw_DEPENDENCIES)
 relax$(EXEEXT): $(relax_OBJECTS) $(relax_DEPENDENCIES) 
 	@rm -f relax$(EXEEXT)
 	$(CXXLINK) $(relax_OBJECTS) $(relax_LDADD) $(LIBS)
+super$(EXEEXT): $(super_OBJECTS) $(super_DEPENDENCIES) 
+	@rm -f super$(EXEEXT)
+	$(CXXLINK) $(super_OBJECTS) $(super_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -274,6 +281,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/random_throw.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/relax.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/super.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

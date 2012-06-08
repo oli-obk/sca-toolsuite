@@ -18,6 +18,9 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
+#ifndef STACK_ALGORITHM_H
+#define STACK_ALGORITHM_H
+
 #include <cassert>
 #include <vector>
 
@@ -166,7 +169,8 @@ inline void l2_hint(std::vector<int>* grid, const dimension* dim, int hint, Aval
 #endif
 
 //! Class for fix algorithm in order to log avalanches binary
-class FixLogL {
+class FixLogL
+{
 	FILE* avalanche_fp;
 public:
 	inline FixLogL(FILE* _avalanche_fp) : avalanche_fp(_avalanche_fp) {}
@@ -199,7 +203,8 @@ public:
 };*/
 
 //! Class for fix algorithm to log nothing. Can be used to output grid afterwards, instead of the avalanche.
-class FixLogS {
+class FixLogS
+{
 public:
 	inline FixLogS(FILE* fp) { (void) fp; }
 	inline void write_avalanche_counter() {}
@@ -282,3 +287,5 @@ inline void fix(std::vector<int>* grid, const dimension* dim, AvalancheContainer
 	// note: hint does not matter for correctness
 	do_fix(grid, dim, array, result_logger);
 }
+
+#endif // STACK_ALGORITHM_H

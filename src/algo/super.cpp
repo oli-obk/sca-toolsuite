@@ -18,60 +18,38 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#ifndef ASM_BASIC_H
-#define ASM_BASIC_H
-
-#include "general.h"
-#include "stack_algorithm.h"
+#include <cstdlib>
+#include <cstdio>
+#include <vector>
+#include "asm_basic.h"
 #include "io.h"
 
-inline void stabilize(std::vector<int>* grid, const dimension* dim)
+class MyProgram : public Program
 {
-	// +1 is an ugly, necessary trick
-	ArrayStack container(dim->area_without_border() /*+ 1*/);
-	FixLogS logger(NULL);
-	fix(grid, dim, &container, &logger);
+	int main()
+	{
+		assert_usage(argc == 1);
+
+		std::vector<int> grid;
+		dimension dim;
+
+		read_grid(stdin, &grid, &dim);
+		superstabilize(&grid, &dim);
+		write_grid(stdout, &grid, &dim);
+
+		return 0;
+	}
+};
+
+int main(int argc, char** argv)
+{
+	HelpStruct help;
+	help.syntax = "math/super";
+	help.description = "Creates the superstabilization of a given configuration.";
+	help.input = "any configuration with values >= 0";
+	help.output = "the superstabilization";
+
+	MyProgram p;
+	return p.run(argc, argv, &help);
 }
 
-//! Given an empty vector @a grid, creates grid of dimension @a dim
-//! with all cells being @a predefined_value
-inline void get_identity(std::vector<int>* grid, const dimension* dim)
-{
-	create_empty_grid(grid, dim, 6);
-	stabilize(grid, dim);
-	for(std::vector<int>::iterator itr = grid->begin();
-		itr != grid->end(); itr++)
-		if(*itr>=0)
-		*itr = 6 - (*itr) ;
-	stabilize(grid, dim);
-}
-
-//! calculates superstabilization of @a grid
-inline void superstabilize(std::vector<int>* grid, const dimension* dim,
-	const std::vector<int>* identity)
-{
-	assert(identity->size() == grid->size());
-
-	stabilize(grid, dim);
-
-	unsigned int area = dim->area();
-	for(unsigned int i = 0; i < area; i++)
-	 if((*grid)[i]>=0)
-	  (*grid)[i] = 3 - (*grid)[i] + (*identity)[i];
-
-	stabilize(grid, dim);
-
-	for(unsigned int i = 0; i < area; i++)
-	 if((*grid)[i]>=0)
-	  (*grid)[i] = 3 - (*grid)[i];
-}
-
-//! calculates superstabilization of @a grid
-inline void superstabilize(std::vector<int>* grid, const dimension* dim)
-{
-	std::vector<int> identity;
-	get_identity(&identity, dim);
-	superstabilize(grid, dim, &identity);
-}
-
-#endif // ASM_BASIC_H

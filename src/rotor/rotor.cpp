@@ -23,6 +23,7 @@
 #include <vector>
 #include "io.h"
 #include "rotor_algorithm.h"
+#include "asm_basic.h"
 
 template<class AvalancheContainer, class Logger>
 void run(std::vector<int>& grid, std::vector<int>& chips, const dimension& dim, int hint=-1)
@@ -37,6 +38,7 @@ void run(std::vector<int>& grid, std::vector<int>& chips, const dimension& dim, 
 			rotor_fix(&grid, &chips, &dim, internal, &container, &logger);
 		}*/
 		//fix(&chips, &dim, &container, &logger);
+		superstabilize(&chips, &dim);
 		rotor_fix_naive(&grid, &chips, &dim, &container, &logger);
 	}
 	else

@@ -1,21 +1,34 @@
 #!/bin/sh
 
+# Set this to 1 if you want to do non obligatory tests
+DO_OBLIGATORY="0"
+
+do_eval()
+{
+	eval $*
+	if [ $? != 0 ]; then
+		echo "   FAILED"
+		exit 1;
+	else
+		echo "   SUCCESS"
+	fi
+}
+
 call_test ()
 {
 	printf "$1"
 	shift
 	OBLIGATORY=$1
 	shift
-	eval $*
-	if [ $? != 0 ]; then
-		echo "   FAILED"
-		if [ $OBLIGATORY != 0 ]; then
-			exit 1;
+	
+	if [ $OBLIGATORY != 0 ]; then
+		do_eval $*
+	else
+		if [ $DO_OBLIGATORY != 0  ]; then
+			do_eval $*
 		else
 			echo "   NOT OBLIGATORY, SKIPPING..."
 		fi
-	else
-		echo "   SUCCESS"
 	fi
 }
 
@@ -84,8 +97,12 @@ call_test "Testing algo/random_throw (random)" 1 "core/create 9 9 0 | algo/rando
 
 call_test "Testing io/to_tga (0=green, 3=red)" 1 "algo/id 50 50 | io/to_tga 00ff00 ff0000 > /dev/null"
 
+call_test "Testing algo/super (1)" 1 "core/create 2 2 2 | algo/super | core/all_equals 0"
+call_test "Testing algo/super (2)" 1 "core/create 2 2 3 | algo/super | core/all_equals 1"
+
 # rotor stuff
-call_test "Testing rotor/rotor" 1 "core/create 10 10 0 | rotor/rotor s 'core/create 10 10 100' | core/diff2 \"core/create 10 10 0 | algo/S | rotor/rotor s 'core/create 10 10 100'\""
+call_test "Testing rotor/rotor s" 1 "core/create 10 10 0 | rotor/rotor s 'core/create 10 10 100' | core/diff2 \"core/create 10 10 0 | algo/S | rotor/rotor s 'core/create 10 10 100'\""
+call_test "Testing rotor/rotor l" 1 "core/create 2 2 0 | math/equation 'min(x+y*2,2)' | rotor/rotor l 'core/create 2 2 0 | math/add 0' | io/avalanches_bin2human 2 | io/seq_to_field 2 2 | core/all_equals 1"
 call_test "Testing io/convert" 1 "core/create 3 3 3 | io/convert numbers rotors | io/convert rotors numbers | core/all_equals 3"
 call_test "Testing rotor/xrotor" 1 "core/create 3 3 3 | io/convert numbers rotors | rotor/xrotor s 'core/create 3 3 0' | io/convert rotors numbers | core/all_equals 3"
 
