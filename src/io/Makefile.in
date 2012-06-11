@@ -33,7 +33,8 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 tools_PROGRAMS = scat$(EXEEXT) field_to_seq$(EXEEXT) \
-	seq_to_field$(EXEEXT) avalanches_bin2human$(EXEEXT)
+	seq_to_field$(EXEEXT) avalanches_bin2human$(EXEEXT) \
+	convert$(EXEEXT) to_tga$(EXEEXT)
 subdir = src/io
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -50,6 +51,9 @@ am_avalanches_bin2human_OBJECTS = avalanches_bin2human.$(OBJEXT) \
 	io.$(OBJEXT)
 avalanches_bin2human_OBJECTS = $(am_avalanches_bin2human_OBJECTS)
 avalanches_bin2human_LDADD = $(LDADD)
+am_convert_OBJECTS = convert.$(OBJEXT) io.$(OBJEXT)
+convert_OBJECTS = $(am_convert_OBJECTS)
+convert_LDADD = $(LDADD)
 am_field_to_seq_OBJECTS = field_to_seq.$(OBJEXT) io.$(OBJEXT)
 field_to_seq_OBJECTS = $(am_field_to_seq_OBJECTS)
 field_to_seq_LDADD = $(LDADD)
@@ -59,6 +63,9 @@ scat_LDADD = $(LDADD)
 am_seq_to_field_OBJECTS = seq_to_field.$(OBJEXT) io.$(OBJEXT)
 seq_to_field_OBJECTS = $(am_seq_to_field_OBJECTS)
 seq_to_field_LDADD = $(LDADD)
+am_to_tga_OBJECTS = to_tga.$(OBJEXT) io.$(OBJEXT) image.$(OBJEXT)
+to_tga_OBJECTS = $(am_to_tga_OBJECTS)
+to_tga_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -68,10 +75,12 @@ CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
-SOURCES = $(avalanches_bin2human_SOURCES) $(field_to_seq_SOURCES) \
-	$(scat_SOURCES) $(seq_to_field_SOURCES)
-DIST_SOURCES = $(avalanches_bin2human_SOURCES) $(field_to_seq_SOURCES) \
-	$(scat_SOURCES) $(seq_to_field_SOURCES)
+SOURCES = $(avalanches_bin2human_SOURCES) $(convert_SOURCES) \
+	$(field_to_seq_SOURCES) $(scat_SOURCES) \
+	$(seq_to_field_SOURCES) $(to_tga_SOURCES)
+DIST_SOURCES = $(avalanches_bin2human_SOURCES) $(convert_SOURCES) \
+	$(field_to_seq_SOURCES) $(scat_SOURCES) \
+	$(seq_to_field_SOURCES) $(to_tga_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -171,6 +180,8 @@ scat_SOURCES = scat.cpp ../res/io.cpp
 field_to_seq_SOURCES = field_to_seq.cpp ../res/io.cpp
 seq_to_field_SOURCES = seq_to_field.cpp ../res/io.cpp
 avalanches_bin2human_SOURCES = avalanches_bin2human.cpp ../res/io.cpp
+convert_SOURCES = convert.cpp ../res/io.cpp
+to_tga_SOURCES = to_tga.cpp ../res/io.cpp ../res/image.cpp
 EXTRA_DIST = to_ods
 all: all-am
 
@@ -246,6 +257,9 @@ clean-toolsPROGRAMS:
 avalanches_bin2human$(EXEEXT): $(avalanches_bin2human_OBJECTS) $(avalanches_bin2human_DEPENDENCIES) 
 	@rm -f avalanches_bin2human$(EXEEXT)
 	$(CXXLINK) $(avalanches_bin2human_OBJECTS) $(avalanches_bin2human_LDADD) $(LIBS)
+convert$(EXEEXT): $(convert_OBJECTS) $(convert_DEPENDENCIES) 
+	@rm -f convert$(EXEEXT)
+	$(CXXLINK) $(convert_OBJECTS) $(convert_LDADD) $(LIBS)
 field_to_seq$(EXEEXT): $(field_to_seq_OBJECTS) $(field_to_seq_DEPENDENCIES) 
 	@rm -f field_to_seq$(EXEEXT)
 	$(CXXLINK) $(field_to_seq_OBJECTS) $(field_to_seq_LDADD) $(LIBS)
@@ -255,6 +269,9 @@ scat$(EXEEXT): $(scat_OBJECTS) $(scat_DEPENDENCIES)
 seq_to_field$(EXEEXT): $(seq_to_field_OBJECTS) $(seq_to_field_DEPENDENCIES) 
 	@rm -f seq_to_field$(EXEEXT)
 	$(CXXLINK) $(seq_to_field_OBJECTS) $(seq_to_field_LDADD) $(LIBS)
+to_tga$(EXEEXT): $(to_tga_OBJECTS) $(to_tga_DEPENDENCIES) 
+	@rm -f to_tga$(EXEEXT)
+	$(CXXLINK) $(to_tga_OBJECTS) $(to_tga_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -263,10 +280,13 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/avalanches_bin2human.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/convert.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/field_to_seq.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/image.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/seq_to_field.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/to_tga.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -295,6 +315,20 @@ io.obj: ../res/io.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../res/io.cpp' object='io.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o io.obj `if test -f '../res/io.cpp'; then $(CYGPATH_W) '../res/io.cpp'; else $(CYGPATH_W) '$(srcdir)/../res/io.cpp'; fi`
+
+image.o: ../res/image.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT image.o -MD -MP -MF $(DEPDIR)/image.Tpo -c -o image.o `test -f '../res/image.cpp' || echo '$(srcdir)/'`../res/image.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/image.Tpo $(DEPDIR)/image.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../res/image.cpp' object='image.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o image.o `test -f '../res/image.cpp' || echo '$(srcdir)/'`../res/image.cpp
+
+image.obj: ../res/image.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT image.obj -MD -MP -MF $(DEPDIR)/image.Tpo -c -o image.obj `if test -f '../res/image.cpp'; then $(CYGPATH_W) '../res/image.cpp'; else $(CYGPATH_W) '$(srcdir)/../res/image.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/image.Tpo $(DEPDIR)/image.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../res/image.cpp' object='image.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o image.obj `if test -f '../res/image.cpp'; then $(CYGPATH_W) '../res/image.cpp'; else $(CYGPATH_W) '$(srcdir)/../res/image.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

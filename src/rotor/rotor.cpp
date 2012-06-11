@@ -22,19 +22,27 @@
 #include <cstdio>
 #include <vector>
 #include "io.h"
-#include "stack_algorithm.h"
+#include "rotor_algorithm.h"
+#include "asm_basic.h"
 
 template<class AvalancheContainer, class Logger>
-void run(std::vector<int>& grid, const dimension& dim, int hint=-1)
+void run(std::vector<int>& grid, std::vector<int>& chips, const dimension& dim, int hint=-1)
 {
 	AvalancheContainer container(dim.area_without_border());
 	Logger logger(stdout);
 	if(hint == -1)
 	{
-		fix(&grid, &dim, &container, &logger);
+		/*for(unsigned int i=0; i<dim.area_without_border(); i++)
+		{
+			const int internal = human2internal(i, dim.width);
+			rotor_fix(&grid, &chips, &dim, internal, &container, &logger);
+		}*/
+		//fix(&chips, &dim, &container, &logger);
+		superstabilize(&chips, &dim);
+		rotor_fix_naive(&grid, &chips, &dim, &container, &logger);
 	}
 	else
-	 fix(&grid, &dim, human2internal(hint, dim.width), &container, &logger);
+	 rotor_fix(&grid, &chips, &dim, human2internal(hint, dim.width), &container, &logger);
 }
 
 class MyProgram : public Program
@@ -44,13 +52,14 @@ class MyProgram : public Program
 		FILE* read_fp = stdin;
 		int hint = -1;
 		char output_type = 's';
+		const char* shell_command = NULL;
 
 		switch(argc) {
-			case 3: hint = atoi(argv[2]);
-			case 2:
+			case 4: hint = atoi(argv[3]);
+			case 3: shell_command = argv[2];
 				output_type = argv[1][0];
-				assert_usage(!argv[1][1] &&
-					(output_type=='l'||output_type=='s'));
+				if(argv[1][1] || !(output_type=='l'||output_type=='s'))
+				 exit_usage();
 				break;
 			default:
 				exit_usage();
@@ -62,14 +71,22 @@ class MyProgram : public Program
 
 		read_grid(read_fp, &grid, &dim);
 
+		std::vector<int> chips;
+		dimension dim2;
+		get_input(argv[2]);
+		read_grid(read_fp, &chips, &dim2);
+
+		if(dim != dim2)
+		 exit("Different dimensions in both grids are not allowed.");
+
 		switch(output_type) {
-			case 'l': ::run<ArrayStack, FixLogL>(grid, dim, hint); break;
-		//	case 'h': run<ArrayStack, FixLogLHuman>(grid, dim, hint); break;
+			case 'l': ::run<ArrayStack, FixLogL>(grid, chips, dim, hint); break;
 			case 's':
-				::run<ArrayStack, FixLogS>(grid, dim, hint);
+				::run<ArrayStack, FixLogS>(grid, chips, dim, hint);
 				write_grid(stdout, &grid, &dim);
 				break;
 		}
+
 		return 0;
 	}
 };
@@ -77,15 +94,13 @@ class MyProgram : public Program
 int main(int argc, char** argv)
 {
 	HelpStruct help;
-	help.description = "Runs the stabilisation algorithm until grid is stable.\n"
-		"Algorithm runs correctly on every configuration >= 0.";
-	help.input = "input grid";
-	help.syntax = "algo/fix s|l [<hint>]";
-	help.add_param("s|l", "s calculates resulting grid, l the number each cell fires");
-	help.add_param("<hint>", "only ensures that cell at hint will be fired");
+	help.description = "Runs the rotor router algorithm until all chips are out.";
+	help.input = "arrow grid";
+	help.syntax = "rotor/rotor s|l <shell command> [<hint>]";
+	help.add_param("s|l", "s calculates resulting arrows, l the number each arrow fires");
+	help.add_param("<shell command>", "calculates chip configuration to add");
+	help.add_param("<hint>", "only ensures that arrow at hint will be fired");
 
 	MyProgram program;
 	return program.run(argc, argv, &help);
 }
-
-

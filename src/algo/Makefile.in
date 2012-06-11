@@ -33,7 +33,7 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 tools_PROGRAMS = relax$(EXEEXT) fix$(EXEEXT) random_throw$(EXEEXT) \
-	burning_test$(EXEEXT)
+	burning_test$(EXEEXT) id$(EXEEXT) super$(EXEEXT)
 subdir = src/algo
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -52,12 +52,18 @@ burning_test_LDADD = $(LDADD)
 am_fix_OBJECTS = fix.$(OBJEXT) io.$(OBJEXT)
 fix_OBJECTS = $(am_fix_OBJECTS)
 fix_LDADD = $(LDADD)
+am_id_OBJECTS = id.$(OBJEXT) io.$(OBJEXT)
+id_OBJECTS = $(am_id_OBJECTS)
+id_LDADD = $(LDADD)
 am_random_throw_OBJECTS = random_throw.$(OBJEXT) io.$(OBJEXT)
 random_throw_OBJECTS = $(am_random_throw_OBJECTS)
 random_throw_LDADD = $(LDADD)
 am_relax_OBJECTS = relax.$(OBJEXT) io.$(OBJEXT)
 relax_OBJECTS = $(am_relax_OBJECTS)
 relax_LDADD = $(LDADD)
+am_super_OBJECTS = super.$(OBJEXT) io.$(OBJEXT)
+super_OBJECTS = $(am_super_OBJECTS)
+super_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -67,10 +73,10 @@ CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
-SOURCES = $(burning_test_SOURCES) $(fix_SOURCES) \
-	$(random_throw_SOURCES) $(relax_SOURCES)
-DIST_SOURCES = $(burning_test_SOURCES) $(fix_SOURCES) \
-	$(random_throw_SOURCES) $(relax_SOURCES)
+SOURCES = $(burning_test_SOURCES) $(fix_SOURCES) $(id_SOURCES) \
+	$(random_throw_SOURCES) $(relax_SOURCES) $(super_SOURCES)
+DIST_SOURCES = $(burning_test_SOURCES) $(fix_SOURCES) $(id_SOURCES) \
+	$(random_throw_SOURCES) $(relax_SOURCES) $(super_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -170,7 +176,9 @@ relax_SOURCES = relax.cpp ../res/io.cpp
 fix_SOURCES = fix.cpp ../res/io.cpp
 random_throw_SOURCES = random_throw.cpp ../res/io.cpp
 burning_test_SOURCES = burning_test.cpp ../res/io.cpp
-EXTRA_DIST = l s L S throw is_recurrent id
+id_SOURCES = id.cpp ../res/io.cpp
+super_SOURCES = super.cpp ../res/io.cpp
+EXTRA_DIST = l s L S throw is_recurrent
 all: all-am
 
 .SUFFIXES:
@@ -248,12 +256,18 @@ burning_test$(EXEEXT): $(burning_test_OBJECTS) $(burning_test_DEPENDENCIES)
 fix$(EXEEXT): $(fix_OBJECTS) $(fix_DEPENDENCIES) 
 	@rm -f fix$(EXEEXT)
 	$(CXXLINK) $(fix_OBJECTS) $(fix_LDADD) $(LIBS)
+id$(EXEEXT): $(id_OBJECTS) $(id_DEPENDENCIES) 
+	@rm -f id$(EXEEXT)
+	$(CXXLINK) $(id_OBJECTS) $(id_LDADD) $(LIBS)
 random_throw$(EXEEXT): $(random_throw_OBJECTS) $(random_throw_DEPENDENCIES) 
 	@rm -f random_throw$(EXEEXT)
 	$(CXXLINK) $(random_throw_OBJECTS) $(random_throw_LDADD) $(LIBS)
 relax$(EXEEXT): $(relax_OBJECTS) $(relax_DEPENDENCIES) 
 	@rm -f relax$(EXEEXT)
 	$(CXXLINK) $(relax_OBJECTS) $(relax_LDADD) $(LIBS)
+super$(EXEEXT): $(super_OBJECTS) $(super_DEPENDENCIES) 
+	@rm -f super$(EXEEXT)
+	$(CXXLINK) $(super_OBJECTS) $(super_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -263,9 +277,11 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/burning_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fix.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/id.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/random_throw.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/relax.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/super.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

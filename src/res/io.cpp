@@ -40,8 +40,9 @@
  */
 
 // reads grid from open file
-void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, bool SCANFUNC(FILE*, int*))
+void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, bool (*SCANFUNC)(FILE*, int*))
 {
+	assert(SCANFUNC);
 	bool end_of_file = false;
 	int read_symbol;
 	int line_width = -1, col_count = 0, line_count = 0; // all excl. border
@@ -79,9 +80,11 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, bool SCANFUNC(F
 }
 
 void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim, void (*PRINTFUNC)(FILE*, int)) {
+	assert(PRINTFUNC);
 	for(unsigned int y = 1; y < dim->height-1; y++) {
 		for(unsigned int x = 1; x < dim->width-1; x++) {
 			//fprintf(fp, "%d", (*grid)[x + (dim->width)*y]); // TODO: two [] operators
+			if(PRINTFUNC==NULL) exit(99);
 			PRINTFUNC(fp, (*grid)[x + (dim->width)*y]); // TODO: two [] operators
 			fputc((x == dim->width-2) ? '\n':' ', fp);
 		}

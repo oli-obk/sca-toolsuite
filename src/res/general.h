@@ -56,6 +56,7 @@ inline bool is_border(const dimension* dim, unsigned int idx) {
 
 //! Given an empty vector @a grid, creates grid of dimension @a dim
 //! with all cells being @a predefined_value
+//! @todo This is highly inefficient. Now in O(n^2), can be done easily in O(n)
 inline void create_empty_grid(std::vector<int>* grid, const dimension* dim,
 	int predefined_value = 0)
 {

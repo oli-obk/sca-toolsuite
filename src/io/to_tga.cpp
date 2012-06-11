@@ -21,55 +21,44 @@
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
-#include "io.h"
-#include "stack_algorithm.h"
 
-template<class AvalancheContainer, class Logger>
-void run(std::vector<int>& grid, const dimension& dim, int hint=-1)
-{
-	AvalancheContainer container(dim.area_without_border());
-	Logger logger(stdout);
-	if(hint == -1)
-	{
-		fix(&grid, &dim, &container, &logger);
-	}
-	else
-	 fix(&grid, &dim, human2internal(hint, dim.width), &container, &logger);
-}
+#include "image.h"
+#include "io.h"
 
 class MyProgram : public Program
 {
 	int main()
 	{
-		FILE* read_fp = stdin;
-		int hint = -1;
-		char output_type = 's';
-
-		switch(argc) {
-			case 3: hint = atoi(argv[2]);
-			case 2:
-				output_type = argv[1][0];
-				assert_usage(!argv[1][1] &&
-					(output_type=='l'||output_type=='s'));
+		rgb min_color(0,0,0), max_color(255,255,255);
+		int min_val=0, max_val=3;
+		FILE* write_fp = stdout;
+		switch(argc)
+		{
+			case 6:
+				write_fp = fopen(argv[5], "w");
+				if(write_fp==NULL)
+				 exit("Error opening outfile");
+			case 5: max_val = atoi(argv[4]);
+			case 4: min_val = atoi(argv[3]);
+			case 3: max_color.from_str(argv[2]);
+			case 2: min_color.from_str(argv[1]);
+			case 1:
+			//	read_fp = stdin;
 				break;
 			default:
 				exit_usage();
-				return 1;
 		}
 
 		std::vector<int> grid;
 		dimension dim;
 
-		read_grid(read_fp, &grid, &dim);
+		read_grid(stdin, &grid, &dim);
 
-		switch(output_type) {
-			case 'l': ::run<ArrayStack, FixLogL>(grid, dim, hint); break;
-		//	case 'h': run<ArrayStack, FixLogLHuman>(grid, dim, hint); break;
-			case 's':
-				::run<ArrayStack, FixLogS>(grid, dim, hint);
-				write_grid(stdout, &grid, &dim);
-				break;
-		}
+		ColorTable color_table(min_color, max_color, min_val, max_val);
+		print_to_tga(write_fp, color_table, grid, dim);
+
+		if(argc==7)
+		 fclose(write_fp);
 		return 0;
 	}
 };
@@ -77,15 +66,14 @@ class MyProgram : public Program
 int main(int argc, char** argv)
 {
 	HelpStruct help;
-	help.description = "Runs the stabilisation algorithm until grid is stable.\n"
-		"Algorithm runs correctly on every configuration >= 0.";
-	help.input = "input grid";
-	help.syntax = "algo/fix s|l [<hint>]";
-	help.add_param("s|l", "s calculates resulting grid, l the number each cell fires");
-	help.add_param("<hint>", "only ensures that cell at hint will be fired");
+	help.syntax = "io/grid2tga [<infile>]";
+	help.description = "TODO";
+	help.input = "input grid, or none if a file was given as an argument";
+	help.output = "the same grid";
+	help.add_param("infile", "specifies a file to read a grid from");
 
-	MyProgram program;
-	return program.run(argc, argv, &help);
+	MyProgram p;
+	return p.run(argc, argv, &help);
 }
 
 
