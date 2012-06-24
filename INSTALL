@@ -1,5 +1,5 @@
-INSTALLATION
-::::::::::::
+INSTALLATION OF THE COMMANDLINE INTERFACE
+:::::::::::::::::::::::::::::::::::::::::
 
 In this directory, type:
 
@@ -9,4 +9,15 @@ In this directory, type:
 In case you are interested in gdb's or valgrind's output, use CXXFLAGS=-g.
 If you need more information about how to configure, type
 `./configure --help'.
+
+INSTALLATION OF THE QT GUI
+::::::::::::::::::::::::::
+
+For technical reasons, the GUI must be built separately. From this directory,
+do these steps:
+
+  cd src/gui
+  qmake  # on your system, this might be qmake-qt4 or similar
+  make
+
 

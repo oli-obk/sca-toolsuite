@@ -29,7 +29,18 @@ template<class AvalancheContainer>
 inline void inc_push_neighbour(std::vector<int>* chips, int position, AvalancheContainer* array)
 {
 	++(*chips)[position];
-	if((*chips)[position]>=0)
+	//if((*chips)[position]>=0)
+	{
+		(*chips)[position] |= INVERT_BIT;
+		array->push(position);
+	}
+}
+
+template<class AvalancheContainer>
+inline void inc_push_neighbour(std::vector<int>* chips, int position, AvalancheContainer* array, int n)
+{
+	(*chips)[position] += n;
+	//if((*chips)[position]>=0)
 	{
 		(*chips)[position] |= INVERT_BIT;
 		array->push(position);
@@ -56,7 +67,21 @@ inline void rotor_fix(std::vector<int>* grid, std::vector<int>* chips,
 
 			(*chips)[cur_element] &= GRAIN_BITS;
 			int cur_rotor = (*grid)[cur_element];
-			int chips_to_dec = std::min(3,(*chips)[cur_element]);
+
+
+			int chips_to_dec = (*chips)[cur_element];
+			int chips_to_dec_4 = chips_to_dec >> 2;
+
+			if(chips_to_dec_4)
+			{
+				inc_push_neighbour(chips, cur_element - dim->width, array, chips_to_dec_4);
+				inc_push_neighbour(chips, cur_element - 1, array, chips_to_dec_4);
+				inc_push_neighbour(chips, cur_element + 1, array, chips_to_dec_4);
+				inc_push_neighbour(chips, cur_element + dim->width, array, chips_to_dec_4);
+			}
+			//int chips_to_dec = std::min(3,(*chips)[cur_element]);
+
+			chips_to_dec &= 3;
 
 			//printf("%d chips, rotor: %d\n", (*chips)[cur_element], (*grid)[cur_element]);
 			switch(chips_to_dec) // assumption: more will no hapen
@@ -65,7 +90,8 @@ inline void rotor_fix(std::vector<int>* grid, std::vector<int>* chips,
 				case 3: ++cur_rotor; inc_push_neighbour(chips, cur_element + PALETTE[cur_rotor], array);
 				case 2: ++cur_rotor; inc_push_neighbour(chips, cur_element + PALETTE[cur_rotor], array);
 				case 1: ++cur_rotor; inc_push_neighbour(chips, cur_element + PALETTE[cur_rotor], array); break;
-			/*	default: {
+				default: ;
+				/*	default: {
 					std::string err_str = "Invalid number of chips detected."; // TODO: number
 					throw(err_str);
 				}*/

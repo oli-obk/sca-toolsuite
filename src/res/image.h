@@ -39,6 +39,10 @@ public:
 	inline void to_24bit(char* result) const {
 		result[0]=b; result[1]=g; result[2]=r;
 	}
+	inline void to_32bit(int* result) const {
+		// TODO: careful of negative values!
+		*result = (255 << 24) + (((int)r)<<16) + (g << 8) + b;
+	}
 	inline rgb operator-(const rgb& other) const {
 		return rgb(r-other.r, g-other.g, b-other.b);
 	}
@@ -83,6 +87,7 @@ public:
 		 throw("Error: Found pixel out of range [min_val, max_val]");
 		return index - min_val;
 	}
+	inline rgb get_step_size() const { return step_size; }
 	ColorTable(rgb _min_color, rgb _max_color, int _min_val, int _max_val);
 };
 
