@@ -4,6 +4,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QVector>
+#include "StateMachine.h"
 struct QAction;
 struct MainWindow;
 
@@ -33,6 +34,7 @@ class MenuBar : public QMenuBar
 		const QKeySequence& short_key_sequence = QKeySequence());
 
 public:
+	void state_updated(StateMachine::STATE new_state);
 	explicit MenuBar(MainWindow *parent = 0);
 
 signals:

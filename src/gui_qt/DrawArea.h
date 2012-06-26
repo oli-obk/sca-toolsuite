@@ -40,6 +40,7 @@ class DrawArea : public QLabel
 
 	QImage* grid_image;
 	int pixel_factor;
+	int TIMER_INTERVAL;
 
 	dimension dim;
 	std::vector<int> sim_grid;
@@ -80,6 +81,10 @@ public:
 
 signals:
 public slots:
+	inline void set_timeout_interval(int msecs) {
+		TIMER_INTERVAL = msecs;
+		next_fire_timer.setInterval(TIMER_INTERVAL);
+	}
 
 protected:
 	void mousePressEvent(QMouseEvent *event);

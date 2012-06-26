@@ -53,16 +53,15 @@ class MainWindow : public QMainWindow
 
 	QVBoxLayout vbox_right;
 	QPushButton btn_run, btn_step;
-	QSpinBox pixel_size_chooser;
+	QSpinBox pixel_size_chooser, time_interval_chooser;
 
 	void retranslate_ui();
 
 private slots:
+	void state_updated(StateMachine::STATE new_state);
 	inline void change_pixel_size(int new_size) {
 		draw_area.set_pixel_size(new_size);
 	}
-
-	void state_updated(StateMachine::STATE new_state);
 
 public:
 	explicit MainWindow(QWidget *parent = 0);

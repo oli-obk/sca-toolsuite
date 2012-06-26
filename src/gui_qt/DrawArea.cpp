@@ -23,8 +23,6 @@
 #include "asm_basic.h"
 #include "DrawArea.h"
 
-const int TIMER_INTERVAL = 10;
-
 DrawArea::DrawArea(StateMachine& _state_machine, QWidget *parent) :
 	QLabel(parent),
 	state_machine(_state_machine),
@@ -34,7 +32,6 @@ DrawArea::DrawArea(StateMachine& _state_machine, QWidget *parent) :
 	max_color(255,0,0),
 	next_cell(0)
 {
-	next_fire_timer.setInterval(TIMER_INTERVAL);
 	connect(&next_fire_timer, SIGNAL(timeout()),
 		this, SLOT(slot_timeout()));
 	connect(&state_machine, SIGNAL(updated(StateMachine::STATE)),

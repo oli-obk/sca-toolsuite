@@ -63,5 +63,24 @@ QAction* MenuBar::append (enum MENU menu_no, enum ACTION action_no, const char* 
 	return new_action;
 }
 
+void MenuBar::state_updated(StateMachine::STATE new_state)
+{
+	const bool simulating = (new_state == StateMachine::STATE_SIMULATING
+		|| new_state == StateMachine::STATE_STEP);
+
+	const bool instable = (simulating
+		|| new_state == StateMachine::STATE_INSTABLE);
+
+	actions[FILE_LOAD]->setDisabled(simulating);
+	actions[FILE_CREATE]->setDisabled(simulating);
+	actions[FILE_SAVE]->setDisabled(simulating);
+	actions[FILE_EXPORT]->setDisabled(simulating);
+	actions[FILE_QUIT]->setDisabled(simulating);
+	actions[TRANSFORM_SUPER]->setDisabled(instable);
+	actions[TRANSFORM_BURNING]->setDisabled(instable);
+	actions[MORE_RECURRENCE]->setDisabled(instable);
+}
+
+
 
 

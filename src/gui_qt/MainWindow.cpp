@@ -60,15 +60,14 @@ MainWindow::MainWindow(QWidget *parent) :
 	vbox_right.addWidget(&btn_run);
 	vbox_right.addWidget(&btn_step);
 	vbox_right.addWidget(&pixel_size_chooser);
+	vbox_right.addWidget(&time_interval_chooser);
 	btn_run.setCheckable(true);
-
-	pixel_size_chooser.setMinimum(1);
-	pixel_size_chooser.setMaximum(255);
-	pixel_size_chooser.setValue(4);
 
 	draw_area.fill_grid();
 	draw_area.set_pixel_size(pixel_size_chooser.value());
 
+	connect(&time_interval_chooser, SIGNAL(valueChanged(int)),
+		&draw_area, SLOT(set_timeout_interval(int)));
 	connect(&pixel_size_chooser, SIGNAL(valueChanged(int)),
 		this, SLOT(change_pixel_size(int)));
 	connect(&state_machine, SIGNAL(updated(StateMachine::STATE)),
@@ -77,6 +76,13 @@ MainWindow::MainWindow(QWidget *parent) :
 		&state_machine, SLOT(trigger_step()));
 	connect(&btn_run, SIGNAL(released()),
 		&state_machine, SLOT(trigger_pause()));
+
+	pixel_size_chooser.setMinimum(1);
+	pixel_size_chooser.setMaximum(255);
+	pixel_size_chooser.setValue(4);
+	time_interval_chooser.setMinimum(0);
+	time_interval_chooser.setMaximum(1000);
+	time_interval_chooser.setValue(10);
 
 	retranslate_ui();
 
@@ -94,6 +100,8 @@ void MainWindow::state_updated(StateMachine::STATE new_state)
 			btn_step.setDisabled(true);
 			break;
 	}
+
+	menu_bar.state_updated(new_state);
 
 	statusBar()->showMessage(state_machine.status_msg());
 }
