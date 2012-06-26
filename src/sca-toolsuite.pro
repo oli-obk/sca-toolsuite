@@ -13,8 +13,12 @@ HEADERS += res/io.h res/stack_algorithm.h \
 	res/stack_algorithm_2.h \
 	res/equation_solver.h \
 	res/rotor_algorithm.h \
-    res/image.h \
-    res/asm_basic.h
+	res/image.h \
+	res/asm_basic.h \
+    gui_qt/MainWindow.h \
+    gui_qt/DrawArea.h \
+    gui_qt/StateMachine.h \
+    gui_qt/MenuBar.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \
@@ -36,11 +40,16 @@ SOURCES += algo/relax.cpp \
 	rotor/rotor.cpp \
 	math/calc.cpp \
 	algo/random_throw.cpp \
-    io/convert.cpp \
-    res/image.cpp \
-    algo/id.cpp \
-    io/to_tga.cpp \
-    algo/super.cpp
+	io/convert.cpp \
+	res/image.cpp \
+	algo/id.cpp \
+	io/to_tga.cpp \
+	algo/super.cpp \
+	gui_qt/main.cpp \
+    gui_qt/MainWindow.cpp \
+    gui_qt/DrawArea.cpp \
+    gui_qt/StateMachine.cpp \
+    gui_qt/MenuBar.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL \
 	../README \

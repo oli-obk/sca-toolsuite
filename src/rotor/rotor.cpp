@@ -70,10 +70,13 @@ class MyProgram : public Program
 		dimension dim;
 
 		read_grid(read_fp, &grid, &dim);
+		for(unsigned int i=0;i<dim.area();i++)
+		 if(!is_border(&dim, i))
+		  grid[i]&=3;
 
 		std::vector<int> chips;
 		dimension dim2;
-		get_input(argv[2]);
+		get_input(shell_command);
 		read_grid(read_fp, &chips, &dim2);
 
 		if(dim != dim2)

@@ -84,7 +84,7 @@ void tga::print_header(FILE* fp, const dimension& dim, const ColorTable& ct)
 void tga::print_color_map(FILE* fp, const ColorTable& ct)
 {
 	// (image id: empty)
-	for(ColorTable::const_iterator itr(ct);itr.valid();++itr)
+	for(ColorTable::const_iterator itr(ct); itr.valid(); ++itr)
 	{
 		char bitmask[3];
 		itr->to_24bit(bitmask);

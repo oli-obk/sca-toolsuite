@@ -30,7 +30,8 @@
 	This is the faster way for simulation, but avalanches can not be logged detailled.
 	@invariant stack_ptr points to top element
 */
-class ArrayStack {
+class ArrayStack
+{
 	int* const array; //! first element will never be read: "sentinel"
 	int* stack_ptr;
 public:
@@ -46,29 +47,49 @@ public:
 };
 
 /**
-	@brief  Class for stack algorithm using a queue for the avalanches.
+	@brief  Class for stack algorithm using a queue for the avalanches
 
-	This is the IO efficient way for detailled avalanche logging. If this is not wanted, ArrayStack is faster.
+	This is the way you should go if you are interested in the detailled avalanches.
+	They are stored in the array right after the algorithm. If you need to store the
+	avalanches in a file, look for ArrayQueue instead.
 	@invariant write_ptr always points to the element last written
 */
-class ArrayQueue {
+class ArrayQueueNoFile
+{
+protected:
 	int* const array; //! first element will never be read
 	int* read_ptr;
 	int* write_ptr;
 public:
-	inline ArrayQueue(int human_grid_size) :
+	inline ArrayQueueNoFile(int human_grid_size) :
 		array(new int[human_grid_size+1]),
 		read_ptr(array), write_ptr(array) {}
-	inline ~ArrayQueue() { delete[] array; }
+	inline ~ArrayQueueNoFile() { delete[] array; }
 	inline unsigned int pop() { return *(++read_ptr); assert(read_ptr <= write_ptr); }
 	inline void push(unsigned int i) { *(++write_ptr) = i; }
 	inline bool empty() const { return read_ptr == write_ptr; }
 	inline void flush() { read_ptr = write_ptr = array; }
+	inline void write_to_file(FILE* fp) const { (void)fp;  }
+	inline void write_separator(FILE* fp) const { (void)fp; }
+	inline unsigned int size() { return (unsigned int)(write_ptr-array); }
+	inline const int* data() const { return array+1; }
+};
+
+/**
+	@brief Class for stack algorithm (and IO) using a queue for the avalanches.
+
+	This is the IO efficient way for detailled avalanche logging in files.
+	If this is not wanted, ArrayStack is faster.
+	@invariant write_ptr always points to the element last written
+*/
+class ArrayQueue : public ArrayQueueNoFile
+{
+public:
+	inline ArrayQueue(int human_grid_size) : ArrayQueueNoFile(human_grid_size) {}
 	inline void write_to_file(FILE* fp) const { fwrite(array+1, 4, write_ptr-array, fp); }
 	inline void write_separator(FILE* fp) const {
 		const int minus1 = -1; fwrite(&minus1,4,1, fp);
 	}
-	inline unsigned int size() { return (unsigned int)(write_ptr-array); }
 };
 
 inline void increase_neighbours_without_self(std::vector<int>* grid, const dimension* dim, int center)

@@ -36,47 +36,93 @@ inline void inc_push_neighbour(std::vector<int>* chips, int position, AvalancheC
 	}
 }
 
+template<class AvalancheContainer>
+inline void inc_push_neighbour(std::vector<int>* chips, int position, AvalancheContainer* array, int n)
+{
+	(*chips)[position]+=n;
+	if((*chips)[position]>=0)
+	{
+		(*chips)[position] |= INVERT_BIT;
+		array->push(position);
+	}
+}
+
+template<class AvalancheContainer, class ResultType>
+inline void do_rotor_fix(std::vector<int>* grid, std::vector<int>* chips,
+	const dimension* dim, AvalancheContainer* array, ResultType* result_logger)
+{
+	const int INVERT_BIT = (1 << 31);
+	const int GRAIN_BITS = (-1) ^ INVERT_BIT;
+	const int PALETTE[7] = { -dim->width, 1, dim->width, -1, -dim->width, 1, dim->width };
+
+	result_logger->write_avalanche_counter();
+
+	do {
+		const int cur_element = array->pop();
+		//result_logger->write_int_to_file(&cur_element); // TODO
+		//printf("cur_element: %d\n",cur_element);
+
+		(*chips)[cur_element] &= GRAIN_BITS;
+		int cur_rotor = (*grid)[cur_element];
+		int chips_to_dec = (*chips)[cur_element];
+		int chips_to_dec_4 = chips_to_dec >> 2;
+
+		if(chips_to_dec_4)
+		{
+			inc_push_neighbour(chips, cur_element-dim->width, array, chips_to_dec_4);
+			inc_push_neighbour(chips, cur_element-1, array, chips_to_dec_4);
+			inc_push_neighbour(chips, cur_element+1, array, chips_to_dec_4);
+			inc_push_neighbour(chips, cur_element+dim->width, array, chips_to_dec_4);
+		}
+
+		chips_to_dec &= 3;
+		//printf("%d chips, rotor: %d\n", (*chips)[cur_element], (*grid)[cur_element]);
+		switch(chips_to_dec)
+		{
+			// unrolled for loop
+			case 3: ++cur_rotor; inc_push_neighbour(chips, cur_element + PALETTE[cur_rotor], array);
+			case 2: ++cur_rotor; inc_push_neighbour(chips, cur_element + PALETTE[cur_rotor], array);
+			case 1: ++cur_rotor; inc_push_neighbour(chips, cur_element + PALETTE[cur_rotor], array); break;
+		default: assert(chips_to_dec==0);
+		}
+		(*grid)[cur_element] = ((*grid)[cur_element] + chips_to_dec)&3;
+		(*chips)[cur_element] = 0;
+
+	//	if( ((*chips)[cur_element] -= chips_to_dec) )
+	//	 array->push(cur_element);
+	} while( ! array->empty() );
+
+}
+
+
 template<class AvalancheContainer, class ResultType>
 inline void rotor_fix(std::vector<int>* grid, std::vector<int>* chips,
 	const dimension* dim, int hint, AvalancheContainer* array, ResultType* result_logger)
 {
-	const int INVERT_BIT = (1 << 31);
-	const int GRAIN_BITS = (-1) ^ INVERT_BIT;
-
-	const int PALETTE[7] = { -dim->width, 1, dim->width, -1, -dim->width, 1, dim->width };
-
 	if((*chips)[hint]>0) // otherwise, we would need an additional "case 0" label
 	{
 		array->push(hint);
-		result_logger->write_avalanche_counter();
-
-		do {
-			const int cur_element = array->pop();
-			//result_logger->write_int_to_file(&cur_element); // TODO
-
-			(*chips)[cur_element] &= GRAIN_BITS;
-			int cur_rotor = (*grid)[cur_element];
-			int chips_to_dec = std::min(3,(*chips)[cur_element]);
-
-			//printf("%d chips, rotor: %d\n", (*chips)[cur_element], (*grid)[cur_element]);
-			switch(chips_to_dec) // assumption: more will no hapen
-			{
-				// unrolled for loop
-				case 3: ++cur_rotor; inc_push_neighbour(chips, cur_element + PALETTE[cur_rotor], array);
-				case 2: ++cur_rotor; inc_push_neighbour(chips, cur_element + PALETTE[cur_rotor], array);
-				case 1: ++cur_rotor; inc_push_neighbour(chips, cur_element + PALETTE[cur_rotor], array); break;
-			/*	default: {
-					std::string err_str = "Invalid number of chips detected."; // TODO: number
-					throw(err_str);
-				}*/
-			}
-			(*grid)[cur_element] = ((*grid)[cur_element] + chips_to_dec)%4;
-			if( ((*chips)[cur_element] -= chips_to_dec) )
-			 array->push(cur_element);
-		} while( ! array->empty() );
+		do_rotor_fix(grid, chips, dim, array, result_logger);
 	}
 	result_logger->write_separator();
 	array->flush(); // note: empty does not always imply being flushed!
+}
+
+template<class AvalancheContainer, class ResultType>
+inline void rotor_fix(std::vector<int>* grid, std::vector<int>* chips,
+	const dimension* dim, AvalancheContainer* array, ResultType* result_logger)
+{
+	const int INVERT_BIT = (1 << 31);
+	for(unsigned int count = 0; count < dim->area(); ++count)
+	{
+		if(! is_border(dim, count)) {
+			array->push(count); // panic: every cell is assumed to be higher than 3
+			(*chips)[count] |= INVERT_BIT; // don't push this one twice
+		}
+	}
+
+	// note: hint does not matter for correctness
+	do_rotor_fix(grid, chips, dim, array, result_logger);
 }
 
 template<class AvalancheContainer, class ResultType>
