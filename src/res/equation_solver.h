@@ -262,7 +262,7 @@ namespace eqsolver
 				    )
 				;
 
-			variable = +qi::char_("xyvXYV") | (+qi::char_("aA") >> '[' >> (*(qi::char_("0-9")))  [_val = _1] >> ']');
+			variable = +qi::char_("xyvXYV") | (+qi::char_("aA") >> '[' >> ((qi::char_("0-9")))  [_val = _1] >> ']');
 
 			function =
 				( "min(" >> expression [_val = _1] >> ',' >> expression [_val = min_func(_val,_1)] >> ')')
