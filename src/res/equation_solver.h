@@ -170,10 +170,23 @@ namespace eqsolver
 		inline result_type operator()(qi::info::nil) const { return 0; }
 		inline result_type operator()(int n) const { return n;  }
 		inline result_type operator()(std::string c) const {
+			printf("c=%s\n",c.c_str());
 			switch(c[0]) {
 				case 'x': return x;
 				case 'y': return y;
 				case 'v': return v;
+				case 'a':
+				printf("c=%s\n",c.c_str());
+					printf("c[c.length()-2], c[c.length()-1] = %c,%c\n",c[c.length()-2], c[c.length()-1]);
+					if(c[1]!='['||c[c.length()-2]!=']')
+					 throw("Variable a must be followed by [<integer>].");
+					else {
+						std::string numeric_substr = c.substr(1,c.length()-2);
+						for(unsigned int i = 0; i < numeric_substr.length(); i++)
+						 if(numeric_substr[i]<'0' || numeric_substr[i]>'9')
+						  throw("Array subscript must be numeric");
+						return 1;
+					}
 				default: throw("For variables, only x,y or v accepted.");
 			}
 		}
@@ -202,7 +215,7 @@ namespace eqsolver
 	struct calculator : qi::grammar<Iterator, expression_ast(), ascii::space_type>
 	{
 		/*
-			We use an Order like in the C language
+			We use an order like in the C language
 		*/
 		calculator() : calculator::base_type(expression)
 		{
@@ -249,7 +262,7 @@ namespace eqsolver
 				    )
 				;
 
-			variable = +qi::char_("xyvXYV");
+			variable = +qi::char_("xyvXYV") | (+qi::char_("aA") >> '[' >> (*(qi::char_("0-9")))  [_val = _1] >> ']');
 
 			function =
 				( "min(" >> expression [_val = _1] >> ',' >> expression [_val = min_func(_val,_1)] >> ')')
