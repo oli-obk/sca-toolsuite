@@ -92,11 +92,11 @@ void build_tree_from_equation(const char* equation, eqsolver::expression_ast* as
 	}
 }
 
-int solve_single_equation(const char* equation, int x, int y, int v)
+int solve_single_equation(const char* equation, int height, int width, int x, int y, int* v)
 {
 	eqsolver::expression_ast ast;
 	build_tree_from_equation(equation, &ast);
 
-	eqsolver::ast_print solver(x,y,v);
+	eqsolver::ast_print solver(height, width, x,y,v);
 	return solver(ast);
 }

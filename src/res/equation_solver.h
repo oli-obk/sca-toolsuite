@@ -164,19 +164,32 @@ namespace eqsolver
 	//! Class for iterating an expression tree and printing the result.
 	struct ast_print
 	{
+		// h and w shall be internal, since we want to avoid adding 2
+		// so it is still general to non-bordered areas
+		int height, width;
 		typedef unsigned int result_type;
-		result_type x,y,v;
+		const result_type x,y, *v;
+
+		inline int position(int _x, int _y) const { return (_y*(width+1)+_x+1); }
 
 		inline result_type operator()(qi::info::nil) const { return 0; }
 		inline result_type operator()(int n) const { return n;  }
 		inline result_type operator()(std::string c) const {
-			//printf("c=%s\n",c.c_str());
 			switch(c[0]) {
 				case 'x': return x;
 				case 'y': return y;
-				case 'v': return v;
+				case 'v': return *v;
 				default:
-					return atoi(c.c_str());
+				{
+					std::string help_str = c;
+					 // TODO: this is waste of memory - make , to \0 instead
+					int comma_pos = help_str.find(',');
+					help_str[comma_pos]=0;
+					int xoff = atoi(help_str.c_str());
+					help_str=c.substr(comma_pos+1);
+					int yoff = atoi(help_str.c_str());
+					return v[xoff+(yoff*width)];
+				}
 			}
 		}
 
@@ -195,8 +208,12 @@ namespace eqsolver
 		inline result_type operator()(unary_op const& expr) const {
 			return expr.fptr(boost::apply_visitor(*this, expr.subject.expr));
 		}
+		ast_print(int _x) : x(_x), y(0), v(NULL) {}
+		ast_print(int _height, int _width, int _x, int _y, const int* _v)
+			: height(_height), width(_width), x(_x), y(_y), v((const result_type*)_v) {
+		}
+	//	ast_print(int x, int y, int* v) : x(x), y(y), v((result_type*)v) {}
 
-		ast_print(int x, int y, int v) : x(x), y(y), v(v) {}
 	};
 
 	//! caluclator grammar to build expression trees
@@ -252,8 +269,16 @@ namespace eqsolver
 				;
 
 			variable = +qi::char_("xyvXYV");
-			array_subscript = ("a[" >> (*qi::char_("0-9")) >> ']')
-					| ("A[" >> (*qi::char_("0-9")) >> ']');
+
+			str_int =  (qi::char_("-") >> *qi::char_("0-9")) | (*qi::char_("0-9"));
+
+			array_subscript = ("a[" >> str_int >> qi::char_(",") >> str_int >> ']') |
+				("A[" >> str_int >> qi::char_(",") >> str_int >> ']');
+			//array_subscript = ("a[" >> (*qi::char_("0-9")) >> (*qi::char_(",")) >> (*qi::char_("0-9")) >> ']')
+			//		| ("A[" >> (*qi::char_("0-9")) >> (*qi::char_(",")) >> (*qi::char_("0-9")) >> ']');
+
+			//("a[" >> (*qi::char_("0-9")) >> (*qi::char_(",")) >> (*qi::char_("0-9")) >> ']')
+
 
 			function =
 				( "min(" >> expression [_val = _1] >> ',' >> expression [_val = min_func(_val,_1)] >> ')')
@@ -274,7 +299,7 @@ namespace eqsolver
 		}
 		qi::rule<Iterator, expression_ast(), ascii::space_type>
 		expression, and_expression, equation, inequation, sum, term, factor, function;
-		qi::rule<Iterator, std::string()> variable, array_subscript;
+		qi::rule<Iterator, std::string()> variable, array_subscript, str_int;
 	};
 }
 

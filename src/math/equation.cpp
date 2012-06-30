@@ -34,23 +34,44 @@ class MyProgram : public Program
 		eqsolver::expression_ast ast;
 		build_tree_from_equation(equation, &ast);
 
-		std::vector<int> grid;
+		std::vector<int> grid, result;
 		dimension dim;
 		read_grid(stdin, &grid, &dim);
+		result.reserve(grid.size());
 
-		for(unsigned int y = 0; y<dim.height-2; y++)
+		/*for(unsigned int y = 0; y<dim.height-2; y++)
 		 for(unsigned int x = 0; x<dim.width-2; x++)
 		{
 			const int human = x+y*(dim.width-2);
 			const int internal = human2internal(human, dim.width);
 			if(grid[internal] != INT_MIN) { // excludes border
-				eqsolver::ast_print solver(x,y,grid[internal]);
-				//printf("x=%d, y=%d, value=%d => result: %d\n",x,y,grid[internal],solver(ast));
-				grid[internal] = solver(ast);
+				printf("REAL	ADDR of v: %d\n",(int)grid.data());
+				eqsolver::ast_print solver(dim.height, dim.width, x,y,grid.data());
+				printf("%d %d\n",grid[internal], grid[internal]);
+				printf("%d %d\n",(grid.data())[internal], (grid.data())[internal]);
+				printf("x=%d, y=%d, value=%d, internal: %d => result: %d\n",x,y,grid[internal],internal,solver(ast));
+				result[internal] = solver(ast);
+				printf("%d %d\n",grid[internal], grid[internal]);
+				printf("%d %d\n",(grid.data())[internal], (grid.data())[internal]);
+			}
+			else
+			 result[internal];
+		}*/
+		for(unsigned int y = 0; y<dim.height; y++)
+		for(unsigned int x = 0; x<dim.width; x++)
+		{
+			const int internal = x+y*(dim.width);
+			if(grid[internal] == INT_MIN) { // excludes border
+				result[internal] = INT_MIN;
+			}
+			else {
+				eqsolver::ast_print solver(dim.height, dim.width, x-1,y-1,&grid[internal]);
+				result[internal] = solver(ast);
 			}
 		}
 
-		write_grid(stdout, &grid, &dim);
+
+		write_grid(stdout, &result, &dim);
 		return 0;
 	}
 };

@@ -45,7 +45,7 @@ class MyProgram : public Program
 		do {
 			symbols_read = fscanf(read_fp, "%d", &index);
 			if(symbols_read > 0) {
-				eqsolver::ast_print solver(index,0,1);
+				eqsolver::ast_print solver(index);
 				fprintf(stdout, "%d%c", solver(ast),separator);
 			}
 		} while(symbols_read > 0);

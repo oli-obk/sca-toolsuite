@@ -162,6 +162,7 @@ public:
 		}
 		return return_value;
 	}
+	virtual ~Program() {}
 
 protected:
 	//! Main routine for inherited classes.
