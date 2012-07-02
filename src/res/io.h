@@ -90,8 +90,15 @@ inline bool read_number(FILE* fp, int* read_symbol) {
 	@param grid pointer to vector, shall be empty and usually not pre-allocated
 	@param dim the real dimension of the grid, i.e. including border
 	@param SCANFUNC function which converts chars to numbers for internal handling
+	@param border whether the outer cells make a border - internal use only
 */
-void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, bool (*SCANFUNC)(FILE*, int*) = &read_number);
+void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
+	 bool (*SCANFUNC)(FILE*, int*) = &read_number, bool border = true);
+
+inline void read_array(FILE* fp, std::vector<int>* grid, dimension* dim,
+	bool (*SCANFUNC)(FILE*, int*) = &read_number) {
+	read_grid(fp, grid, dim, SCANFUNC, false);
+}
 
 inline void write_arrow(FILE* fp, int int_to_write) {
 	fprintf(fp, "%c", (char)int_2_arrow(&int_to_write));
@@ -103,13 +110,20 @@ inline void write_number(FILE* fp, int int_to_write) {
 
 /**
 	Write a grid to a file pointer (without border)
-	The border can have any values, this won't do harm.
+	If border exists, its values are ignored.
 	@param fp open file, writable
 	@param grid pointer to vector, shall contain the grid
 	@param dim shall contain real dimension of the grid, i.e. including border
 	@param PRINTFUNC function which converts numbers to chars for readability
+	@param border whether the outer cells make a border - internal use only
 */
-void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim, void (*PRINTFUNC)(FILE*, int) = &write_number);
+void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
+	void (*PRINTFUNC)(FILE*, int) = &write_number, bool border = true);
+
+inline void write_array(FILE* fp, const std::vector<int>* grid, const dimension* dim,
+	void (*PRINTFUNC)(FILE*, int) = &write_number) {
+	write_grid(fp, grid, dim, PRINTFUNC, false);
+}
 
 /**
 	Executes shell command and pipes output to stdout.

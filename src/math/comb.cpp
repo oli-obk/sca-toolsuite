@@ -22,6 +22,7 @@
 
 inline int add_ints(const int i1, const int i2) { return i1+i2; }
 inline int sub_ints(const int i1, const int i2) { return i1-i2; }
+inline int mul_ints(const int i1, const int i2) { return i1*i2; }
 inline int max_of_ints(const int i1, const int i2) { return std::max(i1, i2); }
 inline int min_of_ints(const int i1, const int i2) { return std::min(i1, i2); }
 
@@ -37,9 +38,10 @@ class MyProgram : public Program
 		int (*op_fptr)(const int i1, const int i2) = NULL;
 		if(!strcmp(op_str,"add")) op_fptr = &add_ints;
 		else if(!strcmp(op_str,"sub")) op_fptr = &sub_ints;
+		else if(!strcmp(op_str,"mul")) op_fptr = &mul_ints;
 		else if(!strcmp(op_str,"max")) op_fptr = &max_of_ints;
 		else if(!strcmp(op_str,"min")) op_fptr = &min_of_ints;
-		else exitf("Unknown operator %s. Supported: add, sub, max, min.\n", op_str);
+		else exitf("Unknown operator %s. Supported: add, sub, mul, max, min.\n", op_str);
 
 		std::vector<int> grid1, grid2, grid0;
 		dimension dim, dim2;

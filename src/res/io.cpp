@@ -40,53 +40,72 @@
  */
 
 // reads grid from open file
-void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, bool (*SCANFUNC)(FILE*, int*))
+// TODO: we should reserve the array linewise...
+void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
+	bool (*SCANFUNC)(FILE*, int*), bool border)
 {
 	assert(SCANFUNC);
-	bool end_of_file = false;
+	assert(((int)border)<=1);
 	int read_symbol;
 	int line_width = -1, col_count = 0, line_count = 0; // all excl. border
-	grid->push_back(INT_MIN);
-	do {
-#if 0
-		if( fscanf(fp, "%d", &read_symbol) != 1)
-		 break;
-#endif
+
+	if(border) grid->push_back(INT_MIN);
+
+	while(true)
+	{
+		// read first numeric
 		if(! SCANFUNC(fp, &read_symbol) )
-		 break;
+		 break; // eof
 		grid->push_back(read_symbol);
 		col_count++;
+
+		// read separating whitespace
 		read_symbol=fgetc(fp);
-		if(read_symbol == '\n') { // NOTE: WIN32
+		if(read_symbol == '\n')
+		{
+			// first newline => determine line length
 			if(! line_count) {
 				line_width = col_count;
-				grid->insert(grid->begin(), line_width + 2, INT_MIN);
+				// insert first row as border row
+				if(border)
+				 grid->insert(grid->begin(), line_width + 2, INT_MIN);
 			}
 			else
 			 assert(line_width == col_count);
+
 			line_count++;
 			col_count = 0;
-			grid->push_back(INT_MIN);
-			grid->push_back(INT_MIN);
+			// insert border: right end, left start
+			if(border) {
+				grid->push_back(INT_MIN);
+				grid->push_back(INT_MIN);
+			}
 		}
-		else if(read_symbol != ' ')
-		 assert(0);
-	} while(!end_of_file);
-	grid->insert(grid->end(), line_width + 1, INT_MIN);
-	//grid->free(grid->size);
-	dim->height = line_count+2;
-	dim->width = line_width+2;
+		else
+		 assert(read_symbol == ' ');
+	}
+
+	// insert last row as border row
+	if(border) grid->insert(grid->end(), line_width + 1, INT_MIN);
+
+	dim->height = line_count + (((int)(border))<<1);
+	dim->width = line_width + (((int)(border))<<1);
+
 	assert(dim->area() == grid->size());
 }
 
-void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim, void (*PRINTFUNC)(FILE*, int)) {
+void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
+	void (*PRINTFUNC)(FILE*, int), bool border)
+{
 	assert(PRINTFUNC);
-	for(unsigned int y = 1; y < dim->height-1; y++) {
-		for(unsigned int x = 1; x < dim->width-1; x++) {
-			//fprintf(fp, "%d", (*grid)[x + (dim->width)*y]); // TODO: two [] operators
-			if(PRINTFUNC==NULL) exit(99);
+	int iborder = (int) border;
+	unsigned int last_symbol = dim->width - 1 - iborder;
+
+	for(unsigned int y = iborder; y < dim->height - iborder; y++)
+	{
+		for(unsigned int x = iborder; x < dim->width - iborder; x++) {
 			PRINTFUNC(fp, (*grid)[x + (dim->width)*y]); // TODO: two [] operators
-			fputc((x == dim->width-2) ? '\n':' ', fp);
+			fputc((x == last_symbol) ? '\n':' ', fp);
 		}
 	}
 }

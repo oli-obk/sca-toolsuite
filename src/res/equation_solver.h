@@ -59,6 +59,8 @@ namespace eqsolver
 {
 	inline int f1i_not(int arg1) { return (int)(arg1==0); }
 	inline int f1i_neg(int arg1) { return -arg1; }
+	inline int f1i_abs(int arg1) { return std::abs(arg1); }
+	inline int f1i_sqrt(int arg1) { return (int)std::sqrt((int)arg1); }
 	inline int f2i_add(int arg1, int arg2) { return arg1 + arg2; }
 	inline int f2i_sub(int arg1, int arg2) { return arg1 - arg2; }
 	inline int f2i_mul(int arg1, int arg2) { return arg1 * arg2; }
@@ -158,6 +160,8 @@ namespace eqsolver
 	// meantime, we will use a phoenix::function below:
 	MAKE_UNARY_FUNC(neg, '-', f1i_neg);
 	MAKE_UNARY_FUNC(not_func, '!', f1i_not);
+	MAKE_UNARY_FUNC(abs_func, 'a', f1i_abs);
+	MAKE_UNARY_FUNC(sqrt_func, 's', f1i_sqrt);
 	MAKE_BINARY_FUNC(min_func, 'm', f2i_min);
 	MAKE_BINARY_FUNC(max_func, 'n', f2i_max);
 
@@ -282,7 +286,9 @@ namespace eqsolver
 
 			function =
 				( "min(" >> expression [_val = _1] >> ',' >> expression [_val = min_func(_val,_1)] >> ')')
-				| ( "max(" >> expression [_val = _1] >> ',' >> expression [_val = max_func(_val,_1)] >> ')');
+				| ( "max(" >> expression [_val = _1] >> ',' >> expression [_val = max_func(_val,_1)] >> ')')
+				| ( "abs(" >> expression [_val = abs_func(_1)] >> ')')
+				| ( "sqrt(" >> expression [_val = sqrt_func(_1)] >> ')');
 
 			factor =
 				variable                        [_val = _1]

@@ -71,8 +71,8 @@ class MyProgram : public Program
 		std::vector<int> grid;
 		dimension dim;
 
-		read_grid(stdin, &grid, &dim, scanfunc);
-		write_grid(stdout, &grid, &dim, printfunc);
+		read_array(stdin, &grid, &dim, scanfunc);
+		write_array(stdout, &grid, &dim, printfunc);
 		return 0;
 	}
 };

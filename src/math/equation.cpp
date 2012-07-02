@@ -60,12 +60,12 @@ class MyProgram : public Program
 		for(unsigned int y = 0; y<dim.height; y++)
 		for(unsigned int x = 0; x<dim.width; x++)
 		{
-			const int internal = x+y*(dim.width);
+			const int internal = x+y*dim.width;
 			if(grid[internal] == INT_MIN) { // excludes border
 				result[internal] = INT_MIN;
 			}
 			else {
-				eqsolver::ast_print solver(dim.height, dim.width, x-1,y-1,&grid[internal]);
+				eqsolver::ast_print solver(dim.height, dim.width, x-1 ,y-1, &grid[internal]);
 				result[internal] = solver(ast);
 			}
 		}

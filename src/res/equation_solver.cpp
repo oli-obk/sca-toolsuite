@@ -30,7 +30,7 @@ const char* EQUATION_HELP_STR =
 "Booleans are treated as integer values 0 and 1.\n"
 "Supported Operators by precedence (like in C++):\n"
 " 1. Braces: ()\n"
-"    Function calls: min(,), max(,)\n"
+"    Function calls: min(,), max(,), abs(), sqrt()\n"
 "    Negation: +, - \n"
 "    Not: !\n"
 " 2. Multiplicative terms: *, /, %\n"

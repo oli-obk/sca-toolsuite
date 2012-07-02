@@ -49,7 +49,8 @@ SOURCES += algo/relax.cpp \
     gui_qt/MainWindow.cpp \
     gui_qt/DrawArea.cpp \
     gui_qt/StateMachine.cpp \
-    gui_qt/MenuBar.cpp
+    gui_qt/MenuBar.cpp \
+    math/filter.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL \
 	../README \

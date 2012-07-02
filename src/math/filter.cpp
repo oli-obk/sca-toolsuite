@@ -21,42 +21,58 @@
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
-
-#include "image.h"
 #include "io.h"
 
 class MyProgram : public Program
 {
 	int main()
 	{
-		rgb min_color(0,0,0), max_color(255,255,255);
-		int min_val=0, max_val=3;
-		FILE* write_fp = stdout;
+		if(argc != 3)
+		 exit_usage();
+
 		switch(argc)
 		{
-			case 6:
-				write_fp = fopen(argv[5], "w");
-				if(write_fp==NULL)
-				 exit("Error opening outfile");
-			case 5: max_val = atoi(argv[4]);
-			case 4: min_val = atoi(argv[3]);
-			case 3: max_color.from_str(argv[2]);
-			case 2: min_color.from_str(argv[1]);
-			case 1: break;
+			case 2:
+
+			case 1:
+
 			default:
 				exit_usage();
 		}
 
-		std::vector<int> grid;
+		std::vector<int> grid, result;
 		dimension dim;
+		std::vector <int> filter;
+		dimension dim_filter;
 
-		read_grid(stdin, &grid, &dim);
+		read_array(stdin, &grid, &dim);
+		result.resize(grid.size(), 0);
+		get_input(argv[2]);
+		read_array(stdin, &filter, &dim_filter);
 
-		ColorTable color_table(min_color, max_color, min_val, max_val);
-		print_to_tga(write_fp, color_table, grid, dim);
+		if(dim_filter.width % 2 || dim_filter.height % 2)
+		 exit("Filter matrix must have odd width and height.");
 
-		if(argc==7)
-		 fclose(write_fp);
+		int centerx = dim_filter.width >> 1;
+		int centery = dim_filter.height >> 1;
+
+		for(unsigned int y = 0; y < dim.height; y++)
+		for(unsigned int x = 0; x < dim.width; x++)
+		// iterate over input grid
+		{
+			const int internal = x+y*dim.width;
+			if(grid[internal] == INT_MIN) { // excludes border
+				result[internal] = INT_MIN;
+			}
+			else {
+				eqsolver::ast_print solver(dim.height, dim.width, x-1,y-1,&grid[internal]);
+				result[internal] = solver(ast);
+			}
+
+
+		}
+
+		write_array(stdout, &grid, &dim);
 		return 0;
 	}
 };
@@ -64,15 +80,12 @@ class MyProgram : public Program
 int main(int argc, char** argv)
 {
 	HelpStruct help;
-	help.syntax = "io/grid2tga [<min_color> <max_color> [<min_val> <max_val> [<outfile>]]]";
-	help.description = "Converts given grid to a TGA file (v2, color table, no RLE).\n"
-		"Colors can be specified for minimum and maximum no of chips,\n"
-		"other numbers will be linearly interpolated.";
-	help.input = "input grid";
-	help.output = "TGA file content if no outfile is given, otherwise nothing";
-	help.add_param("<min_color>, <max_color>", "color values for min and max no of chips");
-	help.add_param("<min_val>, <max_val>", "modify min and max no of chips - default is 0 and 3");
-	help.add_param("<outfile>", "file to store resulting TGA in");
+	help.syntax = "io/filter <shell command>";
+	help.description = "Reads grid from stdin and writes it to stdout. Useful for formatting.";
+	help.input = "input grid, or none if a file was given as an argument";
+	help.output = "the same grid";
+	help.add_param("infile", "specifies a file to read a grid from");
+
 	MyProgram p;
 	return p.run(argc, argv, &help);
 }
