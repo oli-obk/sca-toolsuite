@@ -30,6 +30,23 @@
 
 #include "io.h"
 
+inline void insert_horizontal_border(std::vector<int>* grid,
+	std::vector<int>::iterator itr,
+	int human_linewidth,
+	int border_width)
+{
+	grid->insert(itr,
+		(human_linewidth + (border_width<<1))*border_width,
+		INT_MIN);
+}
+
+inline void insert_vertical_border(std::vector<int>* grid,
+	std::vector<int>::iterator itr,
+	int border_width)
+{
+	grid->insert(itr, border_width, INT_MIN);
+}
+
 /*
  * Shall we use width for a line including or excluding borders?
  * convention: The user (and even an AI random inputter)
@@ -42,20 +59,21 @@
 // reads grid from open file
 // TODO: we should reserve the array linewise...
 void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
-	bool (*SCANFUNC)(FILE*, int*), bool border)
+	bool (*SCANFUNC)(FILE*, int*), int border)
 {
 	assert(SCANFUNC);
 	assert(((int)border)<=1);
+
 	int read_symbol;
 	int line_width = -1, col_count = 0, line_count = 0; // all excl. border
-
-	if(border) grid->push_back(INT_MIN);
 
 	while(true)
 	{
 		// read first numeric
 		if(! SCANFUNC(fp, &read_symbol) )
 		 break; // eof
+		if(!col_count)
+		 insert_vertical_border(grid, grid->end(), border);
 		grid->push_back(read_symbol);
 		col_count++;
 
@@ -66,27 +84,21 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 			// first newline => determine line length
 			if(! line_count) {
 				line_width = col_count;
-				// insert first row as border row
-				if(border)
-				 grid->insert(grid->begin(), line_width + 2, INT_MIN);
+				insert_horizontal_border(grid, grid->begin(), line_width, border);
 			}
 			else
 			 assert(line_width == col_count);
 
 			line_count++;
 			col_count = 0;
-			// insert border: right end, left start
-			if(border) {
-				grid->push_back(INT_MIN);
-				grid->push_back(INT_MIN);
-			}
+
+			insert_vertical_border(grid, grid->end(), border);
 		}
 		else
 		 assert(read_symbol == ' ');
 	}
 
-	// insert last row as border row
-	if(border) grid->insert(grid->end(), line_width + 1, INT_MIN);
+	insert_horizontal_border(grid, grid->end(), line_width, border);
 
 	dim->height = line_count + (((int)(border))<<1);
 	dim->width = line_width + (((int)(border))<<1);
@@ -95,15 +107,14 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 }
 
 void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
-	void (*PRINTFUNC)(FILE*, int), bool border)
+	void (*PRINTFUNC)(FILE*, int), int border)
 {
 	assert(PRINTFUNC);
-	int iborder = (int) border;
-	unsigned int last_symbol = dim->width - 1 - iborder;
+	unsigned int last_symbol = dim->width - 1 - border;
 
-	for(unsigned int y = iborder; y < dim->height - iborder; y++)
+	for(unsigned int y = border; y < dim->height - border; y++)
 	{
-		for(unsigned int x = iborder; x < dim->width - iborder; x++) {
+		for(unsigned int x = border; x < dim->width - border; x++) {
 			PRINTFUNC(fp, (*grid)[x + (dim->width)*y]); // TODO: two [] operators
 			fputc((x == last_symbol) ? '\n':' ', fp);
 		}

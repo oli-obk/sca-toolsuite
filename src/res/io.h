@@ -93,11 +93,11 @@ inline bool read_number(FILE* fp, int* read_symbol) {
 	@param border whether the outer cells make a border - internal use only
 */
 void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
-	 bool (*SCANFUNC)(FILE*, int*) = &read_number, bool border = true);
+	 bool (*SCANFUNC)(FILE*, int*) = &read_number, int border = 1);
 
 inline void read_array(FILE* fp, std::vector<int>* grid, dimension* dim,
 	bool (*SCANFUNC)(FILE*, int*) = &read_number) {
-	read_grid(fp, grid, dim, SCANFUNC, false);
+	read_grid(fp, grid, dim, SCANFUNC, 0);
 }
 
 inline void write_arrow(FILE* fp, int int_to_write) {
@@ -118,11 +118,11 @@ inline void write_number(FILE* fp, int int_to_write) {
 	@param border whether the outer cells make a border - internal use only
 */
 void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
-	void (*PRINTFUNC)(FILE*, int) = &write_number, bool border = true);
+	void (*PRINTFUNC)(FILE*, int) = &write_number, int border = 1);
 
 inline void write_array(FILE* fp, const std::vector<int>* grid, const dimension* dim,
 	void (*PRINTFUNC)(FILE*, int) = &write_number) {
-	write_grid(fp, grid, dim, PRINTFUNC, false);
+	write_grid(fp, grid, dim, PRINTFUNC, 0);
 }
 
 /**
