@@ -131,7 +131,7 @@ core/create 8 8 2 | algo/burning_test | io/avalanches_bin2human 8  | io/seq_to_f
 
 In alphabetical order, I thank:
 
-  * Dr Thomas Worsch [2] @ the University of Karlsruhe [3].
+  * Dr Thomas Worsch [2] @ The Karlsruhe Institute of Technology (KIT) [3].
   * Philipp Lorenz.
   * Sebastian Frehmel, his diploma thesis at [4].
   * The helpful people of ##spirit at irc.freenode.net.

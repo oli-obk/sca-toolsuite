@@ -100,6 +100,10 @@ call_test "Testing io/to_tga (0=green, 3=red)" 1 "algo/id 50 50 | io/to_tga 00ff
 call_test "Testing algo/super (1)" 1 "core/create 2 2 2 | algo/super | core/all_equals 0"
 call_test "Testing algo/super (2)" 1 "core/create 2 2 3 | algo/super | core/all_equals 1"
 
+# ca
+call_test "Testing ca/ca (1)" 1 "core/create 20 20 0 | ca/ca 'v+2' 4 | core/all_equals 8"
+call_test "Testing ca/ca (2)" 1 "core/create 20 20 4 | ca/ca 'v+(-4*(v>=4))+(a[-1,0]>=4)+(a[0,-1]>=4)+(a[1,0]>=4)+(a[0,1]>=4)' | core/diff2 'core/create 20 20 4 | algo/S'"
+
 # rotor stuff
 call_test "Testing rotor/rotor s" 1 "core/create 10 10 0 | rotor/rotor s 'core/create 10 10 100' | core/diff2 \"core/create 10 10 0 | algo/S | rotor/rotor s 'core/create 10 10 100'\""
 call_test "Testing rotor/rotor l" 1 "core/create 2 2 0 | math/equation 'min(x+y*2,2)' | rotor/rotor l 'core/create 2 2 0 | math/add 0' | io/avalanches_bin2human 2 | io/seq_to_field 2 2 | core/all_equals 1"

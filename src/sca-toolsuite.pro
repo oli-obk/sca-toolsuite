@@ -50,7 +50,8 @@ SOURCES += algo/relax.cpp \
     gui_qt/DrawArea.cpp \
     gui_qt/StateMachine.cpp \
     gui_qt/MenuBar.cpp \
-    math/filter.cpp
+    math/filter.cpp \
+    ca/ca.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL \
 	../README \

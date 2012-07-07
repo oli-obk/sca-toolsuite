@@ -127,6 +127,7 @@ struct HelpStruct
 class Program
 {
 protected:
+	const bool env_debug;
 	int argc;
 	char** argv;
 private:
@@ -162,6 +163,8 @@ public:
 		}
 		return return_value;
 	}
+	static inline int safe_atoi(const char* str) { return str?atoi(str):0; }
+	Program() : env_debug(safe_atoi(getenv("SCA_DEBUG"))) {}
 	virtual ~Program() {}
 
 protected:
@@ -185,6 +188,30 @@ protected:
 		vfprintf(stderr, format, args);
 		va_end(args);
 		internal_exit();
+	}
+
+	//! Prints str if shell sets SCA_DEBUG and macro SCA_DEBUG is defined.
+	//! Programmers can put these everywhere without runtime worries.
+	inline void debug(const char* str) const {
+#ifdef SCA_DEBUG
+		if(env_debug) fputs(str, stderr);
+#endif
+	}
+
+	//! Prints format if shell sets SCA_DEBUG and macro SCA_DEBUG is
+	//! defined.
+	//! Programmers can put these everywhere without runtime worries
+	inline void debugf(const char* format, ...) const
+	{
+#ifdef SCA_DEBUG
+		if(env_debug)
+		{
+			va_list args;
+			va_start(args, format);
+			vfprintf(stderr, format, args);
+			va_end(args);
+		}
+#endif
 	}
 
 	//! Exit program with usage

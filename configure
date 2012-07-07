@@ -4437,7 +4437,7 @@ fi
 
 # Checks for library functions.
 
-ac_config_files="$ac_config_files Makefile src/Makefile src/core/Makefile src/io/Makefile src/algo/Makefile src/math/Makefile src/res/Makefile src/rotor/Makefile doc/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile src/ca/Makefile src/core/Makefile src/io/Makefile src/algo/Makefile src/math/Makefile src/res/Makefile src/rotor/Makefile doc/Makefile"
 
 #                src/tsa/Makefile
 #                src/tsasim/Makefile
@@ -5181,6 +5181,7 @@ do
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
+    "src/ca/Makefile") CONFIG_FILES="$CONFIG_FILES src/ca/Makefile" ;;
     "src/core/Makefile") CONFIG_FILES="$CONFIG_FILES src/core/Makefile" ;;
     "src/io/Makefile") CONFIG_FILES="$CONFIG_FILES src/io/Makefile" ;;
     "src/algo/Makefile") CONFIG_FILES="$CONFIG_FILES src/algo/Makefile" ;;

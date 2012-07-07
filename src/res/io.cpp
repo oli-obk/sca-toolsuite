@@ -62,7 +62,6 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	bool (*SCANFUNC)(FILE*, int*), int border)
 {
 	assert(SCANFUNC);
-	assert(((int)border)<=1);
 
 	int read_symbol;
 	int line_width = -1, col_count = 0, line_count = 0; // all excl. border

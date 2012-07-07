@@ -3,12 +3,18 @@ INSTALLATION OF THE COMMANDLINE INTERFACE
 
 In this directory, type:
 
-  ./configure CXXFLAGS="-O3 -Wall"
+  ./configure CXXFLAGS="-Wall -O3"
   make
 
-In case you are interested in gdb's or valgrind's output, use CXXFLAGS=-g.
+In case you want to debug, or are interested in gdb's or valgrind's output,
+use:
+
+  ./configure CXXFLAGS="-Wall -g -DSCA_DEBUG"
+
+
 If you need more information about how to configure, type
-`./configure --help'.
+
+  ./configure --help.
 
 INSTALLATION OF THE QT GUI
 ::::::::::::::::::::::::::

@@ -220,6 +220,49 @@ namespace eqsolver
 
 	};
 
+	//! Class for iterating an expression tree and print the used area in the array.
+	//! The result is an int describing the half size of a square.
+	struct ast_area
+	{
+		typedef unsigned int result_type;
+
+		inline result_type operator()(qi::info::nil) const { return 0; }
+		inline result_type operator()(int n) const { return 0;  }
+		inline result_type operator()(std::string c) const {
+			switch(c[0]) {
+				case 'x': case 'y': case 'v': return 0;
+				default:
+				{
+					std::string help_str = c;
+					 // TODO: this is waste of memory - make , to \0 instead
+					int comma_pos = help_str.find(',');
+					help_str[comma_pos]=0;
+					int xoff = atoi(help_str.c_str());
+					help_str=c.substr(comma_pos+1);
+					int yoff = atoi(help_str.c_str());
+					return std::max(xoff,yoff);
+				}
+			}
+		}
+
+		inline result_type operator()(expression_ast const& ast) const {
+			return boost::apply_visitor(*this, ast.expr);
+		}
+
+		inline result_type operator()(binary_op const& expr) const
+		{
+			return std::max(
+				boost::apply_visitor(*this, expr.left.expr),
+				boost::apply_visitor(*this, expr.right.expr)
+			);
+		}
+
+		inline result_type operator()(unary_op const& expr) const {
+			return boost::apply_visitor(*this, expr.subject.expr);
+		}
+
+	};
+
 	//! caluclator grammar to build expression trees
 	template <typename Iterator>
 	struct calculator : qi::grammar<Iterator, expression_ast(), ascii::space_type>

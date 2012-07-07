@@ -24,6 +24,7 @@ AC_TYPE_SIZE_T
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
+		 src/ca/Makefile
 		 src/core/Makefile
 		 src/io/Makefile
 		 src/algo/Makefile
