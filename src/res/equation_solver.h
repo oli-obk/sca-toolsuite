@@ -21,6 +21,8 @@
 #ifndef EQUATION_SOLVER_H
 #define EQUATION_SOLVER_H
 
+#include <map>
+
 #include <boost/config/warning_disable.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/variant/recursive_variant.hpp>
@@ -38,7 +40,7 @@ const char* get_help_description();
 	template <typename T> \
 	struct result { typedef T type; }; \
 	inline expression_ast operator()(expression_ast const& expr) const { \
-		return expression_ast(unary_op(VISUAL, &EXECUTE, expr)); \
+		return expression_ast(unary_op(VISUAL, EXECUTE, expr)); \
 	} \
 }; \
 const boost::phoenix::function<OP> OP;
@@ -48,7 +50,7 @@ const boost::phoenix::function<OP> OP;
 	template <typename T1, typename T2> \
 	struct result { typedef T2 type; }; \
 	inline expression_ast operator()(expression_ast const& expr1, expression_ast const& expr2) const { \
-		return expression_ast(binary_op(VISUAL, &EXECUTE, expr1, expr2)); \
+		return expression_ast(binary_op(VISUAL, EXECUTE, expr1, expr2)); \
 	} \
 }; \
 const boost::phoenix::function<OP> OP;
@@ -76,6 +78,7 @@ namespace eqsolver
 	inline int f2i_neq(int arg1, int arg2) { return (int)(arg1!=arg2); }
 	inline int f2i_and(int arg1, int arg2) { return (int)(arg1*arg2); }
 	inline int f2i_or(int arg1, int arg2) { return (int)((arg1!=0)||(arg2!=0)); }
+	inline int f2i_com(int arg1, int arg2) { (void)arg1; return arg2; }
 
 	typedef int (*fptr_1i)(int arg1);
 	typedef int (*fptr_2i)(int arg1, int arg2);
@@ -164,6 +167,14 @@ namespace eqsolver
 	MAKE_UNARY_FUNC(sqrt_func, 's', f1i_sqrt);
 	MAKE_BINARY_FUNC(min_func, 'm', f2i_min);
 	MAKE_BINARY_FUNC(max_func, 'n', f2i_max);
+	MAKE_BINARY_FUNC(ass_func, 'h', NULL);
+	MAKE_BINARY_FUNC(com_func, ',', f2i_com);
+
+	inline int array_subscript_to_coord(std::string* str, int width) {
+		const int comma_pos = str->find(',');
+		(*str)[comma_pos]=0;
+		return atoi(str->c_str()+1)+atoi(str->data()+(comma_pos+1))*width;
+	}
 
 	//! Class for iterating an expression tree and printing the result.
 	struct ast_print
@@ -173,6 +184,8 @@ namespace eqsolver
 		int height, width;
 		typedef unsigned int result_type;
 		const result_type x,y, *v;
+		//mutable std::map<int, int> helper_vars;
+		int* helper_vars;
 
 		inline int position(int _x, int _y) const { return (_y*(width+1)+_x+1); }
 
@@ -183,30 +196,33 @@ namespace eqsolver
 				case 'x': return x;
 				case 'y': return y;
 				case 'v': return *v;
-				default:
-				{
-					std::string help_str = c;
-					 // TODO: this is waste of memory - make , to \0 instead
-					int comma_pos = help_str.find(',');
-					help_str[comma_pos]=0;
-					int xoff = atoi(help_str.c_str());
-					help_str=c.substr(comma_pos+1);
-					int yoff = atoi(help_str.c_str());
-					return v[xoff+(yoff*width)];
-				}
+				case 'h': return helper_vars[atoi(c.data()+1)];
+				default: return v[array_subscript_to_coord(&c, width)];
 			}
 		}
 
-		inline result_type operator()(expression_ast const& ast) const {
+		inline result_type operator()(expression_ast const& ast) const
+		{
+			ast_area helper_num(ast_area::MAX_HELPER);
+			helper_vars = new int[helper_num()+1];
+
 			return boost::apply_visitor(*this, ast.expr);
 		}
 
 		inline result_type operator()(binary_op const& expr) const
 		{
-			return expr.fptr(
-				boost::apply_visitor(*this, expr.left.expr),
-				boost::apply_visitor(*this, expr.right.expr)
-			);
+			int left = boost::apply_visitor(*this, expr.left.expr);
+			int right = boost::apply_visitor(*this, expr.right.expr);
+			/*if(expr.fptr == NULL) { // this is an assignment
+				puts("before");
+				printf("before2:%s\n",boost::get<std::string>(expr.right.expr).c_str());
+				left = atoi(
+					boost::get<std::string>(expr.right.expr).data()+1);
+				printf("after\n");
+				helper_vars[left]=right;
+				return right;
+			}*/
+			else return expr.fptr(left, right);
 		}
 
 		inline result_type operator()(unary_op const& expr) const {
@@ -224,6 +240,11 @@ namespace eqsolver
 	//! The result is an int describing the half size of a square.
 	struct ast_area
 	{
+		enum AREA_TYPE {
+			MAX_GRID,
+			MAX_HELPER
+		} area_type;
+
 		typedef unsigned int result_type;
 
 		inline result_type operator()(qi::info::nil) const { return 0; }
@@ -232,16 +253,16 @@ namespace eqsolver
 			switch(c[0]) {
 				case 'x': case 'y': case 'v': return 0;
 				default:
+				if(c[0]=='a' && area_type == MAX_GRID)
 				{
-					std::string help_str = c;
-					 // TODO: this is waste of memory - make , to \0 instead
-					int comma_pos = help_str.find(',');
-					help_str[comma_pos]=0;
-					int xoff = atoi(help_str.c_str());
-					help_str=c.substr(comma_pos+1);
-					int yoff = atoi(help_str.c_str());
-					return std::max(xoff,yoff);
+					const int comma_pos = c.find(',');
+					c[comma_pos]=0;
+					return std::max(atoi(c.c_str()),
+						atoi(c.data()+(comma_pos+1)));
 				}
+				else if(c[0]==h && area_type == MAX_HELPER)
+				 return atoi(c.data()+1);
+				else return 0;
 			}
 		}
 
@@ -261,6 +282,7 @@ namespace eqsolver
 			return boost::apply_visitor(*this, expr.subject.expr);
 		}
 
+		ast_area(AREA_TYPE _area_type) : area_type(_area_type) {}
 	};
 
 	//! caluclator grammar to build expression trees
@@ -270,12 +292,22 @@ namespace eqsolver
 		/*
 			We use an order like in the C language
 		*/
-		calculator() : calculator::base_type(expression)
+		calculator() : calculator::base_type(comma_assignment)
 		{
 			using qi::_val;
 			using qi::_1;
 			using qi::uint_;
 			using ascii::string;
+
+			str_int =  (qi::char_("-") >> *qi::char_("0-9")) | (*qi::char_("0-9"));
+
+			helper_variable = qi::char_("h") >> '[' >> str_int >> ']';
+
+			//comma_assignment = *(assignment [_val = _1] >> ',' ) >> assignment [_val = _1];
+			comma_assignment = assignment [_val = _1]
+					>> *( (',' >> assignment [_val = com_func(_val, _1)]));
+			assignment = (helper_variable [_val = _1] >> '='
+				>> expression [_val = ass_func(_val,_1)]) | expression [_val = _1];
 
 			expression = and_expression [_val = _1]
 				>> *("||" >> and_expression [_val = _val || _1]);
@@ -286,7 +318,7 @@ namespace eqsolver
 			equation =
 				inequation [_val = _1]
 				>> *( ("==" >> inequation [_val == _1])
-				    | ('=' >> inequation [_val == _1])
+			//	    | ('=' >> inequation [_val == _1])
 				    | ("!=" >> inequation [_val != _1])
 				    )
 				;
@@ -317,10 +349,10 @@ namespace eqsolver
 
 			variable = +qi::char_("xyvXYV");
 
-			str_int =  (qi::char_("-") >> *qi::char_("0-9")) | (*qi::char_("0-9"));
+			array_subscript = (qi::char_("a") >> '[' >> str_int >> qi::char_(",") >> str_int >> ']') |
+				helper_variable [_val = _1];
 
-			array_subscript = ("a[" >> str_int >> qi::char_(",") >> str_int >> ']') |
-				("A[" >> str_int >> qi::char_(",") >> str_int >> ']');
+
 			//array_subscript = ("a[" >> (*qi::char_("0-9")) >> (*qi::char_(",")) >> (*qi::char_("0-9")) >> ']')
 			//		| ("A[" >> (*qi::char_("0-9")) >> (*qi::char_(",")) >> (*qi::char_("0-9")) >> ']');
 
@@ -328,16 +360,18 @@ namespace eqsolver
 
 
 			function =
-				( "min(" >> expression [_val = _1] >> ',' >> expression [_val = min_func(_val,_1)] >> ')')
-				| ( "max(" >> expression [_val = _1] >> ',' >> expression [_val = max_func(_val,_1)] >> ')')
-				| ( "abs(" >> expression [_val = abs_func(_1)] >> ')')
-				| ( "sqrt(" >> expression [_val = sqrt_func(_1)] >> ')');
+				( "min(" >> assignment [_val = _1] >> ','
+					>> assignment [_val = min_func(_val,_1)] >> ')')
+				| ( "max(" >> assignment [_val = _1] >> ','
+					>> assignment [_val = max_func(_val,_1)] >> ')')
+				| ( "abs(" >> assignment [_val = abs_func(_1)] >> ')')
+				| ( "sqrt(" >> assignment [_val = sqrt_func(_1)] >> ')');
 
 			factor =
 				variable                        [_val = _1]
-				| array_subscript                 [_val = _1]
+				| array_subscript               [_val = _1]
 				| uint_                         [_val = _1]
-				|   '(' >> expression           [_val = _1] >> ')'
+				|   '(' >> comma_assignment           [_val = _1] >> ')'
 				|   ('-' >> factor              [_val = neg(_1)])
 				|   ('+' >> factor              [_val = _1])
 				|   ('!' >> factor              [_val = not_func(_1)])
@@ -346,9 +380,9 @@ namespace eqsolver
 
 
 		}
-		qi::rule<Iterator, expression_ast(), ascii::space_type>
+		qi::rule<Iterator, expression_ast(), ascii::space_type> comma_assignment, assignment,
 		expression, and_expression, equation, inequation, sum, term, factor, function;
-		qi::rule<Iterator, std::string()> variable, array_subscript, str_int;
+		qi::rule<Iterator, std::string()> helper_variable, variable, array_subscript, str_int;
 	};
 }
 

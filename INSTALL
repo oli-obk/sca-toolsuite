@@ -1,5 +1,16 @@
-INSTALLATION OF THE COMMANDLINE INTERFACE
-:::::::::::::::::::::::::::::::::::::::::
+0 Greetings
+:::::::::::
+
+Welcome to the installation!
+
+CONTENTS
+
+1 Installation of the commandline interface
+2 Installation of the Qt GUI
+3 Debugging
+
+1 Installation of the commandline interface
+:::::::::::::::::::::::::::::::::::::::::::
 
 In this directory, type:
 
@@ -11,13 +22,12 @@ use:
 
   ./configure CXXFLAGS="-Wall -g -DSCA_DEBUG"
 
-
 If you need more information about how to configure, type
 
   ./configure --help.
 
-INSTALLATION OF THE QT GUI
-::::::::::::::::::::::::::
+2 Installation of the Qt GUI
+::::::::::::::::::::::::::::
 
 For technical reasons, the GUI must be built separately. From this directory,
 do these steps:
@@ -26,4 +36,19 @@ do these steps:
   qmake  # on your system, this might be qmake-qt4 or similar
   make
 
+3 Debugging
+:::::::::::
+
+The sca toosuite gives you debug output exactly if both of the following
+conditions apply:
+
+  1. you compiled with -DSCA_DEBUG (see (1) of this file)
+  2. you set SCA_DEBUG=1 (or any other integer) in your shell
+
+For the second condition, you can do either
+
+  * SCA_DEBUG=1 ./path/program
+  * export SCA_DEBUG=1; ./path/program
+
+Debug output is always sent to stdout, so it does not affect pipelining.
 
