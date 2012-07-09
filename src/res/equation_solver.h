@@ -203,9 +203,9 @@ namespace eqsolver
 
 		inline result_type operator()(expression_ast const& ast) const
 		{
-			ast_area helper_num(ast_area::MAX_HELPER);
-			helper_vars = new int[helper_num()+1];
-
+			//ast_area helper_num(ast_area::MAX_HELPER);
+			//helper_vars = new int[helper_num()+1];
+			// TODO: delete int[]
 			return boost::apply_visitor(*this, ast.expr);
 		}
 
@@ -221,8 +221,8 @@ namespace eqsolver
 				printf("after\n");
 				helper_vars[left]=right;
 				return right;
-			}*/
-			else return expr.fptr(left, right);
+			}
+			else*/ return expr.fptr(left, right);
 		}
 
 		inline result_type operator()(unary_op const& expr) const {
@@ -260,7 +260,7 @@ namespace eqsolver
 					return std::max(atoi(c.c_str()),
 						atoi(c.data()+(comma_pos+1)));
 				}
-				else if(c[0]==h && area_type == MAX_HELPER)
+				else if(c[0]=='h' && area_type == MAX_HELPER)
 				 return atoi(c.data()+1);
 				else return 0;
 			}

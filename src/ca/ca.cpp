@@ -41,7 +41,7 @@ class MyProgram : public Program
 				exit_usage();
 		}
 
-		eqsolver::ast_area area_solver;
+		eqsolver::ast_area area_solver(eqsolver::ast_area::MAX_GRID);
 		int border_width = area_solver(ast);
 		debugf("Size of Moore Neighbourhood: %d\n", border_width);
 
