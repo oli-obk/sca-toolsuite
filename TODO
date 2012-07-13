@@ -1,0 +1,7 @@
+This file contains things that should be done in the future.
+
+General:
+
+  * Instead of copying io.o etc. into the binarys every time, tell automake to
+    build a shared object file.
+
