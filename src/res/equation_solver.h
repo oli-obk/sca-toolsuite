@@ -91,6 +91,100 @@ namespace eqsolver
 	//! empty expression, can't happen!
 	struct nil {};
 
+	struct vaddr
+	{
+		struct var_x{};
+		struct var_y{};
+		struct var_array{
+			int x; int y;
+			var_array(std::string const& s1, std::string const& s2) {
+				x = atoi(s1.c_str()); y = atoi(s2.c_str());
+			}
+		};
+		struct var_helper{
+			int i;
+			var_helper(std::string const& s) { i = atoi(s.c_str()); }
+		};
+		typedef boost::variant<nil, var_x, var_y, var_array, var_helper> type;
+		type expr;
+		vaddr(const type& _t) { expr = _t; }
+		vaddr() : expr(nil()) {}
+	};
+
+	struct make_array_indexes
+	{
+		template <typename T1, typename T2>
+		struct result { typedef vaddr type; };
+		// TODO: allow expressions for array indixes??
+		template <typename T1, typename T2>
+		inline typename result<T1, T2>::type operator()(T1 const& c1, T2 const& c2) const {
+			return vaddr(
+				vaddr::var_array(c1, c2));
+		}
+	};
+	const boost::phoenix::function<make_array_indexes> make_array_indexes;
+
+	struct make_helper_index
+	{
+		template <typename T>
+		struct result { typedef vaddr type; }; // TODO: ref string?
+
+		template <typename T>
+			inline typename result<T>::type operator()(T const& c1) const {
+			return vaddr(
+				vaddr::var_helper(c1));
+		}
+	};
+	const boost::phoenix::function<make_helper_index> make_helper_index;
+
+	struct _make_x
+	{
+		typedef vaddr result_type;
+		inline result_type operator()() const {
+			return vaddr( vaddr::var_x() );
+		}
+	};
+	const boost::phoenix::function<_make_x> make_x;
+
+	struct _make_y
+	{
+		typedef vaddr result_type;
+		inline result_type operator()() const {
+			return vaddr( vaddr::var_y() );
+		}
+	};
+	const boost::phoenix::function<_make_y> make_y;
+
+	struct variable_print : public boost::static_visitor<>
+	{
+		typedef unsigned int result_type;
+		static int width;
+		static result_type x,y;
+		static const result_type *v;
+		static int* helper_vars;
+		static void set_variables(int _width, result_type  _x, result_type _y, const result_type* _v) {
+			width=_width; x=_x; y=_y; v=(const result_type*)_v;
+		}
+
+		inline result_type operator()(nil) const { return 0; }
+		inline result_type operator()(vaddr::var_x _x) const { (void)_x; return x; }
+		inline result_type operator()(vaddr::var_y _y) const { (void)_y; return y; }
+		inline result_type operator()(vaddr::var_array _a) const { return v[_a.x+_a.y*width]; }
+		inline result_type operator()(vaddr::var_helper _h) const { return helper_vars[_h.i]; }
+	};
+
+	struct variable_area : public boost::static_visitor<>
+	{
+		typedef unsigned int result_type;
+		inline result_type operator()(nil) const { return 0; }
+		inline result_type operator()(vaddr::var_x _x) const { return 0; }
+		inline result_type operator()(vaddr::var_y _y) const { return 0; }
+		inline result_type operator()(vaddr::var_array _a) const {
+			return std::max(std::abs(_a.x), std::abs(_a.y));
+		}
+		inline result_type operator()(vaddr::var_helper _h) const { return 0; }
+	};
+
 	//! expression tree node
 	struct expression_ast
 	{
@@ -98,6 +192,7 @@ namespace eqsolver
 			nil
 			, unsigned int
 			, std::string  // TODO: needed?
+			, vaddr
 			, boost::recursive_wrapper<expression_ast>
 			, boost::recursive_wrapper<binary_op>
 			, boost::recursive_wrapper<unary_op>
@@ -158,7 +253,7 @@ namespace eqsolver
 	};
 
 	// We should be using expression_ast::operator-. There's a bug
-	// in phoenix type deduction mechanism that prevents us from
+	// in phoenix type deduction mechanism that prevents us fom
 	// doing so. Phoenix will be switching to BOOST_TYPEOF. In the
 	// meantime, we will use a phoenix::function below:
 	MAKE_UNARY_FUNC(neg, '-', f1i_neg);
@@ -172,8 +267,11 @@ namespace eqsolver
 
 	inline int array_subscript_to_coord(std::string* str, int width) {
 		const int comma_pos = str->find(',');
+		const int first_pos = str->find('[')+1;
 		(*str)[comma_pos]=0;
-		return atoi(str->c_str()+1)+atoi(str->data()+(comma_pos+1))*width;
+		(*str)[str->find(']')]=0;
+		//printf("coords: %s, %s\n",str->data()+first_pos, str->data()+(comma_pos+1));
+		return atoi(str->data()+first_pos)+atoi(str->data()+(comma_pos+1))*width;
 	}
 
 	//! Class for iterating an expression tree and printing the result.
@@ -186,19 +284,20 @@ namespace eqsolver
 		const result_type x,y, *v;
 		//mutable std::map<int, int> helper_vars;
 		int* helper_vars;
+		variable_print var_print;
 
 		inline int position(int _x, int _y) const { return (_y*(width+1)+_x+1); }
 
 		inline result_type operator()(qi::info::nil) const { return 0; }
 		inline result_type operator()(int n) const { return n;  }
-		inline result_type operator()(std::string c) const {
-			switch(c[0]) {
-				case 'x': return x;
-				case 'y': return y;
-				case 'v': return *v;
-				case 'h': return helper_vars[atoi(c.data()+1)];
-				default: return v[array_subscript_to_coord(&c, width)];
-			}
+		inline result_type operator()(std::string c) const
+		{
+			exit(99);
+		}
+
+		inline result_type operator()(const vaddr& v) const
+		{
+			return boost::apply_visitor(var_print, v.expr);
 		}
 
 		inline result_type operator()(expression_ast const& ast) const
@@ -222,15 +321,19 @@ namespace eqsolver
 				helper_vars[left]=right;
 				return right;
 			}
-			else*/ return expr.fptr(left, right);
+			else*/
+			return expr.fptr(left, right);
 		}
 
 		inline result_type operator()(unary_op const& expr) const {
 			return expr.fptr(boost::apply_visitor(*this, expr.subject.expr));
 		}
-		ast_print(int _x) : x(_x), y(0), v(NULL) {}
+		ast_print(int _x) : x(_x), y(0), v(NULL) {
+			variable_print::set_variables(width, x, y, v);
+		}
 		ast_print(int _height, int _width, int _x, int _y, const int* _v)
 			: height(_height), width(_width), x(_x), y(_y), v((const result_type*)_v) {
+			variable_print::set_variables(width, x, y, v);
 		}
 	//	ast_print(int x, int y, int* v) : x(x), y(y), v((result_type*)v) {}
 
@@ -246,24 +349,18 @@ namespace eqsolver
 		} area_type;
 
 		typedef unsigned int result_type;
+		variable_area var_area;
 
 		inline result_type operator()(qi::info::nil) const { return 0; }
 		inline result_type operator()(int n) const { return 0;  }
-		inline result_type operator()(std::string c) const {
-			switch(c[0]) {
-				case 'x': case 'y': case 'v': return 0;
-				default:
-				if(c[0]=='a' && area_type == MAX_GRID)
-				{
-					const int comma_pos = c.find(',');
-					c[comma_pos]=0;
-					return std::max(atoi(c.c_str()),
-						atoi(c.data()+(comma_pos+1)));
-				}
-				else if(c[0]=='h' && area_type == MAX_HELPER)
-				 return atoi(c.data()+1);
-				else return 0;
-			}
+		inline result_type operator()(std::string c) const
+		{
+			exit(99);
+		}
+
+		inline result_type operator()(const vaddr& v) const
+		{
+			return boost::apply_visitor(var_area, v.expr);
 		}
 
 		inline result_type operator()(expression_ast const& ast) const {
@@ -294,16 +391,42 @@ namespace eqsolver
 		*/
 		calculator() : calculator::base_type(comma_assignment)
 		{
+			std::string null_str = "0";
 			using qi::_val;
 			using qi::_1;
+			using qi::_2;
 			using qi::uint_;
 			using ascii::string;
 
 			str_int =  (qi::char_("-") >> *qi::char_("0-9")) | (*qi::char_("0-9"));
 
-			helper_variable = qi::char_("h") >> '[' >> str_int >> ']';
+			helper_variable = "h[" >> (str_int [_val = make_helper_index(_1)]) >> ']';
+			array_variable = "a[" >> ( str_int >> ',' >> str_int ) [_val = make_array_indexes(_1, _2)] >> ']';
 
-			//comma_assignment = *(assignment [_val = _1] >> ',' ) >> assignment [_val = _1];
+			// fixed indentation:
+			/*helper_variable = "h[" >>
+			    (
+				str_int [_val = make_helper_index(_1)]
+			    ) >> ']';
+*/
+			/*array_variable = qi::char_("a") >> qi::char_("[") >>
+			    ( str_int >> ',' >> str_int )
+				[_val = make_array_indexes(_1, _2)]
+			    >> qi::char_("]");*/
+
+
+
+
+			variable = qi::char_("x") [ _val = make_x() ]
+				| qi::char_("y") [ _val = make_y() ]
+				| qi::char_("v") [ _val = make_array_indexes(null_str, null_str)];
+
+			//helper_variable = qi::char_("h") >> qi::char_("[") >> str_int >> qi::char_("]");
+			//array_variable = qi::char_("a") >> qi::char_("[") >> str_int >> qi::char_(",") >> str_int >> qi::char_("]");
+
+
+
+
 			comma_assignment = assignment [_val = _1]
 					>> *( (',' >> assignment [_val = com_func(_val, _1)]));
 			assignment = (helper_variable [_val = _1] >> '='
@@ -347,10 +470,10 @@ namespace eqsolver
 				    )
 				;
 
-			variable = +qi::char_("xyvXYV");
+			//variable = +qi::char_("xyvXYV");
 
-			array_subscript = (qi::char_("a") >> '[' >> str_int >> qi::char_(",") >> str_int >> ']') |
-				helper_variable [_val = _1];
+			//array_subscript = array_variable [_val = _1]
+			//	| helper_variable [_val = _1];
 
 
 			//array_subscript = ("a[" >> (*qi::char_("0-9")) >> (*qi::char_(",")) >> (*qi::char_("0-9")) >> ']')
@@ -369,7 +492,9 @@ namespace eqsolver
 
 			factor =
 				variable                        [_val = _1]
-				| array_subscript               [_val = _1]
+				//| array_subscript               [_val = _1]
+				| helper_variable [_val = _1]
+				| array_variable  [_val = _1]
 				| uint_                         [_val = _1]
 				|   '(' >> comma_assignment           [_val = _1] >> ')'
 				|   ('-' >> factor              [_val = neg(_1)])
@@ -382,7 +507,9 @@ namespace eqsolver
 		}
 		qi::rule<Iterator, expression_ast(), ascii::space_type> comma_assignment, assignment,
 		expression, and_expression, equation, inequation, sum, term, factor, function;
-		qi::rule<Iterator, std::string()> helper_variable, variable, array_subscript, str_int;
+		qi::rule<Iterator, vaddr()> variable, array_variable, helper_variable;
+		qi::rule<Iterator, std::string()> str_int;
+		//qi::rule<Iterator, std::string()> array_variable, helper_variable, variable, array_subscript, str_int;
 	};
 }
 

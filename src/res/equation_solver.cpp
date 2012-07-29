@@ -50,8 +50,14 @@ const char* get_help_description() { return EQUATION_HELP_STR; }
 		return *this; \
 	}
 
-namespace eqsolver
+namespace eqsolver // TODO: everything should be in this namespace?!
 {
+	// static variable definitions
+	int variable_print::width;
+	variable_print::result_type variable_print::x, variable_print::y;
+	const variable_print::result_type *variable_print::v;
+	int* variable_print::helper_vars;
+
 	MAKE_OP(+=,'+',f2i_add);
 	MAKE_OP(-=,'-',f2i_sub);
 	MAKE_OP(*=,'*',f2i_mul);
