@@ -4,14 +4,22 @@
 This file contains questions often asked by others.
 Or questions I think others might ask.
 
-Q: Is there no other COPYING restriction than GPL3?
-A: Yes. This code was made by me in my free time, and I did not copy any line
+CONTENTS
+
+1 General
+2 Sandpiles
+
+1 General
+:::::::::
+
+Q: Are there any other COPYING restrictions than GPL3?
+A: None. This code was made by me in my free time, and I did not copy any line
    of code from other projects. This code was not written for any institution.
 
 Q: I miss the ternary operator in the equation solver...
 A: It might be comfortable, but I think you can always find a solution without
    using it. The reason I did not integrate it was not to overcomplicate the
-   source code.
+   source code. Maybe I'll do it in the future...
 
 Q: I need --help as a filename...
 A: Try to pass ./--help to the program.
@@ -22,4 +30,40 @@ A: If you are using qt creator: Yes. Use src/sca-toolsuite.pro.
 Q: Is Qt necessary?
 A: No, the .pro file is only for people who use qt creator for coding. The
    Makefile generation is done by autotools.
+
+2 Sandpiles
+:::::::::::
+
+Q: How fast is the sandpile algorithm?
+   There are different experiments:
+   
+     * stabilize: stabilize one given (positive) configuration.
+     * random throw: throw one grain at random position, then stabilize.
+       Repeat it often enough. Runtime counted is started when a recurrent
+       configuration is reached.
+
+   For stabilize, we are faster if the grid contains a bit less than 3 grains
+   on each cell. For random throw, we are much faster.
+
+Q: How fast is the sandpile algorithm for the random throw?
+A: There might be no faster currently, thought we don't know. We knew of the
+   parallel and sequential stack algorithm by Sebastian Frehmel [4], ported to
+   C++ by Johannes Lorenz. The sca algorithm works similar, but it is
+   sequential. The reason for the speedup is that avalanches are developped in
+   multiple levels, where in each level, each cell on the grid is assured to
+   only fire once. This makes branch prediction and memory usage much easier.
+
+   A comparison on an Intel (R) Core i7 (R) 2600 with 8MB L3 cache:
+
+     sequential stack, C++ (2011):		1.17 s
+     parallel stack, C++ (2011):		0.65 s (8 threads)
+     our (sequential) algorithm (2012):	0.44 s
+
+Q: What if we want to log avalanches in random throw?
+A: Then we are even a lot faster, since n^2 avalanches can be thrown at once.
+
+Q: Why is the sandpile algorithm so fast, even though it is sequential?
+A: The reason for the speedup is that avalanches are developped in multiple
+   levels, where in each level, each cell on the grid is assured to only fire
+   once. This makes branch prediction and memory usage much easier.
 
