@@ -65,7 +65,8 @@ class MyProgram : public Program
 				result[internal] = INT_MIN;
 			}
 			else {
-				eqsolver::ast_print solver(dim.height, dim.width, x-1 ,y-1, &grid[internal]);
+				eqsolver::variable_print vprinter(dim.height, dim.width, x-1 ,y-1, &grid[internal], NULL);
+				eqsolver::ast_print<eqsolver::variable_print> solver(&vprinter);
 				result[internal] = solver(ast);
 			}
 		}

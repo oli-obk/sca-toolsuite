@@ -53,11 +53,11 @@ const char* get_help_description() { return EQUATION_HELP_STR; }
 namespace eqsolver // TODO: everything should be in this namespace?!
 {
 	// static variable definitions
-	int variable_print::width;
+/*	int variable_print::width;
 	variable_print::result_type variable_print::x, variable_print::y;
 	const variable_print::result_type *variable_print::v;
 	int* variable_print::helper_vars;
-
+*/
 	MAKE_OP(+=,'+',f2i_add);
 	MAKE_OP(-=,'-',f2i_sub);
 	MAKE_OP(*=,'*',f2i_mul);
@@ -100,9 +100,11 @@ void build_tree_from_equation(const char* equation, eqsolver::expression_ast* as
 
 int solve_single_equation(const char* equation, int height, int width, int x, int y, int* v)
 {
-	eqsolver::expression_ast ast;
+/*	eqsolver::expression_ast ast;
 	build_tree_from_equation(equation, &ast);
 
-	eqsolver::ast_print solver(height, width, x,y,v);
-	return solver(ast);
+	//eqsolver::ast_print solver(height, width, x,y,v);
+
+	return solver(ast);*/
+	exit(99); // TODO!
 }

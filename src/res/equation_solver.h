@@ -29,6 +29,8 @@
 #include <boost/variant/apply_visitor.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_function.hpp>
+#include <boost/spirit/include/phoenix_bind.hpp>
+//#include <boost/phoenix/bind/bind_function.hpp>
 
 const char* get_help_description();
 
@@ -54,6 +56,7 @@ const boost::phoenix::function<OP> OP;
 	} \
 }; \
 const boost::phoenix::function<OP> OP;
+
 // typedef expression_ast result_type; // TODO: must work with phoenix 3!
 
 //! namespace of the equation solver
@@ -95,23 +98,24 @@ namespace eqsolver
 	{
 		struct var_x{};
 		struct var_y{};
-		struct var_array{
+		struct var_array {
 			int x; int y;
 			var_array(std::string const& s1, std::string const& s2) {
 				x = atoi(s1.c_str()); y = atoi(s2.c_str());
 			}
 		};
-		struct var_helper{
+		struct var_helper {
 			int i;
 			var_helper(std::string const& s) { i = atoi(s.c_str()); }
 		};
 		typedef boost::variant<nil, var_x, var_y, var_array, var_helper> type;
 		type expr;
 		vaddr(const type& _t) { expr = _t; }
+		vaddr& operator=(const type& _expr) { expr = _expr; return *this; }
 		vaddr() : expr(nil()) {}
 	};
 
-	struct make_array_indexes
+/*	struct make_array_indexes
 	{
 		template <typename T1, typename T2>
 		struct result { typedef vaddr type; };
@@ -122,22 +126,64 @@ namespace eqsolver
 				vaddr::var_array(c1, c2));
 		}
 	};
-	const boost::phoenix::function<make_array_indexes> make_array_indexes;
+	const boost::phoenix::function<make_array_indexes> make_array_indexes;*/
 
-	struct make_helper_index
+
+	/*struct make_helper_index
 	{
-		template <typename T>
+		template <typename T, bool>
 		struct result { typedef vaddr type; }; // TODO: ref string?
 
-		template <typename T>
-			inline typename result<T>::type operator()(T const& c1) const {
+		template <typename T, bool>
+		inline typename result<T, bool>::type operator()(T const& c1, bool pointer) const {
 			return vaddr(
-				vaddr::var_helper(c1));
+				vaddr::var_helper(c1, pointer));
 		}
 	};
-	const boost::phoenix::function<make_helper_index> make_helper_index;
+	const boost::phoenix::function<make_helper_index> make_helper_index;*/
 
-	struct _make_x
+
+
+	template<typename _result_type>
+	struct _make_0
+	{
+		typedef _result_type result_type;
+		inline result_type operator()() const {
+			return result_type();
+		}
+	};
+	template<typename _result_type>
+	struct _make_1
+	{
+		template <typename T>
+		struct result { typedef _result_type type; };
+
+		template <typename T>
+		inline typename result<T>::type operator()(T const& c1) const {
+			return _result_type(c1);
+		}
+	};
+	template<typename _result_type>
+	struct _make_2
+	{
+		template <typename T1, typename T2>
+		struct result { typedef _result_type type; };
+
+		template <typename T1, typename T2>
+		inline typename result<T1, T2>::type operator()(
+				T1 const& c1, T2 const& c2) const {
+			return _result_type(c1, c2);
+		}
+	};
+
+	const boost::phoenix::function< _make_2<vaddr::var_array> > make_array_indexes;
+	const boost::phoenix::function< _make_1<vaddr::var_helper> > make_helper_index;
+	const boost::phoenix::function< _make_0<vaddr::var_x> > make_x;
+	const boost::phoenix::function< _make_0<vaddr::var_y> > make_y;
+
+	inline vaddr::var_x make_x_bound_function(void) { return vaddr::var_x(); }
+
+	/*struct _make_x
 	{
 		typedef vaddr result_type;
 		inline result_type operator()() const {
@@ -153,18 +199,21 @@ namespace eqsolver
 			return vaddr( vaddr::var_y() );
 		}
 	};
-	const boost::phoenix::function<_make_y> make_y;
+	const boost::phoenix::function<_make_y> make_y;*/
 
 	struct variable_print : public boost::static_visitor<>
 	{
-		typedef unsigned int result_type;
-		static int width;
-		static result_type x,y;
-		static const result_type *v;
-		static int* helper_vars;
-		static void set_variables(int _width, result_type  _x, result_type _y, const result_type* _v) {
-			width=_width; x=_x; y=_y; v=(const result_type*)_v;
+		variable_print(int _x) : x(_x) {}
+		variable_print(int _height, int _width, int _x, int _y, const int* _v, const int* _h)
+			: height(_height), width(_width), x(_x), y(_y),
+			v((const result_type*)_v), helper_vars((result_type*)_h) {
 		}
+
+		typedef unsigned int result_type;
+		int height, width; // TODO: height unused?
+		result_type x,y;
+		const result_type *v;
+		result_type* helper_vars;
 
 		inline result_type operator()(nil) const { return 0; }
 		inline result_type operator()(vaddr::var_x _x) const { (void)_x; return x; }
@@ -173,7 +222,7 @@ namespace eqsolver
 		inline result_type operator()(vaddr::var_helper _h) const { return helper_vars[_h.i]; }
 	};
 
-	struct variable_area : public boost::static_visitor<>
+	struct variable_area_grid : public boost::static_visitor<>
 	{
 		typedef unsigned int result_type;
 		inline result_type operator()(nil) const { return 0; }
@@ -182,7 +231,18 @@ namespace eqsolver
 		inline result_type operator()(vaddr::var_array _a) const {
 			return std::max(std::abs(_a.x), std::abs(_a.y));
 		}
-		inline result_type operator()(vaddr::var_helper _h) const { return 0; }
+		inline result_type operator()(vaddr::var_helper _h) const { (void)_h; return 0; }
+	};
+
+
+	struct variable_area_helpers : public boost::static_visitor<>
+	{
+		typedef unsigned int result_type;
+		inline result_type operator()(nil) const { return -1; }
+		inline result_type operator()(vaddr::var_x _x) const { return -1; }
+		inline result_type operator()(vaddr::var_y _y) const { return -1; }
+		inline result_type operator()(vaddr::var_array _a) const { (void)_a; return -1; }
+		inline result_type operator()(vaddr::var_helper _h) const { return _h.i; }
 	};
 
 	//! expression tree node
@@ -275,18 +335,20 @@ namespace eqsolver
 	}
 
 	//! Class for iterating an expression tree and printing the result.
+	template<typename variable_handler>
 	struct ast_print
 	{
+		const variable_handler* var_print;
+
 		// h and w shall be internal, since we want to avoid adding 2
 		// so it is still general to non-bordered areas
-		int height, width;
+	//	int height, width;
 		typedef unsigned int result_type;
-		const result_type x,y, *v;
+	//	const result_type x,y, *v;
 		//mutable std::map<int, int> helper_vars;
-		int* helper_vars;
-		variable_print var_print;
+	//	variable_print var_print;
 
-		inline int position(int _x, int _y) const { return (_y*(width+1)+_x+1); }
+	//	inline int position(int _x, int _y) const { return (_y*(width+1)+_x+1); }
 
 		inline result_type operator()(qi::info::nil) const { return 0; }
 		inline result_type operator()(int n) const { return n;  }
@@ -297,7 +359,7 @@ namespace eqsolver
 
 		inline result_type operator()(const vaddr& v) const
 		{
-			return boost::apply_visitor(var_print, v.expr);
+			return boost::apply_visitor(*var_print, v.expr);
 		}
 
 		inline result_type operator()(expression_ast const& ast) const
@@ -328,28 +390,20 @@ namespace eqsolver
 		inline result_type operator()(unary_op const& expr) const {
 			return expr.fptr(boost::apply_visitor(*this, expr.subject.expr));
 		}
-		ast_print(int _x) : x(_x), y(0), v(NULL) {
-			variable_print::set_variables(width, x, y, v);
-		}
-		ast_print(int _height, int _width, int _x, int _y, const int* _v)
-			: height(_height), width(_width), x(_x), y(_y), v((const result_type*)_v) {
-			variable_print::set_variables(width, x, y, v);
-		}
+
+		ast_print(const variable_handler* _var_print) : var_print(_var_print) {}
+
 	//	ast_print(int x, int y, int* v) : x(x), y(y), v((result_type*)v) {}
 
 	};
 
 	//! Class for iterating an expression tree and print the used area in the array.
 	//! The result is an int describing the half size of a square.
+	template<typename variable_handler>
 	struct ast_area
 	{
-		enum AREA_TYPE {
-			MAX_GRID,
-			MAX_HELPER
-		} area_type;
-
 		typedef unsigned int result_type;
-		variable_area var_area;
+		variable_handler var_area;
 
 		inline result_type operator()(qi::info::nil) const { return 0; }
 		inline result_type operator()(int n) const { return 0;  }
@@ -379,7 +433,8 @@ namespace eqsolver
 			return boost::apply_visitor(*this, expr.subject.expr);
 		}
 
-		ast_area(AREA_TYPE _area_type) : area_type(_area_type) {}
+		//ast_area(variable_area::AREA_TYPE _area_type)
+		//	: var_area(_area_type) {}
 	};
 
 	//! caluclator grammar to build expression trees
@@ -417,7 +472,7 @@ namespace eqsolver
 
 
 
-			variable = qi::char_("x") [ _val = make_x() ]
+			variable = qi::char_("x") [ /*_val = make_x()*/ _val = boost::phoenix::bind(&make_x_bound_function)() ]
 				| qi::char_("y") [ _val = make_y() ]
 				| qi::char_("v") [ _val = make_array_indexes(null_str, null_str)];
 

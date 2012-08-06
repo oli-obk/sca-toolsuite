@@ -41,9 +41,16 @@ class MyProgram : public Program
 				exit_usage();
 		}
 
-		eqsolver::ast_area area_solver(eqsolver::ast_area::MAX_GRID);
-		int border_width = area_solver(ast);
+		eqsolver::ast_area<eqsolver::variable_area_grid> grid_solver;
+		const int border_width = grid_solver(ast);
 		debugf("Size of Moore Neighbourhood: %d\n", border_width);
+
+		eqsolver::ast_area<eqsolver::variable_area_helpers> helpers_solver;
+		const int helpers_size = helpers_solver(ast) + 1;
+		debugf("Size of Helper Variable Array: %d\n", helpers_size);
+		int *helper_vars = NULL;
+		if(helpers_size > 0)
+		 helper_vars = new int[helpers_size];
 
 		int num_changed = 1;
 		dimension dim;
@@ -65,13 +72,16 @@ class MyProgram : public Program
 				const int internal = x+y*dim.width;
 				int new_value, old_value = (*old_grid)[internal];
 
-				eqsolver::ast_print solver(dim.height, dim.width,
-					x-border_width,y-border_width, &((*old_grid)[internal]));
+				eqsolver::variable_print vprinter(dim.height, dim.width,
+					x-border_width,y-border_width,
+					&((*old_grid)[internal]), helper_vars);
+				eqsolver::ast_print<eqsolver::variable_print> solver(&vprinter);
 				(*new_grid)[internal] = (new_value = solver(ast));
 				num_changed += (int)(new_value!=old_value);
 			}
 		}
 
+		delete helper_vars;
 		write_grid(stdout, new_grid, &dim, &write_number, border_width);
 		return 0;
 	}
