@@ -106,7 +106,9 @@ namespace eqsolver
 		};
 		struct var_helper {
 			int i;
-			var_helper(std::string const& s) { i = atoi(s.c_str()); }
+			var_helper(std::string const& s) {
+				printf("reading i as %s\n",s.c_str());
+				i = atoi(s.c_str()); }
 		};
 		typedef boost::variant<nil, var_x, var_y, var_array, var_helper> type;
 		type expr;
@@ -114,35 +116,6 @@ namespace eqsolver
 		vaddr& operator=(const type& _expr) { expr = _expr; return *this; }
 		vaddr() : expr(nil()) {}
 	};
-
-/*	struct make_array_indexes
-	{
-		template <typename T1, typename T2>
-		struct result { typedef vaddr type; };
-		// TODO: allow expressions for array indixes??
-		template <typename T1, typename T2>
-		inline typename result<T1, T2>::type operator()(T1 const& c1, T2 const& c2) const {
-			return vaddr(
-				vaddr::var_array(c1, c2));
-		}
-	};
-	const boost::phoenix::function<make_array_indexes> make_array_indexes;*/
-
-
-	/*struct make_helper_index
-	{
-		template <typename T, bool>
-		struct result { typedef vaddr type; }; // TODO: ref string?
-
-		template <typename T, bool>
-		inline typename result<T, bool>::type operator()(T const& c1, bool pointer) const {
-			return vaddr(
-				vaddr::var_helper(c1, pointer));
-		}
-	};
-	const boost::phoenix::function<make_helper_index> make_helper_index;*/
-
-
 
 	template<typename _result_type>
 	struct _make_0
@@ -181,27 +154,7 @@ namespace eqsolver
 	const boost::phoenix::function< _make_0<vaddr::var_x> > make_x;
 	const boost::phoenix::function< _make_0<vaddr::var_y> > make_y;
 
-	inline vaddr::var_x make_x_bound_function(void) { return vaddr::var_x(); }
-
-	/*struct _make_x
-	{
-		typedef vaddr result_type;
-		inline result_type operator()() const {
-			return vaddr( vaddr::var_x() );
-		}
-	};
-	const boost::phoenix::function<_make_x> make_x;
-
-	struct _make_y
-	{
-		typedef vaddr result_type;
-		inline result_type operator()() const {
-			return vaddr( vaddr::var_y() );
-		}
-	};
-	const boost::phoenix::function<_make_y> make_y;*/
-
-	struct variable_print : public boost::static_visitor<>
+	struct variable_print : public boost::static_visitor<unsigned int>
 	{
 		variable_print(int _x) : x(_x) {}
 		variable_print(int _height, int _width, int _x, int _y, const int* _v, const int* _h)
@@ -222,7 +175,7 @@ namespace eqsolver
 		inline result_type operator()(vaddr::var_helper _h) const { return helper_vars[_h.i]; }
 	};
 
-	struct variable_area_grid : public boost::static_visitor<>
+	struct variable_area_grid : public boost::static_visitor<unsigned int>
 	{
 		typedef unsigned int result_type;
 		inline result_type operator()(nil) const { return 0; }
@@ -235,7 +188,7 @@ namespace eqsolver
 	};
 
 
-	struct variable_area_helpers : public boost::static_visitor<>
+	struct variable_area_helpers : public boost::static_visitor<unsigned int>
 	{
 		typedef unsigned int result_type;
 		inline result_type operator()(nil) const { return -1; }
@@ -261,8 +214,17 @@ namespace eqsolver
 
 		expression_ast() : expr(nil()) {}
 
+		template <typename T> struct factory_f {
+			template<typename> struct result { typedef T type; };
+			template<typename A> T operator()(A const& a) const { return T(a); }
+		};
+
+
+		expression_ast(expression_ast const& ai) : expr(ai) {}
+		explicit expression_ast(type const& ai) : expr(ai) {}
+
 		template <typename Expr>
-		expression_ast(Expr const& expr) : expr(expr) {}
+		explicit expression_ast(Expr const& expr) : expr(expr) {}
 
 		expression_ast& operator+=(expression_ast const& rhs);
 		expression_ast& operator-=(expression_ast const& rhs);
@@ -288,10 +250,12 @@ namespace eqsolver
 	//! expression tree node extension for binary operators
 	struct binary_op
 	{
+		// below, (*) is a little fix to allow
+		// expression_ast(type const& ai) to be explicit
 		binary_op(
 			char op
 			, fptr_2i fptr
-			, expression_ast const& left
+			, expression_ast::type const& left // (*)
 			, expression_ast const& right)
 		: op(op), fptr(fptr), left(left), right(right) {}
 
@@ -313,7 +277,7 @@ namespace eqsolver
 	};
 
 	// We should be using expression_ast::operator-. There's a bug
-	// in phoenix type deduction mechanism that prevents us fom
+	// in phoenix type deduction mechanism that prevents us from
 	// doing so. Phoenix will be switching to BOOST_TYPEOF. In the
 	// meantime, we will use a phoenix::function below:
 	MAKE_UNARY_FUNC(neg, '-', f1i_neg);
@@ -336,8 +300,10 @@ namespace eqsolver
 
 	//! Class for iterating an expression tree and printing the result.
 	template<typename variable_handler>
-	struct ast_print
+	struct ast_print  : public boost::static_visitor<unsigned int>
 	{
+
+
 		const variable_handler* var_print;
 
 		// h and w shall be internal, since we want to avoid adding 2
@@ -349,6 +315,8 @@ namespace eqsolver
 	//	variable_print var_print;
 
 	//	inline int position(int _x, int _y) const { return (_y*(width+1)+_x+1); }
+
+		inline result_type operator()(const eqsolver::nil&) const { return 0; }
 
 		inline result_type operator()(qi::info::nil) const { return 0; }
 		inline result_type operator()(int n) const { return n;  }
@@ -391,6 +359,7 @@ namespace eqsolver
 			return expr.fptr(boost::apply_visitor(*this, expr.subject.expr));
 		}
 
+
 		ast_print(const variable_handler* _var_print) : var_print(_var_print) {}
 
 	//	ast_print(int x, int y, int* v) : x(x), y(y), v((result_type*)v) {}
@@ -400,10 +369,12 @@ namespace eqsolver
 	//! Class for iterating an expression tree and print the used area in the array.
 	//! The result is an int describing the half size of a square.
 	template<typename variable_handler>
-	struct ast_area
+	struct ast_area  : public boost::static_visitor<unsigned int>
 	{
 		typedef unsigned int result_type;
 		variable_handler var_area;
+
+		inline result_type operator()(const eqsolver::nil&) const { return 0; }
 
 		inline result_type operator()(qi::info::nil) const { return 0; }
 		inline result_type operator()(int n) const { return 0;  }
@@ -423,9 +394,9 @@ namespace eqsolver
 
 		inline result_type operator()(binary_op const& expr) const
 		{
-			return std::max(
-				boost::apply_visitor(*this, expr.left.expr),
-				boost::apply_visitor(*this, expr.right.expr)
+			return std::max( // TODO: fix everything into signed int
+				(int) boost::apply_visitor(*this, expr.left.expr),
+				(int) boost::apply_visitor(*this, expr.right.expr)
 			);
 		}
 
@@ -452,6 +423,7 @@ namespace eqsolver
 			using qi::_2;
 			using qi::uint_;
 			using ascii::string;
+			boost::phoenix::function<expression_ast::factory_f<expression_ast> > make_expr;
 
 			str_int =  (qi::char_("-") >> *qi::char_("0-9")) | (*qi::char_("0-9"));
 
@@ -472,7 +444,7 @@ namespace eqsolver
 
 
 
-			variable = qi::char_("x") [ /*_val = make_x()*/ _val = boost::phoenix::bind(&make_x_bound_function)() ]
+			variable = qi::char_("x") [ _val = make_x() ]
 				| qi::char_("y") [ _val = make_y() ]
 				| qi::char_("v") [ _val = make_array_indexes(null_str, null_str)];
 
@@ -484,7 +456,7 @@ namespace eqsolver
 
 			comma_assignment = assignment [_val = _1]
 					>> *( (',' >> assignment [_val = com_func(_val, _1)]));
-			assignment = (helper_variable [_val = _1] >> '='
+			assignment = (helper_variable [_val = make_expr(_1)] >> ":="
 				>> expression [_val = ass_func(_val,_1)]) | expression [_val = _1];
 
 			expression = and_expression [_val = _1]
@@ -546,12 +518,12 @@ namespace eqsolver
 				| ( "sqrt(" >> assignment [_val = sqrt_func(_1)] >> ')');
 
 			factor =
-				variable                        [_val = _1]
+				variable                        [_val = make_expr(_1)]
 				//| array_subscript               [_val = _1]
-				| helper_variable [_val = _1]
-				| array_variable  [_val = _1]
-				| uint_                         [_val = _1]
-				|   '(' >> comma_assignment           [_val = _1] >> ')'
+				| helper_variable [_val = make_expr(_1)]
+				| array_variable  [_val = make_expr(_1)]
+				| uint_                         [_val = make_expr(_1)]
+				|   '(' >> comma_assignment           [_val = make_expr(_1)] >> ')'
 				|   ('-' >> factor              [_val = neg(_1)])
 				|   ('+' >> factor              [_val = _1])
 				|   ('!' >> factor              [_val = not_func(_1)])

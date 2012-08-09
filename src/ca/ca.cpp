@@ -33,6 +33,7 @@ class MyProgram : public Program
 			case 3:
 				num_steps = atoi(argv[2]);
 			case 2:
+				debug("Building AST from equation...\n");
 				build_tree_from_equation(argv[1], &ast);
 				break;
 			case 1:
