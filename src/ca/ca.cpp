@@ -92,10 +92,11 @@ int main(int argc, char** argv)
 {
 	HelpStruct help;
 	help.syntax = "ca/ca <equation> [<rounds>]";
-	help.description = ".";
-	help.input = "";
-	help.output = "";
-	help.add_param("infile", "specifies a file to read a grid from");
+	help.description = "Runs a cellular automaton (ca).";
+	help.input = "start configuration of the ca";
+	help.output = "configuration after the simulation";
+	help.add_param("equation", "specifies the equation which determines the ca");
+	help.add_param("rounds", "number of rounds to simulate; if not given, simulates until stable");
 
 	MyProgram p;
 	return p.run(argc, argv, &help);
