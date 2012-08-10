@@ -81,6 +81,7 @@ namespace eqsolver
 	inline int f2i_neq(int arg1, int arg2) { return (int)(arg1!=arg2); }
 	inline int f2i_and(int arg1, int arg2) { return (int)(arg1*arg2); }
 	inline int f2i_or(int arg1, int arg2) { return (int)((arg1!=0)||(arg2!=0)); }
+	inline int f2i_ass(int arg1, int arg2) { return ((*(int*)arg1) = arg2); }
 	inline int f2i_com(int arg1, int arg2) { (void)arg1; return arg2; }
 
 	typedef int (*fptr_1i)(int arg1);
@@ -106,9 +107,11 @@ namespace eqsolver
 		};
 		struct var_helper {
 			int i;
-			var_helper(std::string const& s) {
-				printf("reading i as %s\n",s.c_str());
-				i = atoi(s.c_str()); }
+			bool address;
+			var_helper(std::string const& s, bool _address = false)
+			 : i(atoi(s.c_str())), address(_address)
+			{
+			}
 		};
 		typedef boost::variant<nil, var_x, var_y, var_array, var_helper> type;
 		type expr;
@@ -128,7 +131,7 @@ namespace eqsolver
 	template<typename _result_type>
 	struct _make_1
 	{
-		template <typename T>
+		template <typename>
 		struct result { typedef _result_type type; };
 
 		template <typename T>
@@ -136,21 +139,23 @@ namespace eqsolver
 			return _result_type(c1);
 		}
 	};
+
 	template<typename _result_type>
 	struct _make_2
 	{
-		template <typename T1, typename T2>
+		template <typename, typename>
 		struct result { typedef _result_type type; };
 
 		template <typename T1, typename T2>
-		inline typename result<T1, T2>::type operator()(
-				T1 const& c1, T2 const& c2) const {
+		inline typename result<T1, T2>::type operator()
+			(T1 const& c1, T2 const& c2) const {
 			return _result_type(c1, c2);
 		}
 	};
 
 	const boost::phoenix::function< _make_2<vaddr::var_array> > make_array_indexes;
-	const boost::phoenix::function< _make_1<vaddr::var_helper> > make_helper_index;
+	const boost::phoenix::function< _make_2<vaddr::var_helper> > make_helper_index;
+	//const boost::phoenix::function< _make_1<vaddr::var_helper> > make_helper_index;
 	const boost::phoenix::function< _make_0<vaddr::var_x> > make_x;
 	const boost::phoenix::function< _make_0<vaddr::var_y> > make_y;
 
@@ -172,7 +177,9 @@ namespace eqsolver
 		inline result_type operator()(vaddr::var_x _x) const { (void)_x; return x; }
 		inline result_type operator()(vaddr::var_y _y) const { (void)_y; return y; }
 		inline result_type operator()(vaddr::var_array _a) const { return v[_a.x+_a.y*width]; }
-		inline result_type operator()(vaddr::var_helper _h) const { return helper_vars[_h.i]; }
+		inline result_type operator()(vaddr::var_helper _h) const {
+			return (_h.address) ? ((int)(helper_vars + _h.i)) : helper_vars[_h.i];
+		}
 	};
 
 	struct variable_area_grid : public boost::static_visitor<unsigned int>
@@ -220,7 +227,7 @@ namespace eqsolver
 		};
 
 
-		expression_ast(expression_ast const& ai) : expr(ai) {}
+		expression_ast(expression_ast const& ai) : expr(ai.expr) {}
 		explicit expression_ast(type const& ai) : expr(ai) {}
 
 		template <typename Expr>
@@ -286,7 +293,7 @@ namespace eqsolver
 	MAKE_UNARY_FUNC(sqrt_func, 's', f1i_sqrt);
 	MAKE_BINARY_FUNC(min_func, 'm', f2i_min);
 	MAKE_BINARY_FUNC(max_func, 'n', f2i_max);
-	MAKE_BINARY_FUNC(ass_func, 'h', NULL);
+	MAKE_BINARY_FUNC(ass_func, 'h', f2i_ass);
 	MAKE_BINARY_FUNC(com_func, ',', f2i_com);
 
 	inline int array_subscript_to_coord(std::string* str, int width) {
@@ -427,7 +434,8 @@ namespace eqsolver
 
 			str_int =  (qi::char_("-") >> *qi::char_("0-9")) | (*qi::char_("0-9"));
 
-			helper_variable = "h[" >> (str_int [_val = make_helper_index(_1)]) >> ']';
+			helper_variable = "h[" >> (str_int [_val = make_helper_index(_1, false)]) >> ']';
+			helper_address = "h[" >> (str_int [_val = make_helper_index(_1, true)]) >> ']';
 			array_variable = "a[" >> ( str_int >> ',' >> str_int ) [_val = make_array_indexes(_1, _2)] >> ']';
 
 			// fixed indentation:
@@ -456,7 +464,7 @@ namespace eqsolver
 
 			comma_assignment = assignment [_val = _1]
 					>> *( (',' >> assignment [_val = com_func(_val, _1)]));
-			assignment = (helper_variable [_val = make_expr(_1)] >> ":="
+			assignment = (helper_address [_val = make_expr(_1)] >> ":="
 				>> expression [_val = ass_func(_val,_1)]) | expression [_val = _1];
 
 			expression = and_expression [_val = _1]
@@ -534,7 +542,7 @@ namespace eqsolver
 		}
 		qi::rule<Iterator, expression_ast(), ascii::space_type> comma_assignment, assignment,
 		expression, and_expression, equation, inequation, sum, term, factor, function;
-		qi::rule<Iterator, vaddr()> variable, array_variable, helper_variable;
+		qi::rule<Iterator, vaddr()> variable, array_variable, helper_variable, helper_address;
 		qi::rule<Iterator, std::string()> str_int;
 		//qi::rule<Iterator, std::string()> array_variable, helper_variable, variable, array_subscript, str_int;
 	};

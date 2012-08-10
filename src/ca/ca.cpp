@@ -61,7 +61,7 @@ class MyProgram : public Program
 		read_grid(stdin, old_grid, &dim, &read_number, border_width);
 		grid[1] = grid[0]; // fit borders
 
-		for(int round = 1; (round <= num_steps)&&num_changed; ++round)
+		for(int round = 1; (round <= num_steps) && num_changed; ++round)
 		{
 			num_changed = 0;
 			old_grid = grid + (round&1);
@@ -82,7 +82,7 @@ class MyProgram : public Program
 			}
 		}
 
-		delete helper_vars;
+		delete[] helper_vars;
 		write_grid(stdout, new_grid, &dim, &write_number, border_width);
 		return 0;
 	}
