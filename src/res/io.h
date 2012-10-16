@@ -68,6 +68,28 @@ struct default_grid_writer
 	inline static void write_cell(FILE* fp, int int_to_write) {
 		fprintf(fp, "%d", int_to_write);
 	}
+	inline static bool parse_cell(FILE* fp, int* read_symbol) {
+		// read first numeric
+		if(! grid_writer::read_cell(fp, &read_symbol) )
+		 return true; // eof
+		if(!col_count)
+		 insert_vertical_border(grid, grid->end(), border);
+		grid->push_back(read_symbol);
+		return false;
+	}
+
+	inline static bool parse_whitespace(FILE* fp) {
+		const char read_symbol = fgetc(fp);
+		if(read_symbol == ' ')
+		 return true;
+		if(read_symbol == '\n')
+		 return false;
+		else assert(false);
+	}
+	inline static int horizontal_separators_each() {
+		return 0;
+	}
+	default_grid_writer() {}
 };
 
 #if 0
@@ -148,25 +170,30 @@ void _read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, int border = 1
 	int read_symbol;
 	int line_width = -1, col_count = 0, line_count = 0; // all excl. border
 
+	// We will insert upper and lower border afterwards, but
+	// left and right border are inserted just in time
 	while(true)
 	{
+#if 1
+
+
 		// read first numeric
 		if(! grid_writer::read_cell(fp, &read_symbol) )
 		 break; // eof
 		if(!col_count)
 		 insert_vertical_border(grid, grid->end(), border);
 		grid->push_back(read_symbol);
+#endif
+
+		if(! grid_writer::parse_cell(fp) )
+		 break; // eof
+
 		col_count++;
 
-		// read separating whitespace
-		read_symbol=fgetc(fp);
-		if(read_symbol == '\n')
+		if(! grid_writer::parse_whitespace(fp)) // i.e. a new line
 		{
-			// first newline => determine line length
-			if(! line_count) {
+			if( line_count == 0 ) // first newline => determine line length
 				line_width = col_count;
-				insert_horizontal_border(grid, grid->begin(), line_width, border);
-			}
 			else
 			 assert(line_width == col_count);
 
@@ -175,10 +202,9 @@ void _read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, int border = 1
 
 			insert_vertical_border(grid, grid->end(), border);
 		}
-		else
-		 assert(read_symbol == ' ');
 	}
 
+	insert_horizontal_border(grid, grid->begin(), line_width, border);
 	insert_horizontal_border(grid, grid->end(), line_width, border);
 
 	dim->height = line_count + (((int)(border))<<1);

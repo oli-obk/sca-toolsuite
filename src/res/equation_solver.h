@@ -178,7 +178,7 @@ namespace eqsolver
 		inline result_type operator()(vaddr::var_y _y) const { (void)_y; return y; }
 		inline result_type operator()(vaddr::var_array _a) const { return v[_a.x+_a.y*width]; }
 		inline result_type operator()(vaddr::var_helper _h) const {
-			return (_h.address) ? ((int)(helper_vars + _h.i)) : helper_vars[_h.i];
+			return (_h.address) ? ((result_type)(helper_vars + _h.i)) : helper_vars[_h.i];
 		}
 	};
 

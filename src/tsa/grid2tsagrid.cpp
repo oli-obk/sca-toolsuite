@@ -164,7 +164,7 @@ void transitive_reduction_of_dag(graph_t* out_graph, const graph_t* in_graph)
 template <typename in_type, typename out_type>
 void const_transitive_reduction(in_type* out_graph, const out_type* in_graph)
 {
-	//typedef typename property_map<Graph, vertex_index_t>::const_type VertexIndexMap;
+/*	//typedef typename property_map<Graph, vertex_index_t>::const_type VertexIndexMap;
 	//VertexIndexMap index_map = get(vertex_index, in_graph);
 
 	typedef typename graph_traits<in_type>::vertex_descriptor tc_vertex;
@@ -175,7 +175,7 @@ void const_transitive_reduction(in_type* out_graph, const out_type* in_graph)
 
 	out_type tmp_out_graph;
 	boost::transitive_reduction(*in_graph, tmp_out_graph, g_to_tc_map);
-}
+*/}
 
 void create_T(graph_t* T, graph_t* S)
 {
