@@ -51,7 +51,8 @@ SOURCES += algo/relax.cpp \
     gui_qt/StateMachine.cpp \
     gui_qt/MenuBar.cpp \
     math/filter.cpp \
-    ca/ca.cpp
+    ca/ca.cpp \
+    tsa/grid2tsagrid.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL \
 	../README \

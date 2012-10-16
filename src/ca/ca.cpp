@@ -58,7 +58,7 @@ class MyProgram : public Program
 		std::vector<int> grid[2];
 		std::vector<int> *old_grid = grid, *new_grid = grid;
 
-		read_grid(stdin, old_grid, &dim, &read_number, border_width);
+		read_grid(stdin, old_grid, &dim, border_width);
 		grid[1] = grid[0]; // fit borders
 
 		for(int round = 1; (round <= num_steps) && num_changed; ++round)

@@ -71,8 +71,9 @@ class MyProgram : public Program
 		std::vector<int> grid;
 		dimension dim;
 
-		read_array(stdin, &grid, &dim, scanfunc);
-		write_array(stdout, &grid, &dim, printfunc);
+	/*	read_array(stdin, &grid, &dim, scanfunc);
+		write_array(stdout, &grid, &dim, printfunc);*/
+		exit("Not working in this commit.");
 		return 0;
 	}
 };

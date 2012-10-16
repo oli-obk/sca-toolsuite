@@ -45,7 +45,7 @@ class MyProgram : public Program
 int main(int argc, char** argv)
 {
 	HelpStruct help;
-	help.syntax = "math/id <width> <height>";
+	help.syntax = "algo/id <width> <height>";
 	help.description = "Creates the identity element of ASM group.";
 	help.output = "grid containing the identity";
 

@@ -48,8 +48,9 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-tools_PROGRAMS = rotor$(EXEEXT)
-subdir = src/rotor
+tools_PROGRAMS = edges2tgf$(EXEEXT) graph2scctgf$(EXEEXT) \
+	grid2edges$(EXEEXT) grid2tsagrid$(EXEEXT)
+subdir = src/tsa
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -62,9 +63,18 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(toolsdir)"
 PROGRAMS = $(tools_PROGRAMS)
-am_rotor_OBJECTS = rotor.$(OBJEXT) io.$(OBJEXT)
-rotor_OBJECTS = $(am_rotor_OBJECTS)
-rotor_LDADD = $(LDADD)
+am_edges2tgf_OBJECTS = edges2tgf.$(OBJEXT) io.$(OBJEXT)
+edges2tgf_OBJECTS = $(am_edges2tgf_OBJECTS)
+edges2tgf_LDADD = $(LDADD)
+am_graph2scctgf_OBJECTS = graph2scctgf.$(OBJEXT) io.$(OBJEXT)
+graph2scctgf_OBJECTS = $(am_graph2scctgf_OBJECTS)
+graph2scctgf_LDADD = $(LDADD)
+am_grid2edges_OBJECTS = grid2edges.$(OBJEXT) io.$(OBJEXT)
+grid2edges_OBJECTS = $(am_grid2edges_OBJECTS)
+grid2edges_LDADD = $(LDADD)
+am_grid2tsagrid_OBJECTS = grid2tsagrid.$(OBJEXT) io.$(OBJEXT)
+grid2tsagrid_OBJECTS = $(am_grid2tsagrid_OBJECTS)
+grid2tsagrid_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -74,8 +84,10 @@ CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
-SOURCES = $(rotor_SOURCES)
-DIST_SOURCES = $(rotor_SOURCES)
+SOURCES = $(edges2tgf_SOURCES) $(graph2scctgf_SOURCES) \
+	$(grid2edges_SOURCES) $(grid2tsagrid_SOURCES)
+DIST_SOURCES = $(edges2tgf_SOURCES) $(graph2scctgf_SOURCES) \
+	$(grid2edges_SOURCES) $(grid2tsagrid_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -176,8 +188,11 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 toolsdir = ../../install
 AM_CXXFLAGS = "-I../res"
-rotor_SOURCES = rotor.cpp ../res/io.cpp
-EXTRA_DIST = xrotor
+edges2tgf_SOURCES = edges2tgf.cpp ../res/io.cpp
+graph2scctgf_SOURCES = graph2scctgf.cpp ../res/io.cpp
+grid2edges_SOURCES = grid2edges.cpp ../res/io.cpp
+grid2tsagrid_SOURCES = grid2tsagrid.cpp ../res/io.cpp
+EXTRA_DIST = tsa
 all: all-am
 
 .SUFFIXES:
@@ -191,9 +206,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/rotor/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/tsa/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/rotor/Makefile
+	  $(AUTOMAKE) --gnu src/tsa/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -252,9 +267,18 @@ uninstall-toolsPROGRAMS:
 
 clean-toolsPROGRAMS:
 	-test -z "$(tools_PROGRAMS)" || rm -f $(tools_PROGRAMS)
-rotor$(EXEEXT): $(rotor_OBJECTS) $(rotor_DEPENDENCIES) $(EXTRA_rotor_DEPENDENCIES) 
-	@rm -f rotor$(EXEEXT)
-	$(CXXLINK) $(rotor_OBJECTS) $(rotor_LDADD) $(LIBS)
+edges2tgf$(EXEEXT): $(edges2tgf_OBJECTS) $(edges2tgf_DEPENDENCIES) $(EXTRA_edges2tgf_DEPENDENCIES) 
+	@rm -f edges2tgf$(EXEEXT)
+	$(CXXLINK) $(edges2tgf_OBJECTS) $(edges2tgf_LDADD) $(LIBS)
+graph2scctgf$(EXEEXT): $(graph2scctgf_OBJECTS) $(graph2scctgf_DEPENDENCIES) $(EXTRA_graph2scctgf_DEPENDENCIES) 
+	@rm -f graph2scctgf$(EXEEXT)
+	$(CXXLINK) $(graph2scctgf_OBJECTS) $(graph2scctgf_LDADD) $(LIBS)
+grid2edges$(EXEEXT): $(grid2edges_OBJECTS) $(grid2edges_DEPENDENCIES) $(EXTRA_grid2edges_DEPENDENCIES) 
+	@rm -f grid2edges$(EXEEXT)
+	$(CXXLINK) $(grid2edges_OBJECTS) $(grid2edges_LDADD) $(LIBS)
+grid2tsagrid$(EXEEXT): $(grid2tsagrid_OBJECTS) $(grid2tsagrid_DEPENDENCIES) $(EXTRA_grid2tsagrid_DEPENDENCIES) 
+	@rm -f grid2tsagrid$(EXEEXT)
+	$(CXXLINK) $(grid2tsagrid_OBJECTS) $(grid2tsagrid_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -262,8 +286,11 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/edges2tgf.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/graph2scctgf.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/grid2edges.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/grid2tsagrid.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rotor.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

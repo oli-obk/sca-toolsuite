@@ -21,60 +21,37 @@
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
-
-#include "image.h"
 #include "io.h"
-
-class MyProgram : public Program
-{
-	int main()
-	{
-		rgb min_color(255,255,255), max_color(0,0,0);
-		int min_val=0, max_val=3;
-		FILE* write_fp = stdout;
-		switch(argc)
-		{
-			case 6:
-				write_fp = fopen(argv[5], "w");
-				if(write_fp==NULL)
-				 exit("Error opening outfile");
-			case 5: max_val = atoi(argv[4]);
-			case 4: min_val = atoi(argv[3]);
-			case 3: max_color.from_str(argv[2]);
-			case 2: min_color.from_str(argv[1]);
-			case 1: break;
-			default:
-				exit_usage();
-		}
-
-		std::vector<int> grid;
-		dimension dim;
-
-		read_grid(stdin, &grid, &dim);
-
-		ColorTable color_table(min_color, max_color, min_val, max_val);
-		print_to_tga(write_fp, color_table, grid, dim);
-
-		if(argc==7)
-		 fclose(write_fp);
-		return 0;
-	}
-};
+#include "stack_algorithm.h"
 
 int main(int argc, char** argv)
 {
-	HelpStruct help;
-	help.syntax = "io/grid2tga [<min_color> <max_color> [<min_val> <max_val> [<outfile>]]]";
-	help.description = "Converts given grid to a TGA file (v2, color table, no RLE).\n"
-		"Colors can be specified for minimum and maximum no of chips,\n"
-		"other numbers will be linearly interpolated.";
-	help.input = "input grid";
-	help.output = "TGA file content if no outfile is given, otherwise nothing";
-	help.add_param("<min_color>, <max_color>", "color values for min and max no of chips");
-	help.add_param("<min_val>, <max_val>", "modify min and max no of chips - default is 0 and 3");
-	help.add_param("<outfile>", "file to store resulting TGA in");
-	MyProgram p;
-	return p.run(argc, argv, &help);
+	(void)argv;
+	FILE* read_fp = stdin;
+	if(argc>1) {
+		fputs("There are no arguments for this tool.\n", stderr);
+		exit(1);
+	}
+
+	std::vector<int> grid;
+	dimension dim;
+	read_grid(read_fp, &grid, &dim);
+
+	std::vector<int> workGrid;
+	unsigned int area = dim.area_without_border();
+	ArrayQueue stack(area);
+	fwrite(&(dim.width),4,1,stdout);
+	fwrite(&(dim.height),4,1,stdout);
+	for(unsigned int i=0; i<area; i++)
+	{
+		workGrid = grid;
+		int idx = human2internal(i, dim.width);
+		while(++workGrid[idx]<4);
+
+		l_hint(&workGrid, &dim, idx, &stack, stdout);
+	}
+
+	return 0;
 }
 
 

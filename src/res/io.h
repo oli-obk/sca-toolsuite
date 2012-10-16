@@ -42,6 +42,52 @@ inline unsigned int internal2human(unsigned int internal, int internal_width) {
 	return ((internal_row-1)*(internal_width-2) + internal_col-1 );
 }
 
+inline void insert_horizontal_border(std::vector<int>* grid,
+	std::vector<int>::iterator itr,
+	int human_linewidth,
+	int border_width)
+{
+	grid->insert(itr,
+		(human_linewidth + (border_width<<1))*border_width,
+		INT_MIN);
+}
+
+inline void insert_vertical_border(std::vector<int>* grid,
+	std::vector<int>::iterator itr,
+	int border_width)
+{
+	grid->insert(itr, border_width, INT_MIN);
+}
+
+struct default_grid_writer
+{
+	inline static bool read_cell(FILE* fp, int* read_symbol) {
+		return(fscanf(fp, "%d", read_symbol) == 1);
+	}
+
+	inline static void write_cell(FILE* fp, int int_to_write) {
+		fprintf(fp, "%d", int_to_write);
+	}
+};
+
+#if 0
+struct default_grid_writer
+{
+	inline static bool read_cell(FILE* fp, int* read_symbol) {
+		return(fscanf(fp, "%d", read_symbol) == 1);
+	}
+
+	/*inline static void write_cell(FILE* fp, int int_to_write) {
+		fprintf(fp, "%d", int_to_write);
+	}*/
+
+	inline static void write_cell(FILE* fp, int int_to_write) {
+		fprintf(fp, "%d", int_to_write);
+	}
+
+};
+#endif
+
 
 inline int arrow_2_int(char read_char)
 {
@@ -92,12 +138,64 @@ inline bool read_number(FILE* fp, int* read_symbol) {
 	@param SCANFUNC function which converts chars to numbers for internal handling
 	@param border whether the outer cells make a border - internal use only
 */
-void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
-	 bool (*SCANFUNC)(FILE*, int*) = &read_number, int border = 1);
+//void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
+//	 bool (*SCANFUNC)(FILE*, int*) = &read_number, int border = 1);
 
-inline void read_array(FILE* fp, std::vector<int>* grid, dimension* dim,
-	bool (*SCANFUNC)(FILE*, int*) = &read_number) {
-	read_grid(fp, grid, dim, SCANFUNC, 0);
+// TODO: tpp file?
+template<class grid_writer>
+void _read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, int border = 1)
+{
+	int read_symbol;
+	int line_width = -1, col_count = 0, line_count = 0; // all excl. border
+
+	while(true)
+	{
+		// read first numeric
+		if(! grid_writer::read_cell(fp, &read_symbol) )
+		 break; // eof
+		if(!col_count)
+		 insert_vertical_border(grid, grid->end(), border);
+		grid->push_back(read_symbol);
+		col_count++;
+
+		// read separating whitespace
+		read_symbol=fgetc(fp);
+		if(read_symbol == '\n')
+		{
+			// first newline => determine line length
+			if(! line_count) {
+				line_width = col_count;
+				insert_horizontal_border(grid, grid->begin(), line_width, border);
+			}
+			else
+			 assert(line_width == col_count);
+
+			line_count++;
+			col_count = 0;
+
+			insert_vertical_border(grid, grid->end(), border);
+		}
+		else
+		 assert(read_symbol == ' ');
+	}
+
+	insert_horizontal_border(grid, grid->end(), line_width, border);
+
+	dim->height = line_count + (((int)(border))<<1);
+	dim->width = line_width + (((int)(border))<<1);
+
+	assert(dim->area() == grid->size());
+}
+
+//! @todo: use default templates when c++11 gets default
+inline void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, int border = 1)
+{
+	_read_grid<default_grid_writer>(fp, grid, dim, border);
+}
+
+template<class grid_writer>
+inline void read_array(FILE* fp, std::vector<int>* grid, dimension* dim) {
+	_read_grid<grid_writer>(fp, grid, dim, 0);
 }
 
 inline void write_arrow(FILE* fp, int int_to_write) {
@@ -140,6 +238,9 @@ typedef boost::adjacency_list<
 	> graph_t;
 //! to be documented
 void create_boost_graph(FILE* fp, graph_t* boost_graph);
+
+//! dumps a boost graph into a trivial graphics file (TGF, see Wikipedia)
+void dump_graph_as_tgf(FILE* write_fp, const graph_t* boost_graph);
 
 #endif // IO_H
 

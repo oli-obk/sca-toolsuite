@@ -31,6 +31,7 @@ AC_CONFIG_FILES([Makefile
 		 src/math/Makefile
 		 src/res/Makefile
 		 src/rotor/Makefile
+		 src/tsa/Makefile
 	 	 doc/Makefile
 		 ])
 #                src/tsa/Makefile

@@ -102,6 +102,7 @@ inline void increase_neighbours_without_self(std::vector<int>* grid, const dimen
 
 /**
 	Develops an 1D avalanche. The helping avalanche container is not flushed, so it contains the whole avalanche afterwards.
+	Important: The cell at hint must be decreased by 1.
 */
 template<class AvalancheContainer>
 inline void avalanche_1d_hint_noflush(std::vector<int>* grid, const dimension* dim, int hint, AvalancheContainer* array, FILE* avalanche_fp)
@@ -134,6 +135,7 @@ inline void avalanche_1d_hint_noflush(std::vector<int>* grid, const dimension* d
 
 /**
 	Develops an 1D avalanche. The helping avalanche container is flushed.
+	Important: The cell at hint must be decreased by 1.
 */
 template<class AvalancheContainer>
 inline void avalanche_1d_hint(std::vector<int>* grid, const dimension* dim, int hint, AvalancheContainer* array, FILE* avalanche_fp)

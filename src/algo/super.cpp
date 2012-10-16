@@ -44,7 +44,7 @@ class MyProgram : public Program
 int main(int argc, char** argv)
 {
 	HelpStruct help;
-	help.syntax = "math/super";
+	help.syntax = "algo/super";
 	help.description = "Creates the superstabilization of a given configuration.";
 	help.input = "any configuration with values >= 0";
 	help.output = "the superstabilization";
