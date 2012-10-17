@@ -48,8 +48,11 @@ inline void insert_horizontal_border(std::vector<int>* grid,
 	int border_width)
 {
 	grid->insert(itr,
+			human_linewidth*border_width,
+			INT_MIN);
+/*	grid->insert(itr,
 		(human_linewidth + (border_width<<1))*border_width,
-		INT_MIN);
+		INT_MIN);*/
 }
 
 inline void insert_vertical_border(std::vector<int>* grid,
@@ -59,27 +62,32 @@ inline void insert_vertical_border(std::vector<int>* grid,
 	grid->insert(itr, border_width, INT_MIN);
 }
 
-struct default_grid_writer
+inline void insert_border(std::vector<int>* grid,
+	std::vector<int>::iterator itr,
+	int amount)
 {
-	inline static bool read_cell(FILE* fp, int* read_symbol) {
-		return(fscanf(fp, "%d", read_symbol) == 1);
+	grid->insert(itr, amount, INT_MIN);
+}
+
+template<class cell_details>
+struct default_border_serializer // CRTP
+{
+	std::vector<int>* grid;
+
+	inline bool parse_cell(FILE* fp)
+	{
+		int read_symbol;
+		if(! read_cell(fp, &read_symbol) )
+		 return false; // eof
+		else {
+			grid->push_back(read_symbol);
+			return true;
+		}
 	}
 
-	inline static void write_cell(FILE* fp, int int_to_write) {
-		fprintf(fp, "%d", int_to_write);
-	}
-	inline static bool parse_cell(FILE* fp, int* read_symbol) {
-		// read first numeric
-		if(! grid_writer::read_cell(fp, &read_symbol) )
-		 return true; // eof
-		if(!col_count)
-		 insert_vertical_border(grid, grid->end(), border);
-		grid->push_back(read_symbol);
-		return false;
-	}
-
-	inline static bool parse_whitespace(FILE* fp) {
-		const char read_symbol = fgetc(fp);
+	inline bool parse_whitespace(FILE* fp)
+	{
+		const int read_symbol = fgetc(fp);
 		if(read_symbol == ' ')
 		 return true;
 		if(read_symbol == '\n')
@@ -89,7 +97,76 @@ struct default_grid_writer
 	inline static int horizontal_separators_each() {
 		return 0;
 	}
-	default_grid_writer() {}
+
+	inline static bool read_cell(FILE* fp, int* read_symbol) {
+		return(fscanf(fp, "%d", read_symbol) == 1);
+	}
+
+	inline static void write_cell(FILE* fp, int int_to_write) {
+		fprintf(fp, "%d", int_to_write);
+	}
+
+	default_border_serializer(std::vector<int>* _grid) : grid(_grid) {}
+};
+
+
+struct default_serializer : public default_border_serializer<default_serializer>
+{
+	inline bool read_cell(FILE* fp, int* read_symbol) {
+		return(fscanf(fp, "%d", read_symbol) == 1);
+	}
+
+	inline void write_cell(FILE* fp, int int_to_write) {
+		fprintf(fp, "%d", int_to_write);
+	}
+
+	default_serializer(std::vector<int>* _grid) : default_border_serializer(_grid) {}
+};
+
+struct arrow_serializer : public default_border_serializer<default_serializer>
+{
+	inline static int arrow_2_int(char read_char)
+	{
+		switch(read_char)
+		{
+			case '^': return 0;
+			case '>': return 1;
+			case 'v': return 2;
+			case '<': return 3;
+			default: {
+				std::string error = "Invalid arrow sign read: ";
+				error += read_char;
+				throw error;
+			}
+		}
+	}
+
+	inline static int int_2_arrow(int* int_value)
+	{
+		static const int arrow_palette[4] = { '^', '>', 'v', '<' }; // TODO: ll, tt ?
+		//printf("\nint: %d\n", *int_value);
+		if(*int_value != *int_value % 4) { // TODO: -3
+			std::string error = "Integer could not be converted to arrow: ";
+			error += (char)*int_value;
+			throw error;
+		}
+		else return arrow_palette[*int_value];
+	}
+
+	inline bool read_cell(FILE* fp, int* read_symbol)
+	{
+		char read_char;
+		const bool return_value = (fscanf(fp, "%c", &read_char) == 1);
+		if(return_value)
+		 *read_symbol = arrow_2_int(read_char);
+		return return_value;
+	}
+
+	inline void write_cell(FILE* fp, int int_to_write) {
+		fprintf(fp, "%c", (char)int_2_arrow(&int_to_write));
+	}
+
+	arrow_serializer(std::vector<int>* _grid) : default_border_serializer(_grid) {}
 };
 
 #if 0
@@ -110,44 +187,6 @@ struct default_grid_writer
 };
 #endif
 
-
-inline int arrow_2_int(char read_char)
-{
-	switch(read_char)
-	{
-		case '^': return 0;
-		case '>': return 1;
-		case 'v': return 2;
-		case '<': return 3;
-		default: {
-			std::string error = "Invalid arrow sign read: ";
-			error += read_char;
-			throw error;
-		}
-	}
-}
-
-inline int int_2_arrow(int* int_value)
-{
-	static const int arrow_palette[4] = { '^', '>', 'v', '<' }; // TODO: ll, tt ?
-	//printf("\nint: %d\n", *int_value);
-	if(*int_value != *int_value % 4) { // TODO: -3
-		std::string error = "Integer could not be converted to arrow: ";
-		error += (char)*int_value;
-		throw error;
-	}
-	else return arrow_palette[*int_value];
-}
-
-inline bool read_arrow(FILE* fp, int* read_symbol)
-{
-	char read_char;
-	const bool return_value = (fscanf(fp, "%c", &read_char) == 1);
-	if(return_value)
-	 *read_symbol = arrow_2_int(read_char);
-	return return_value;
-}
-
 inline bool read_number(FILE* fp, int* read_symbol) {
 	return(fscanf(fp, "%d", read_symbol) == 1);
 }
@@ -158,39 +197,39 @@ inline bool read_number(FILE* fp, int* read_symbol) {
 	@param grid pointer to vector, shall be empty and usually not pre-allocated
 	@param dim the real dimension of the grid, i.e. including border
 	@param SCANFUNC function which converts chars to numbers for internal handling
-	@param border whether the outer cells make a border - internal use only
+	@param border how thick the internal border shall be - internal use only
 */
 //void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 //	 bool (*SCANFUNC)(FILE*, int*) = &read_number, int border = 1);
 
 // TODO: tpp file?
-template<class grid_writer>
-void _read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, int border = 1)
+template<class grid_serializer>
+void _read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, grid_serializer* serializer, int border_width = 1)
 {
 	int read_symbol;
 	int line_width = -1, col_count = 0, line_count = 0; // all excl. border
 
 	// We will insert upper and lower border afterwards, but
 	// left and right border are inserted just in time
+
+	/*
+		order of borders being appended:
+		55555555
+		55555555
+		55xxxx22
+		22xxxx33
+		33444444
+		44444444
+	*/
+
 	while(true)
 	{
-#if 1
-
-
-		// read first numeric
-		if(! grid_writer::read_cell(fp, &read_symbol) )
-		 break; // eof
-		if(!col_count)
-		 insert_vertical_border(grid, grid->end(), border);
-		grid->push_back(read_symbol);
-#endif
-
-		if(! grid_writer::parse_cell(fp) )
+		if(! serializer->parse_cell(fp) )
 		 break; // eof
 
 		col_count++;
 
-		if(! grid_writer::parse_whitespace(fp)) // i.e. a new line
+		if(! serializer->parse_whitespace(fp)) // i.e. a new line
 		{
 			if( line_count == 0 ) // first newline => determine line length
 				line_width = col_count;
@@ -200,23 +239,31 @@ void _read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, int border = 1
 			line_count++;
 			col_count = 0;
 
-			insert_vertical_border(grid, grid->end(), border);
+			insert_border(grid, grid->end(),(border_width<<1)); // this.left + next.right
 		}
 	}
 
-	insert_horizontal_border(grid, grid->begin(), line_width, border);
-	insert_horizontal_border(grid, grid->end(), line_width, border);
+	insert_border(grid, grid->end(),(line_width + (border_width<<1))*border_width - border_width); // bottom
+	insert_border(grid, grid->begin(),(line_width + (border_width<<1))*border_width + border_width); // top
 
-	dim->height = line_count + (((int)(border))<<1);
-	dim->width = line_width + (((int)(border))<<1);
+	dim->height = line_count + (((int)(border_width))<<1);
+	dim->width = line_width + (((int)(border_width))<<1);
 
 	assert(dim->area() == grid->size());
+}
+
+template<class grid_serializer>
+void _read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, int border_width = 1)
+{
+	grid_serializer ser(grid);
+	_read_grid(fp, grid, dim, &ser, border_width);
 }
 
 //! @todo: use default templates when c++11 gets default
 inline void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, int border = 1)
 {
-	_read_grid<default_grid_writer>(fp, grid, dim, border);
+	default_serializer serializer(grid);
+	_read_grid<default_serializer>(fp, grid, dim, &serializer, border);
 }
 
 template<class grid_writer>
@@ -224,9 +271,9 @@ inline void read_array(FILE* fp, std::vector<int>* grid, dimension* dim) {
 	_read_grid<grid_writer>(fp, grid, dim, 0);
 }
 
-inline void write_arrow(FILE* fp, int int_to_write) {
+/*inline void write_arrow(FILE* fp, int int_to_write) {
 	fprintf(fp, "%c", (char)int_2_arrow(&int_to_write));
-}
+}*/
 
 inline void write_number(FILE* fp, int int_to_write) {
 	fprintf(fp, "%d", int_to_write);

@@ -23,6 +23,15 @@
 #include <vector>
 #include "io.h"
 
+/*template<typename function>
+call_function(const char* key, FILE* fp, std::vector<int>* grid, dimension* dim, int border_width = 1)
+{
+	if(!strcmp("rotors",key))
+	 function<default_serializer>(fp, grid, drim, border_width);
+	else
+	 function<arrow_serializer>(fp, grid, drim, border_width);
+}*/
+
 class MyProgram : public Program
 {
 	struct fmapping {
@@ -73,14 +82,16 @@ class MyProgram : public Program
 
 	/*	read_array(stdin, &grid, &dim, scanfunc);
 		write_array(stdout, &grid, &dim, printfunc);*/
+	//	call_function(_read_array, stdin, &grid, &dim, scanfunc);
+
 		exit("Not working in this commit.");
 		return 0;
 	}
 };
 
 const MyProgram::fmapping MyProgram::function_names[3] = {
-	{ "numbers", &read_number, &write_number },
-	{ "rotors", &read_arrow, &write_arrow },
+//	{ "numbers", &read_number, &write_number },
+//	{ "rotors", &read_arrow, &write_arrow },
 	{ NULL, NULL, NULL } // sentinel
 };
 
