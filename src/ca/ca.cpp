@@ -83,7 +83,8 @@ class MyProgram : public Program
 		}
 
 		delete[] helper_vars;
-		write_grid(stdout, new_grid, &dim, &write_number, border_width);
+
+		write_grid(stdout, new_grid, &dim, border_width);
 		return 0;
 	}
 };

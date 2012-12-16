@@ -32,21 +32,82 @@ call_function(const char* key, FILE* fp, std::vector<int>* grid, dimension* dim,
 	 function<arrow_serializer>(fp, grid, drim, border_width);
 }*/
 
+#include <cstring>
+#include <iostream>
+
+bool file_ending_is(const char* filename, const char* ending)
+{
+	int end_len = strlen(ending);
+	const char* fn_end = filename + strlen(filename);
+	return (*(fn_end-end_len-1))=='.' && !strcmp(fn_end-end_len,ending);
+}
+
+template<typename this_type, typename next_type>
+struct typelist
+{
+	typedef this_type type;
+	typedef next_type next;
+};
+
+template<typename t>
+bool try_this(const char* name, default_grid& grid)
+{
+	typedef typename t::type _type;
+	if(!strcmp(_type::name(), name)) {
+		const _type infile(stdin);
+		converter<_type, default_grid> c(infile, grid);
+		c.convert();
+		return true;
+	}
+	else
+	 return try_this<typename t::next>(name, grid);
+}
+
+struct end_of_list {};
+template<>
+bool try_this<end_of_list>(const char* name, default_grid& grid)
+{
+	return false;
+}
+
+template<typename t>
+bool try_this2(const char* name, const_default_grid& grid)
+{
+	typedef typename t::type _type;
+	if(!strcmp(_type::name(), name)) {
+		_type outfile(stdout);
+		converter<const_default_grid, _type> c(grid, outfile);
+		c.convert();
+		return true;
+	}
+	else
+	 return try_this2<typename t::next>(name, grid);
+}
+
+template<>
+bool try_this2<end_of_list>(const char* name, const_default_grid& grid)
+{
+	return false;
+}
+
+
+typedef typelist<FileGrid, typelist<FileArrowGrid , end_of_list> > file_list;
+//typedef end_of_list file_list;
+
 class MyProgram : public Program
 {
-	struct fmapping {
-		const char* name;
-		bool (*scanfunc)(FILE*, int*);
-		void (*printfunc)(FILE*, int);
-	};
 
-	static const fmapping function_names[3];
+
+
+	//static const fmapping function_names[3];
 
 	inline bool valid_function_name(const char* function_name) {
-		const fmapping* fmap;
+/*		const fmapping* fmap;
 		for(fmap = function_names;
 			fmap->name && strcmp(function_name,fmap->name); fmap++) ;
-		return (fmap->name != NULL);
+		return (fmap->name != NULL);*/
+	//	return false;
+		return true;
 	}
 
 	int main()
@@ -68,7 +129,7 @@ class MyProgram : public Program
 				exit_usage();
 		}
 
-		const fmapping* fmap;
+	/*	const fmapping* fmap;
 		for(fmap = function_names;
 			fmap->name && strcmp(scanfunc_name,fmap->name); fmap++) ;
 		scanfunc = fmap->name ? fmap->scanfunc : function_names[0].scanfunc;
@@ -76,24 +137,33 @@ class MyProgram : public Program
 		for(fmap = function_names;
 			fmap->name && strcmp(printfunc_name,fmap->name); fmap++) ;
 		printfunc = fmap->name ? fmap->printfunc : function_names[0].printfunc;
+*/
+		std::vector<int> _vector;
+		dimension _dim;
 
-		std::vector<int> grid;
-		dimension dim;
+		default_grid grid(_grid(_vector, _dim, 1));
+		try_this<file_list>(scanfunc_name, grid);
+		const_default_grid grid2(_const_grid(grid.grid.grid, grid.grid.dim, grid.grid.border_width));
+		try_this2<file_list>(printfunc_name, grid2);
+
 
 	/*	read_array(stdin, &grid, &dim, scanfunc);
 		write_array(stdout, &grid, &dim, printfunc);*/
 	//	call_function(_read_array, stdin, &grid, &dim, scanfunc);
 
-		exit("Not working in this commit.");
+	//	exit("Not working in this commit.");
 		return 0;
 	}
 };
+
+
+/*
 
 const MyProgram::fmapping MyProgram::function_names[3] = {
 //	{ "numbers", &read_number, &write_number },
 //	{ "rotors", &read_arrow, &write_arrow },
 	{ NULL, NULL, NULL } // sentinel
-};
+};*/
 
 int main(int argc, char** argv)
 {
