@@ -43,11 +43,11 @@ class MyProgram : public Program
 		}
 
 		eqsolver::ast_area<eqsolver::variable_area_grid> grid_solver;
-		const int border_width = grid_solver(ast);
+		const int border_width = (int)grid_solver(ast);
 		debugf("Size of Moore Neighbourhood: %d\n", border_width);
 
 		eqsolver::ast_area<eqsolver::variable_area_helpers> helpers_solver;
-		const int helpers_size = helpers_solver(ast) + 1;
+		const int helpers_size = (int)helpers_solver(ast) + 1;
 		debugf("Size of Helper Variable Array: %d\n", helpers_size);
 		int *helper_vars = NULL;
 		if(helpers_size > 0)
@@ -77,7 +77,7 @@ class MyProgram : public Program
 					x-border_width,y-border_width,
 					&((*old_grid)[internal]), helper_vars);
 				eqsolver::ast_print<eqsolver::variable_print> solver(&vprinter);
-				(*new_grid)[internal] = (new_value = solver(ast));
+				(*new_grid)[internal] = (new_value = (int)solver(ast));
 				num_changed += (int)(new_value!=old_value);
 			}
 		}

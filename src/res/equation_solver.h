@@ -42,7 +42,7 @@ const char* get_help_description();
 	template <typename T> \
 	struct result { typedef T type; }; \
 	inline expression_ast operator()(expression_ast const& expr) const { \
-		return expression_ast(unary_op(VISUAL, EXECUTE, expr)); \
+		return expression_ast(unary_op_i(VISUAL, EXECUTE, expr)); \
 	} \
 }; \
 const boost::phoenix::function<OP> OP;
@@ -52,7 +52,17 @@ const boost::phoenix::function<OP> OP;
 	template <typename T1, typename T2> \
 	struct result { typedef T2 type; }; \
 	inline expression_ast operator()(expression_ast const& expr1, expression_ast const& expr2) const { \
-		return expression_ast(binary_op(VISUAL, EXECUTE, expr1, expr2)); \
+		return expression_ast(binary_op_i(VISUAL, EXECUTE, expr1, expr2)); \
+	} \
+}; \
+const boost::phoenix::function<OP> OP;
+
+#define MAKE_BINARY_FUNC_ADDR(OP, VISUAL, EXECUTE) struct OP \
+{ \
+	template <typename T1, typename T2> \
+	struct result { typedef T2 type; }; \
+	inline expression_ast operator()(expression_ast const& expr1, expression_ast const& expr2) const { \
+		return expression_ast(binary_op<int, int*, int>(VISUAL, EXECUTE, expr1, expr2)); \
 	} \
 }; \
 const boost::phoenix::function<OP> OP;
@@ -81,17 +91,45 @@ namespace eqsolver
 	inline int f2i_neq(int arg1, int arg2) { return (int)(arg1!=arg2); }
 	inline int f2i_and(int arg1, int arg2) { return (int)(arg1*arg2); }
 	inline int f2i_or(int arg1, int arg2) { return (int)((arg1!=0)||(arg2!=0)); }
-	inline int f2i_ass(int arg1, int arg2) { return ((*(int*)arg1) = arg2); }
+	inline int f2i_ass(int* arg1, int arg2) { return (*arg1 = arg2); }
 	inline int f2i_com(int arg1, int arg2) { (void)arg1; return arg2; }
 
-	typedef int (*fptr_1i)(int arg1);
-	typedef int (*fptr_2i)(int arg1, int arg2);
+//	typedef int (*fptr_1i)(int arg1);
+//	typedef int (*fptr_2i)(int arg1, int arg2);
+
+	template<class Ret, class ...Args>
+	using fptr_base = Ret (*)(Args...);
+
+	using fptr_1i = fptr_base<int, int>;
+	using fptr_2i = fptr_base<int, int, int>;
 
 	namespace qi = boost::spirit::qi;
 	namespace ascii = boost::spirit::ascii;
 
+	template<class Ret, class ...Args>
 	struct binary_op;
+	template<class Ret, class ...Args>
 	struct unary_op;
+
+	using binary_op_i = binary_op<int, int, int>; // TODO: unused?
+	using unary_op_i = unary_op<int, int>;
+
+	struct visit_result_type
+	{
+		boost::variant<unsigned int, int*> v;
+
+		visit_result_type(unsigned int i) : v(i) {}
+		visit_result_type(int* i) : v(i) {}
+
+		// templates assure that the 1st version will be preferred
+		//template<class T> visit_result_type(T& i) : v(i) {}
+		//template<> visit_result_type(int* i) : v(i) {}
+
+		visit_result_type() {}
+		operator int() { return boost::get<unsigned int>(v); }
+		operator int*() { return boost::get<int*>(v); }
+	};
+
 	//! empty expression, can't happen!
 	struct nil {};
 
@@ -105,15 +143,17 @@ namespace eqsolver
 				x = atoi(s1.c_str()); y = atoi(s2.c_str());
 			}
 		};
+
+		//! is used as "adress to index"
+		template<bool IsAddress>
 		struct var_helper {
-			int i;
-			bool address;
-			var_helper(std::string const& s, bool _address = false)
-			 : i(atoi(s.c_str())), address(_address)
+			int i; //!< index that shall be adressed
+			var_helper(std::string const& s/*, bool _address = false*/)
+			 : i(atoi(s.c_str()))
 			{
 			}
 		};
-		typedef boost::variant<nil, var_x, var_y, var_array, var_helper> type;
+		typedef boost::variant<nil, var_x, var_y, var_array, var_helper<true>, var_helper<false>> type;
 		type expr;
 		vaddr(const type& _t) { expr = _t; }
 		vaddr& operator=(const type& _expr) { expr = _expr; return *this; }
@@ -154,70 +194,89 @@ namespace eqsolver
 	};
 
 	const boost::phoenix::function< _make_2<vaddr::var_array> > make_array_indexes;
-	const boost::phoenix::function< _make_2<vaddr::var_helper> > make_helper_index;
+	const boost::phoenix::function< _make_1<vaddr::var_helper<true>> > make_helper_index;
+	const boost::phoenix::function< _make_1<vaddr::var_helper<false>> > make_helper_index_var;
 	//const boost::phoenix::function< _make_1<vaddr::var_helper> > make_helper_index;
 	const boost::phoenix::function< _make_0<vaddr::var_x> > make_x;
 	const boost::phoenix::function< _make_0<vaddr::var_y> > make_y;
 
-	struct variable_print : public boost::static_visitor<unsigned int>
+	struct variable_print : public boost::static_visitor<visit_result_type>
 	{
 		variable_print(int _x) : x(_x) {}
 		variable_print(int _height, int _width, int _x, int _y, const int* _v, const int* _h)
 			: height(_height), width(_width), x(_x), y(_y),
-			v((const result_type*)_v), helper_vars((result_type*)_h) {
+			v((const int*)_v), helper_vars((int*)_h) {
 		}
 
-		typedef unsigned int result_type;
-		int height, width; // TODO: height unused?
-		result_type x,y;
-		const result_type *v;
-		result_type* helper_vars;
+	//	typedef unsigned int result_type;
 
-		inline result_type operator()(nil) const { return 0; }
+		int height, width; // TODO: height unused?
+		unsigned int x,y;
+		const int *v;
+		int* helper_vars;
+
+		inline unsigned int operator()(nil) const { return 0; }
 		inline result_type operator()(vaddr::var_x _x) const { (void)_x; return x; }
 		inline result_type operator()(vaddr::var_y _y) const { (void)_y; return y; }
 		inline result_type operator()(vaddr::var_array _a) const { return v[_a.x+_a.y*width]; }
-		inline result_type operator()(vaddr::var_helper _h) const {
-			return (_h.address) ? ((result_type)(helper_vars + _h.i)) : helper_vars[_h.i];
+		inline int* operator()(vaddr::var_helper<true> _h) const {
+			//return (_h.address) ? ((result_type*)(helper_vars + _h.i)) : helper_vars[_h.i];
+			return helper_vars + _h.i;
 		}
+		inline unsigned int operator()(vaddr::var_helper<false> _h) const {
+			//return (_h.address) ? ((result_type*)(helper_vars + _h.i)) : helper_vars[_h.i];
+			return helper_vars[_h.i];
+		}
+
 	};
 
-	struct variable_area_grid : public boost::static_visitor<unsigned int>
+	struct variable_area_grid : public boost::static_visitor<visit_result_type>
 	{
-		typedef unsigned int result_type;
-		inline result_type operator()(nil) const { return 0; }
-		inline result_type operator()(vaddr::var_x _x) const { return 0; }
-		inline result_type operator()(vaddr::var_y _y) const { return 0; }
+		inline unsigned int operator()(nil) const { return 0; }
+		inline unsigned int operator()(vaddr::var_x _x) const { return 0; }
+		inline unsigned int operator()(vaddr::var_y _y) const { return 0; }
 		inline result_type operator()(vaddr::var_array _a) const {
 			return std::max(std::abs(_a.x), std::abs(_a.y));
 		}
-		inline result_type operator()(vaddr::var_helper _h) const { (void)_h; return 0; }
+		template<bool T>
+		inline unsigned int operator()(vaddr::var_helper<T> _h) const { (void)_h; return 0; }
 	};
 
 
-	struct variable_area_helpers : public boost::static_visitor<unsigned int>
+	struct variable_area_helpers : public boost::static_visitor<visit_result_type>
 	{
-		typedef unsigned int result_type;
-		inline result_type operator()(nil) const { return -1; }
+		inline int operator()(nil) const { return -1; }
 		inline result_type operator()(vaddr::var_x _x) const { return -1; }
 		inline result_type operator()(vaddr::var_y _y) const { return -1; }
 		inline result_type operator()(vaddr::var_array _a) const { (void)_a; return -1; }
-		inline result_type operator()(vaddr::var_helper _h) const { return _h.i; }
+
+		inline result_type operator()(vaddr::var_helper<true> _h) const { return _h.i; } // todo: correct?
+		inline result_type operator()(vaddr::var_helper<false> _h) const { return _h.i; } // todo: correct?
 	};
 
 	//! expression tree node
+
 	struct expression_ast
 	{
-		typedef boost::variant<
+	/*	using type = boost::variant<
 			nil
 			, unsigned int
 			, std::string  // TODO: needed?
 			, vaddr
 			, boost::recursive_wrapper<expression_ast>
-			, boost::recursive_wrapper<binary_op>
-			, boost::recursive_wrapper<unary_op>
-			>
-		type;
+			, boost::recursive_wrapper<binary_op<Ret, Args...>>
+			, boost::recursive_wrapper<unary_op<Ret, Args...>>
+			>;*/
+		using type = boost::variant<
+			nil
+			, unsigned int
+			, std::string  // TODO: needed?
+			, vaddr
+			, boost::recursive_wrapper<expression_ast>
+			, boost::recursive_wrapper<binary_op<int, int, int>>
+			, boost::recursive_wrapper<binary_op<int, int*, int>>
+			, boost::recursive_wrapper<unary_op<int, int>>
+			>;
 
 		expression_ast() : expr(nil()) {}
 
@@ -225,7 +284,6 @@ namespace eqsolver
 			template<typename> struct result { typedef T type; };
 			template<typename A> T operator()(A const& a) const { return T(a); }
 		};
-
 
 		expression_ast(expression_ast const& ai) : expr(ai.expr) {}
 		explicit expression_ast(type const& ai) : expr(ai) {}
@@ -254,32 +312,36 @@ namespace eqsolver
 		type expr;
 	};
 
+	// TODO: we might want to introduce "nary_op"
 	//! expression tree node extension for binary operators
+	template<class Ret, class ...Args>
 	struct binary_op
 	{
 		// below, (*) is a little fix to allow
 		// expression_ast(type const& ai) to be explicit
 		binary_op(
 			char op
-			, fptr_2i fptr
+			, fptr_base<Ret, Args...> fptr
 			, expression_ast::type const& left // (*)
 			, expression_ast const& right)
 		: op(op), fptr(fptr), left(left), right(right) {}
 
 		char op;
-		fptr_2i fptr;
+		fptr_base<Ret, Args...> fptr;
 		expression_ast left;
 		expression_ast right;
 	};
 
 	//! expression tree node extension for unary operators
+	template<class Ret, class ...Args>
 	struct unary_op
 	{
-		unary_op(char op, fptr_1i fptr, expression_ast const& subject)
+		unary_op(char op, fptr_base<Ret, Args...> fptr,
+			expression_ast const& subject)
 		: op(op), fptr(fptr), subject(subject) {}
 
 		char op;
-		fptr_1i fptr;
+		fptr_base<Ret, Args...> fptr;
 		expression_ast subject;
 	};
 
@@ -293,7 +355,7 @@ namespace eqsolver
 	MAKE_UNARY_FUNC(sqrt_func, 's', f1i_sqrt);
 	MAKE_BINARY_FUNC(min_func, 'm', f2i_min);
 	MAKE_BINARY_FUNC(max_func, 'n', f2i_max);
-	MAKE_BINARY_FUNC(ass_func, 'h', f2i_ass);
+	MAKE_BINARY_FUNC_ADDR(ass_func, 'h', f2i_ass);
 	MAKE_BINARY_FUNC(com_func, ',', f2i_com);
 
 	inline int array_subscript_to_coord(std::string* str, int width) {
@@ -307,7 +369,7 @@ namespace eqsolver
 
 	//! Class for iterating an expression tree and printing the result.
 	template<typename variable_handler>
-	struct ast_print  : public boost::static_visitor<unsigned int>
+	struct ast_print  : public boost::static_visitor<visit_result_type>
 	{
 
 
@@ -316,28 +378,28 @@ namespace eqsolver
 		// h and w shall be internal, since we want to avoid adding 2
 		// so it is still general to non-bordered areas
 	//	int height, width;
-		typedef unsigned int result_type;
-	//	const result_type x,y, *v;
+		typedef unsigned int res_type;
+	//	const res_type x,y, *v;
 		//mutable std::map<int, int> helper_vars;
 	//	variable_print var_print;
 
 	//	inline int position(int _x, int _y) const { return (_y*(width+1)+_x+1); }
 
-		inline result_type operator()(const eqsolver::nil&) const { return 0; }
+		inline res_type operator()(const eqsolver::nil&) const { return 0; }
 
-		inline result_type operator()(qi::info::nil) const { return 0; }
-		inline result_type operator()(int n) const { return n;  }
-		inline result_type operator()(std::string c) const
+		inline res_type operator()(qi::info::nil) const { return 0; }
+		inline res_type operator()(int n) const { return n; }
+		inline res_type operator()(std::string c) const
 		{
 			exit(99);
 		}
 
-		inline result_type operator()(const vaddr& v) const
+		inline res_type operator()(const vaddr& v) const
 		{
 			return boost::apply_visitor(*var_print, v.expr);
 		}
 
-		inline result_type operator()(expression_ast const& ast) const
+		inline visit_result_type operator()(expression_ast const& ast) const
 		{
 			//ast_area helper_num(ast_area::MAX_HELPER);
 			//helper_vars = new int[helper_num()+1];
@@ -345,10 +407,11 @@ namespace eqsolver
 			return boost::apply_visitor(*this, ast.expr);
 		}
 
-		inline result_type operator()(binary_op const& expr) const
+		template<class Ret, class ...Args>
+		inline res_type operator()(binary_op<Ret, Args...> const& expr) const
 		{
-			int left = boost::apply_visitor(*this, expr.left.expr);
-			int right = boost::apply_visitor(*this, expr.right.expr);
+			auto left = boost::apply_visitor(*this, expr.left.expr);
+			auto right = boost::apply_visitor(*this, expr.right.expr);
 			/*if(expr.fptr == NULL) { // this is an assignment
 				puts("before");
 				printf("before2:%s\n",boost::get<std::string>(expr.right.expr).c_str());
@@ -362,7 +425,14 @@ namespace eqsolver
 			return expr.fptr(left, right);
 		}
 
-		inline result_type operator()(unary_op const& expr) const {
+	/*	inline res_type operator()(binary_op<int, int*, int> const& expr) const
+		{
+			int left = boost::apply_visitor(*this, expr.left.expr);
+			int right = boost::apply_visitor(*this, expr.right.expr);
+			return expr.fptr(left, right);
+		}*/
+
+		inline res_type operator()(unary_op<int, int> const& expr) const {
 			return expr.fptr(boost::apply_visitor(*this, expr.subject.expr));
 		}
 
@@ -399,7 +469,8 @@ namespace eqsolver
 			return boost::apply_visitor(*this, ast.expr);
 		}
 
-		inline result_type operator()(binary_op const& expr) const
+		template<class Ret, class ...Args>
+		inline result_type operator()(binary_op<Ret, Args...> const& expr) const
 		{
 			return std::max( // TODO: fix everything into signed int
 				(int) boost::apply_visitor(*this, expr.left.expr),
@@ -407,7 +478,8 @@ namespace eqsolver
 			);
 		}
 
-		inline result_type operator()(unary_op const& expr) const {
+		template<class Ret, class ...Args>
+		inline result_type operator()(unary_op<Ret, Args...> const& expr) const {
 			return boost::apply_visitor(*this, expr.subject.expr);
 		}
 
@@ -415,7 +487,7 @@ namespace eqsolver
 		//	: var_area(_area_type) {}
 	};
 
-	//! caluclator grammar to build expression trees
+	//! calculator grammar to build expression trees
 	template <typename Iterator>
 	struct calculator : qi::grammar<Iterator, expression_ast(), ascii::space_type>
 	{
@@ -434,8 +506,8 @@ namespace eqsolver
 
 			str_int =  (qi::char_("-") >> *qi::char_("0-9")) | (*qi::char_("0-9"));
 
-			helper_variable = "h[" >> (str_int [_val = make_helper_index(_1, false)]) >> ']';
-			helper_address = "h[" >> (str_int [_val = make_helper_index(_1, true)]) >> ']';
+			helper_variable = "h[" >> (str_int [_val = make_helper_index_var(_1)]) >> ']';
+			helper_address = "h[" >> (str_int [_val = make_helper_index(_1)]) >> ']';
 			array_variable = "a[" >> ( str_int >> ',' >> str_int ) [_val = make_array_indexes(_1, _2)] >> ']';
 
 			// fixed indentation:

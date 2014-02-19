@@ -143,7 +143,7 @@ In alphabetical order, I thank:
   * Dr Thomas Worsch [2] @ The Karlsruhe Institute of Technology (KIT) [3].
   * Philipp Lorenz.
   * Sebastian Frehmel, his diploma thesis at [4].
-  * Seth Heeren [5] and all other people who gith support for bost::spirit [6].
+  * Seth Heeren [5] and all other people who give support for bost::spirit [6].
 
 8 Links
 :::::::

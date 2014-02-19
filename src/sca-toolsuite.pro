@@ -55,6 +55,6 @@ SOURCES += algo/relax.cpp \
     tsa/grid2tsagrid.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL \
-	../README \
+	../README.txt \
 	../FAQ \
 	test.sh

@@ -46,7 +46,7 @@ const char* get_help_description() { return EQUATION_HELP_STR; }
 #define MAKE_OP(OP, VISUAL, EXECUTE) \
 	expression_ast& expression_ast::operator OP(expression_ast const& rhs) \
 	{ \
-		expr = binary_op(VISUAL, &EXECUTE, expr, rhs); \
+		expr = binary_op<int, int, int>(VISUAL, &EXECUTE, expr, rhs); \
 		return *this; \
 	}
 

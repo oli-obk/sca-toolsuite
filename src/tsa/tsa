@@ -1,0 +1,2 @@
+#!/bin/sh
+tsa/grid2edges | tsa/graph2scctgf

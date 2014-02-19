@@ -47,7 +47,7 @@ class MyProgram : public Program
 			if(symbols_read > 0) {
 				eqsolver::variable_print vprinter(index);
 				eqsolver::ast_print<eqsolver::variable_print> solver(&vprinter); // TODO: don't set x every time
-				fprintf(stdout, "%d%c", solver(ast),separator);
+				fprintf(stdout, "%d%c", (int)solver(ast),separator);
 			}
 		} while(symbols_read > 0);
 		return 0;

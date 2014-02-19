@@ -1,0 +1,2 @@
+#!/bin/sh
+cat > $1.csv && oocalc --convert-to pdf $1.csv
