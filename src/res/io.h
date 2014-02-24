@@ -435,12 +435,17 @@ struct converter
 
 			if( read_sign == RS_ENDLINE ) // i.e. a new line
 			{
+	//			printf("line width is %d, should be %d\n", line_width, x);
 			/*	if( y == 0 ) { // first newline => determine line length
 					line_width = x;
 					dest.set_cols(line_width);
 				}
-				else*/
-				 assert(line_width == x);
+				else*/ {
+				if(line_width != x)
+					 printf("line width is %d instead of %d in line %d (counted from 0)\n",
+						line_width, x, y);
+					assert(line_width == x);
+				}
 				x = 0;
 			}
 

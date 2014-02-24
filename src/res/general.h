@@ -19,6 +19,7 @@
 /*************************************************************************/
 
 #include <cassert>
+#include <exception>
 #include <climits>
 #include <cstdarg>
 #include <cstdlib>
@@ -27,9 +28,11 @@
 #include <vector>
 #include <string>
 
+#include "random.h"
+
 #ifndef GENERAL_H
 #define GENERAL_H
-
+#define SCA_DEBUG
 
 //! Generic structure for a 2D rectangle dimension.
 struct dimension
@@ -70,15 +73,6 @@ inline void create_empty_grid(std::vector<int>* grid, const dimension* dim,
 
 inline bool human_idx_on_grid(const int human_grid_size, const int human_idx) {
 	return (human_idx >= 0 && human_idx < human_grid_size);
-}
-
-//! Calls function of OS to set a randome seed value.
-inline void set_random_seed(unsigned int seed) {
-	srandom(seed);
-}
-//! Returns a random value from the OS.
-inline unsigned int get_random_int(unsigned int max) {
-	return (unsigned int) (((float)max+1.0)*random()/(RAND_MAX+1.0));
 }
 
 //! Generic structure to store help commandline information in and print it
@@ -158,9 +152,11 @@ public:
 			exit(str);
 		} catch(const std::string& str) {
 			exit(str.c_str());
+		}/* catch(std::exception e) {
+			exit(e.what());
 		} catch(...) {
 			exit("Unknown error caught. This should never happen.");
-		}
+		}*/
 		return return_value;
 	}
 	static inline int safe_atoi(const char* str) { return str?atoi(str):0; }

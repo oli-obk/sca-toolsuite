@@ -1,0 +1,4 @@
+#!/bin/sh
+FILENAME=$1
+shift
+./ca/ca "`cat $FILENAME`" $*

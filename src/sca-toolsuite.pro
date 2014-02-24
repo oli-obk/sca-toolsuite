@@ -18,7 +18,8 @@ HEADERS += res/io.h res/stack_algorithm.h \
     gui_qt/MainWindow.h \
     gui_qt/DrawArea.h \
     gui_qt/StateMachine.h \
-    gui_qt/MenuBar.h
+    gui_qt/MenuBar.h \
+    res/random.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \

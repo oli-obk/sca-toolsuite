@@ -91,7 +91,7 @@ namespace eqsolver
 	inline int f2i_neq(int arg1, int arg2) { return (int)(arg1!=arg2); }
 	inline int f2i_and(int arg1, int arg2) { return (int)(arg1*arg2); }
 	inline int f2i_or(int arg1, int arg2) { return (int)((arg1!=0)||(arg2!=0)); }
-	inline int f2i_ass(int* arg1, int arg2) { return (*arg1 = arg2); }
+	inline int f2i_asn(int* arg1, int arg2) { return (*arg1 = arg2); }
 	inline int f2i_com(int arg1, int arg2) { (void)arg1; return arg2; }
 
 //	typedef int (*fptr_1i)(int arg1);
@@ -355,7 +355,7 @@ namespace eqsolver
 	MAKE_UNARY_FUNC(sqrt_func, 's', f1i_sqrt);
 	MAKE_BINARY_FUNC(min_func, 'm', f2i_min);
 	MAKE_BINARY_FUNC(max_func, 'n', f2i_max);
-	MAKE_BINARY_FUNC_ADDR(ass_func, 'h', f2i_ass);
+	MAKE_BINARY_FUNC_ADDR(ass_func, 'h', f2i_asn);
 	MAKE_BINARY_FUNC(com_func, ',', f2i_com);
 
 	inline int array_subscript_to_coord(std::string* str, int width) {
@@ -394,7 +394,7 @@ namespace eqsolver
 			exit(99);
 		}
 
-		inline res_type operator()(const vaddr& v) const
+		inline visit_result_type operator()(const vaddr& v) const
 		{
 			return boost::apply_visitor(*var_print, v.expr);
 		}
