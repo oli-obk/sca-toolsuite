@@ -27,12 +27,16 @@
 #include <cstdio>
 #include <vector>
 #include <string>
+#include <unistd.h>
 
 #include "random.h"
 
 #ifndef GENERAL_H
 #define GENERAL_H
 #define SCA_DEBUG
+
+inline void os_sleep(unsigned int seconds) { sleep(seconds); }
+inline void os_clear() { system("clear"); }
 
 //! Generic structure for a 2D rectangle dimension.
 struct dimension

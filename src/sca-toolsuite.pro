@@ -53,7 +53,8 @@ SOURCES += algo/relax.cpp \
     gui_qt/MenuBar.cpp \
     math/filter.cpp \
     ca/ca.cpp \
-    tsa/grid2tsagrid.cpp
+    tsa/grid2tsagrid.cpp \
+    ca/transf_by_grids.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL \
 	../README.txt \

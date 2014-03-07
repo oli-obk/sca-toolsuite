@@ -112,19 +112,36 @@ class MyProgram : public Program
 		read_grid(stdin, old_grid, &dim, border_width);
 		grid[1] = grid[0]; // fit borders
 
-		if(sim == sim_type::role)
-		 puts("");
+		switch(sim)
+		{
+			case sim_type::role:
+				puts(""); break;
+			case sim_type::anim:
+				os_clear(); break;
+			default:
+				break;
+		}
 
-		for(int round = 1; (round <= num_steps) && (num_changed||async); ++round)
+		for(int round = 0; (round <= num_steps) && (num_changed||async); ++round)
 		{
 			num_changed = 0;
-			old_grid = grid + (round&1);
-			new_grid = grid + ((round+1)&1);
+			old_grid = grid + ((round+1)&1);
+			new_grid = grid + ((round)&1);
 
 			if(sim != sim_type::end)
 			{
 				write_grid(stdout, old_grid, &dim, border_width);
 				puts("");
+				switch(sim)
+				{
+					case sim_type::anim:
+						os_sleep(1); os_clear();
+						break;
+					case sim_type::more:
+						while(getchar()!='\n') ;
+						break;
+					default: break;
+				}
 			}
 
 			for(unsigned int y = border_width; y<dim.height-border_width; y++)
@@ -160,7 +177,8 @@ class MyProgram : public Program
 int main(int argc, char** argv)
 {
 	HelpStruct help;
-	help.syntax = "ca/ca <equation> [<rounds>]";
+	help.syntax = "ca/ca <equation>"
+		"[<sim_type> [<rounds> [sync|async [seed]]]]";
 	help.description = "Runs a cellular automaton (ca).";
 	help.input = "start configuration of the ca";
 	help.output = "configuration after the simulation";
