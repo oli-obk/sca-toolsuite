@@ -63,7 +63,7 @@ class MyProgram : public Program
 		int num_steps = INT_MAX;
 		eqsolver::expression_ast ast;
 		unsigned int seed;
-		sim_type sim;
+		sim_type sim = sim_type::end;
 
 		switch(argc)
 		{
@@ -84,7 +84,6 @@ class MyProgram : public Program
 				build_tree_from_equation(argv[1], &ast);
 				break;
 			case 1:
-				break;
 			default:
 				exit_usage();
 		}
@@ -115,14 +114,16 @@ class MyProgram : public Program
 		switch(sim)
 		{
 			case sim_type::role:
-				puts(""); break;
+				/*puts("");*/ break;
 			case sim_type::anim:
 				os_clear(); break;
+			case sim_type::more:
+				exit("Sorry, `more' is not supported yet.");
 			default:
 				break;
 		}
 
-		for(int round = 0; (round <= num_steps) && (num_changed||async); ++round)
+		for(int round = 0; (round < num_steps) && (num_changed||async); ++round)
 		{
 			num_changed = 0;
 			old_grid = grid + ((round+1)&1);
@@ -167,8 +168,11 @@ class MyProgram : public Program
 
 		delete[] helper_vars;
 
-		if(sim == sim_type::end)
-		 write_grid(stdout, new_grid, &dim, border_width);
+		write_grid(stdout, new_grid, &dim, border_width);
+		if(sim == sim_type::anim) {
+			puts("");
+			os_sleep(1);
+		}
 
 		return 0;
 	}

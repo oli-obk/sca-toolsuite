@@ -30,6 +30,23 @@
 
 #include "io.h"
 
+inline void insert_horizontal_border(std::vector<int>* grid,
+	std::vector<int>::iterator itr,
+	int human_linewidth,
+	int border_width)
+{
+	grid->insert(itr,
+		(human_linewidth + (border_width<<1))*border_width,
+		INT_MIN);
+}
+
+inline void insert_vertical_border(std::vector<int>* grid,
+	std::vector<int>::iterator itr,
+	int border_width)
+{
+	grid->insert(itr, border_width, INT_MIN);
+}
+
 /*
  * Shall we use width for a line including or excluding borders?
  * convention: The user (and even an AI random inputter)
@@ -44,7 +61,7 @@
 void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	bool (*SCANFUNC)(FILE*, int*), int border)
 {
-/*	assert(SCANFUNC);
+	assert(SCANFUNC);
 
 	int read_symbol;
 	int line_width = -1, col_count = 0, line_count = 0; // all excl. border
@@ -85,10 +102,10 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	dim->height = line_count + (((int)(border))<<1);
 	dim->width = line_width + (((int)(border))<<1);
 
-	assert(dim->area() == grid->size());*/
+	assert(dim->area() == grid->size());
 }
 
-/*void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
+void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
 	void (*PRINTFUNC)(FILE*, int), int border)
 {
 	assert(PRINTFUNC);
@@ -101,7 +118,7 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 			fputc((x == last_symbol) ? '\n':' ', fp);
 		}
 	}
-}*/
+}
 
 void create_boost_graph(FILE* read_fp, graph_t* boost_graph)
 {

@@ -18,6 +18,12 @@ add_executable(ca "${src_dir}/ca.cpp"
 	"${res_dir}/equation_solver.h"
 )
 
+add_executable(transf_by_grids "${src_dir}/transf_by_grids.cpp"
+	"${res_dir}/io.cpp"
+	"${res_dir}/io.h"
+	"${res_dir}/general.h"
+)
+
 #add_SOURCES=add.cpp ../res/io.cpp
 #equation_SOURCES=equation.cpp ../res/io.cpp ../res/equation_solver.cpp
 #comb_SOURCES=comb.cpp ../res/io.cpp

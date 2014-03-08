@@ -45,7 +45,7 @@ inline unsigned int internal2human(unsigned int internal, int internal_width) {
 	const unsigned int internal_col = internal%(internal_width);
 	return ((internal_row-1)*(internal_width-2) + internal_col-1 );
 }
-
+#if 0
 inline void insert_border(std::vector<int>* grid,
 	std::vector<int>::iterator itr,
 	int amount)
@@ -131,6 +131,7 @@ struct FileGridBase
 	typedef int border_type;
 	mutable FILE* fp;
 	mutable bool next_is_newline;
+	mutable bool just_read_newline = false;
 	mutable cell_type next_sign;
 	mutable READ_SIGN next_sign_type;
 	/*void parse_cell(cell_type& parsed) {
@@ -150,9 +151,24 @@ struct FileGridBase
 			next_is_newline = false;
 			return RS_ENDLINE;
 		}
-
+puts("...1");
 		bool ret_val = Detail::parse_sign(fp, next_sign);
-		next_is_newline = (fgetc(fp) == '\n');
+	//	next_is_newline = (fgetc(fp) == '\n');
+
+		char next_sign;
+		fread(&next_sign, 1, 1, fp);
+		next_is_newline = (next_sign == '\n');
+
+		puts("...2");
+		if(next_is_newline)
+		{
+			puts("...");
+			if(just_read_newline) // 2 newlines = EOF
+			 return RS_END;
+			else
+			 just_read_newline = true;
+		}
+
 	//	assert(ret_val != 0);
 		//return (ret_val==1)?((char_after=='\n')?RS_ENDLINE:RS_EXPECTED):RS_END;
 
@@ -466,6 +482,7 @@ struct converter
 
 	converter(const source& _src, destination& _dest) : src(_src), dest(_dest) {}
 };
+#endif
 
 #if 0
 template <typename base>
@@ -622,7 +639,6 @@ struct converter
 };
 #endif
 
-
 inline bool read_number(FILE* fp, int* read_symbol) {
 	return(fscanf(fp, "%d", read_symbol) == 1);
 }
@@ -635,9 +651,17 @@ inline bool read_number(FILE* fp, int* read_symbol) {
 	@param SCANFUNC function which converts chars to numbers for internal handling
 	@param border how thick the internal border shall be - internal use only
 */
-//void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
-//	 bool (*SCANFUNC)(FILE*, int*) = &read_number, int border = 1);
+void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
+	bool (*SCANFUNC)(FILE*, int*) = &read_number,
+	int border = 1);
 
+inline void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
+	int border)
+{
+	read_grid(fp, grid, dim, &read_number, border);
+}
+
+#if 0
 template<class grid_serializer>
 void _read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, int border_width = 1)
 {
@@ -721,6 +745,29 @@ template<class grid_writer>
 inline void write_array(FILE* fp, std::vector<int>* grid, dimension* dim) {
 	_write_grid<grid_writer>(fp, grid, dim, 0);
 }
+#endif
+
+inline void write_number(FILE* fp, int int_to_write) {
+	fprintf(fp, "%d", int_to_write);
+}
+
+/**
+	Write a grid to a file pointer (without border)
+	If border exists, its values are ignored.
+	@param fp open file, writable
+	@param grid pointer to vector, shall contain the grid
+	@param dim shall contain real dimension of the grid, i.e. including border
+	@param PRINTFUNC function which converts numbers to chars for readability
+	@param border how thick the internal border shall be - internal use only
+*/
+void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
+	void (*PRINTFUNC)(FILE*, int) = &write_number, int border = 1);
+
+inline void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
+	int border) {
+	write_grid(fp, grid, dim, &write_number, border);
+}
+
 
 /**
 	Executes shell command and pipes output to stdout.

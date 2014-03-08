@@ -42,6 +42,9 @@ bool file_ending_is(const char* filename, const char* ending)
 	return (*(fn_end-end_len-1))=='.' && !strcmp(fn_end-end_len,ending);
 }
 
+
+#if 0
+// TODO: use variadic templates instead
 template<typename this_type, typename next_type>
 struct typelist
 {
@@ -94,6 +97,8 @@ bool try_this2<end_of_list>(const char* name, const_default_grid& grid)
 typedef typelist<FileGrid, typelist<FileArrowGrid , end_of_list> > file_list;
 //typedef end_of_list file_list;
 
+#endif
+
 class MyProgram : public Program
 {
 
@@ -141,17 +146,18 @@ class MyProgram : public Program
 		std::vector<int> _vector;
 		dimension _dim;
 
+#if 0
 		default_grid grid(_grid(_vector, _dim, 1));
 		try_this<file_list>(scanfunc_name, grid);
 		const_default_grid grid2(_const_grid(grid.grid.grid, grid.grid.dim, grid.grid.border_width));
 		try_this2<file_list>(printfunc_name, grid2);
-
+#endif
 
 	/*	read_array(stdin, &grid, &dim, scanfunc);
 		write_array(stdout, &grid, &dim, printfunc);*/
 	//	call_function(_read_array, stdin, &grid, &dim, scanfunc);
 
-	//	exit("Not working in this commit.");
+		exit("Not working in this commit.");
 		return 0;
 	}
 };

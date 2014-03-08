@@ -51,7 +51,14 @@ struct dimension
 	inline bool operator==(const dimension& other) {
 		return height == other.height && width == other.width;
 	}
-	inline bool operator!=(const dimension& other) { return !(operator ==(other)); }
+	inline bool operator!=(const dimension& other) {
+		return !(operator ==(other));
+	}
+	int coords_to_id(int x, int y) const { return y * width + x; }
+	void id_to_coords(int id, int* x, int* y) const {
+		*y = id / width;
+		*x = id - (*y) * width;
+	}
 };
 
 //! Returns true iff @a idx is on the border for given dimension @a dim
