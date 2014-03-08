@@ -67,6 +67,21 @@ const boost::phoenix::function<OP> OP;
 }; \
 const boost::phoenix::function<OP> OP;
 
+#define MAKE_TERNARY_FUNC(OP, VISUAL, EXECUTE) struct OP \
+{ \
+	template <typename T1, typename T2, typename T3> \
+	struct result { typedef T3 type; }; \
+	inline expression_ast operator()(expression_ast const& expr1, expression_ast const& expr2, \
+		expression_ast const& expr3) const { \
+		return expression_ast(ternary_op_i(VISUAL, EXECUTE, expr1, expr2, expr3)); \
+	} \
+}; \
+const boost::phoenix::function<OP> OP;
+
+/*
+* ^^ TODO: try to use macros instead
+*/
+
 // typedef expression_ast result_type; // TODO: must work with phoenix 3!
 
 //! namespace of the equation solver
@@ -93,6 +108,7 @@ namespace eqsolver
 	inline int f2i_or(int arg1, int arg2) { return (int)((arg1!=0)||(arg2!=0)); }
 	inline int f2i_asn(int* arg1, int arg2) { return (*arg1 = arg2); }
 	inline int f2i_com(int arg1, int arg2) { (void)arg1; return arg2; }
+	inline int f3i_tern(int arg1, int arg2, int arg3) { return((bool)arg1)?arg2:arg3; }
 
 //	typedef int (*fptr_1i)(int arg1);
 //	typedef int (*fptr_2i)(int arg1, int arg2);
@@ -100,17 +116,20 @@ namespace eqsolver
 	template<class Ret, class ...Args>
 	using fptr_base = Ret (*)(Args...);
 
-	using fptr_1i = fptr_base<int, int>;
-	using fptr_2i = fptr_base<int, int, int>;
+//	using fptr_1i = fptr_base<int, int>;
+//	using fptr_2i = fptr_base<int, int, int>;
 
 	namespace qi = boost::spirit::qi;
 	namespace ascii = boost::spirit::ascii;
 
 	template<class Ret, class ...Args>
+	struct ternary_op;
+	template<class Ret, class ...Args>
 	struct binary_op;
 	template<class Ret, class ...Args>
 	struct unary_op;
 
+	using ternary_op_i = ternary_op<int, int, int, int>;
 	using binary_op_i = binary_op<int, int, int>; // TODO: unused?
 	using unary_op_i = unary_op<int, int>;
 
@@ -273,6 +292,7 @@ namespace eqsolver
 			, std::string  // TODO: needed?
 			, vaddr
 			, boost::recursive_wrapper<expression_ast>
+			, boost::recursive_wrapper<ternary_op<int, int, int, int>>
 			, boost::recursive_wrapper<binary_op<int, int, int>>
 			, boost::recursive_wrapper<binary_op<int, int*, int>>
 			, boost::recursive_wrapper<unary_op<int, int>>
@@ -313,6 +333,25 @@ namespace eqsolver
 	};
 
 	// TODO: we might want to introduce "nary_op"
+	//! expression tree node extension for ternary operators
+	template<class Ret, class ...Args>
+	struct ternary_op
+	{
+		// below, (*) is a little fix to allow
+		// expression_ast(type const& ai) to be explicit
+		ternary_op(
+			char op
+			, fptr_base<Ret, Args...> fptr
+			, expression_ast::type const& left // (*)
+			, expression_ast const& middle
+			, expression_ast const& right)
+		: op(op), fptr(fptr), left(left), middle(middle), right(right) {}
+
+		char op;
+		fptr_base<Ret, Args...> fptr;
+		expression_ast left, middle, right;
+	};
+
 	//! expression tree node extension for binary operators
 	template<class Ret, class ...Args>
 	struct binary_op
@@ -345,6 +384,8 @@ namespace eqsolver
 		expression_ast subject;
 	};
 
+
+
 	// We should be using expression_ast::operator-. There's a bug
 	// in phoenix type deduction mechanism that prevents us from
 	// doing so. Phoenix will be switching to BOOST_TYPEOF. In the
@@ -357,6 +398,7 @@ namespace eqsolver
 	MAKE_BINARY_FUNC(max_func, 'n', f2i_max);
 	MAKE_BINARY_FUNC_ADDR(ass_func, 'h', f2i_asn);
 	MAKE_BINARY_FUNC(com_func, ',', f2i_com);
+	MAKE_TERNARY_FUNC(tern_func, '?', f3i_tern);
 
 	inline int array_subscript_to_coord(std::string* str, int width) {
 		const int comma_pos = str->find(',');
@@ -405,6 +447,16 @@ namespace eqsolver
 			//helper_vars = new int[helper_num()+1];
 			// TODO: delete int[]
 			return boost::apply_visitor(*this, ast.expr);
+		}
+
+		template<class Ret, class ...Args>
+		inline res_type operator()(ternary_op<Ret, Args...> const& expr) const
+		{
+			auto left = boost::apply_visitor(*this, expr.left.expr);
+			auto middle = boost::apply_visitor(*this, expr.middle.expr);
+			auto right = boost::apply_visitor(*this, expr.right.expr);
+
+			return expr.fptr(left, middle, right);
 		}
 
 		template<class Ret, class ...Args>
@@ -479,6 +531,17 @@ namespace eqsolver
 		}
 
 		template<class Ret, class ...Args>
+		inline result_type operator()(ternary_op<Ret, Args...> const& expr) const
+		{
+			return
+			std::max(
+			std::max(
+				(int) boost::apply_visitor(*this, expr.left.expr),
+				(int) boost::apply_visitor(*this, expr.right.expr)
+			), (int) boost::apply_visitor(*this, expr.middle.expr));
+		}
+
+		template<class Ret, class ...Args>
 		inline result_type operator()(unary_op<Ret, Args...> const& expr) const {
 			return boost::apply_visitor(*this, expr.subject.expr);
 		}
@@ -536,10 +599,14 @@ namespace eqsolver
 
 			comma_assignment = assignment [_val = _1]
 					>> *( (',' >> assignment [_val = com_func(_val, _1)]));
-			assignment = (helper_address [_val = make_expr(_1)] >> ":="
-				>> expression [_val = ass_func(_val,_1)]) | expression [_val = _1];
 
-			expression = and_expression [_val = _1]
+			assignment = (helper_address [_val = make_expr(_1)] >> ":="
+				>> tern_expression [_val = ass_func(_val,_1)]) | tern_expression [_val = _1];
+
+			tern_expression = or_expression [_val = _1]
+				>> *("?" >> or_expression >> ":" >> or_expression) [_val = tern_func(_val, _1, _2)];
+
+			or_expression = and_expression [_val = _1]
 				>> *("||" >> and_expression [_val = _val || _1]);
 
 			and_expression = equation [_val = _1]
@@ -613,7 +680,8 @@ namespace eqsolver
 
 		}
 		qi::rule<Iterator, expression_ast(), ascii::space_type> comma_assignment, assignment,
-		expression, and_expression, equation, inequation, sum, term, factor, function;
+		tern_expression,
+		or_expression, and_expression, equation, inequation, sum, term, factor, function;
 		qi::rule<Iterator, vaddr()> variable, array_variable, helper_variable, helper_address;
 		qi::rule<Iterator, std::string()> str_int;
 		//qi::rule<Iterator, std::string()> array_variable, helper_variable, variable, array_subscript, str_int;

@@ -146,6 +146,7 @@ class MyProgram : public Program
 		std::vector<int> neighbours;
 		int output_cell = -1;
 
+		// read neighbour grid
 		{
 			std::vector<int> neighbour_grid;
 			read_grid(stdin, &neighbour_grid, &input_dim, 0);
@@ -166,11 +167,13 @@ class MyProgram : public Program
 				default: break;
 				}
 			}
+			transition_function::set_neighbour_size(
+				neighbours.size());
 		}
 
 		std::vector<transition_function> table;
-		int new_reserve_size = neighbours.size() + 1;
 
+		// read other grids into table
 		bool eof = false;
 		while(!eof)
 		{
@@ -186,7 +189,7 @@ class MyProgram : public Program
 				read_grid(stdin, &out_grid, &cur_dim, 0);
 				assert(cur_dim.height == 1
 					&& cur_dim.width == 1);
-				out_cell = cur_grid[0];
+				out_cell = out_grid[0];
 			}
 
 			transition_function new_func;
@@ -197,16 +200,28 @@ class MyProgram : public Program
 
 			table.push_back(new_func);
 
+			eof = feof(stdin);
 		}
 
 		// uniq assertion
 		std::sort(table.begin(), table.end(), compare_by_input);
-		transition_function& recent = table[0];
-		for(auto& new_tf : table)
+		const transition_function* recent = &(table[0]);
+		// TODO: I do not know why refs for recent
+		// break the const here...
+		for(std::vector<transition_function>::const_iterator itr
+			= (++table.begin()); itr != table.end(); ++itr)
 		{
-			assert(new_tf != recent);
-			recent = new_tf;
+			assert(*itr != *recent);
+			recent = &(*itr);
 		}
+
+		/*		for(auto& tf : table)
+		 for(unsigned i = 0; i < neighbours.size(); i++)
+		 {
+		 int val;
+			tf.input(i, &val);
+		  printf("input[%d]: %d\n", i, val);
+		}*/
 
 		// write to out
 		std::sort(table.begin(), table.end());
@@ -220,7 +235,7 @@ class MyProgram : public Program
 				int rel_x, rel_y;
 				input_dim.id_to_coords(neighbours[i],
 					&rel_x, &rel_y);
-				printf("h[%d]=a[%d, %d]\n",
+				printf("h[%d]:=a[%d,%d],\n",
 					i, rel_x-out_x, rel_y-out_y);
 			}
 
@@ -233,7 +248,7 @@ class MyProgram : public Program
 				{
 					printf("0 ) ? %d :\n"
 					"(\n", recent_output);
-						recent_output = tf.get_output();
+					recent_output = tf.get_output();
 				}
 
 				for(unsigned i = 0; i < neighbours.size(); i++)
@@ -246,7 +261,8 @@ class MyProgram : public Program
 				}
 				puts(" 1 ||");
 			}
-			printf(") ? %d\n", recent_output);
+			// keep value as v if no matches
+			printf("0 ) ? %d : v\n", recent_output);
 		}
 
 		return 0;

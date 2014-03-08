@@ -105,41 +105,7 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 			else
 			 assert(read_symbol == ' ');
 
-//			printf("ptr now: '%s'\n", ptr);
-//			printf("ptr is EOF? %d\n",read_symbol==EOF);
-
 		} while(read_symbol != '\n' && read_symbol != EOF);
-
-
-#if 0
-		// read first numeric
-		if(! SCANFUNC(fp, &read_symbol) )
-		 break; // eof
-		if(!col_count)
-		 insert_vertical_border(grid, grid->end(), border);
-		grid->push_back(read_symbol);
-		col_count++;
-
-		// read separating whitespace
-		read_symbol=fgetc(fp);
-		if(read_symbol == '\n')
-		{
-			// first newline => determine line length
-			if(! line_count) {
-				line_width = col_count;
-				insert_horizontal_border(grid, grid->begin(), line_width, border);
-			}
-			else
-			 assert(line_width == col_count);
-
-			line_count++;
-			col_count = 0;
-
-			insert_vertical_border(grid, grid->end(), border);
-		}
-		else
-		 assert(read_symbol == ' ');
-#endif
 	}
 
 	insert_horizontal_border(grid, grid->end(), line_width, border);

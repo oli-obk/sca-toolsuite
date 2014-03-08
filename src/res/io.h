@@ -640,7 +640,6 @@ struct converter
 #endif
 
 inline void read_number(const char*& ptr, int* read_symbol) {
-//	printf("ptr: '%s'\n",ptr);
 	*read_symbol = atoi(ptr);
 	while(isdigit(*++ptr));
 }
