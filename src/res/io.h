@@ -639,8 +639,10 @@ struct converter
 };
 #endif
 
-inline bool read_number(FILE* fp, int* read_symbol) {
-	return(fscanf(fp, "%d", read_symbol) == 1);
+inline void read_number(const char*& ptr, int* read_symbol) {
+//	printf("ptr: '%s'\n",ptr);
+	*read_symbol = atoi(ptr);
+	while(isdigit(*++ptr));
 }
 
 /**
@@ -652,7 +654,7 @@ inline bool read_number(FILE* fp, int* read_symbol) {
 	@param border how thick the internal border shall be - internal use only
 */
 void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
-	bool (*SCANFUNC)(FILE*, int*) = &read_number,
+	void (*SCANFUNC)(const char*&, int*) = &read_number,
 	int border = 1);
 
 inline void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,

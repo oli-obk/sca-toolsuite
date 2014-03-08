@@ -56,10 +56,13 @@ inline void insert_vertical_border(std::vector<int>* grid,
  * *do* belong to the model. Thus, internally, we always include the border
  */
 
+constexpr size_t buffer_size = 4096; // TODO: cmake
+char read_buffer[buffer_size];
+
 // reads grid from open file
 // TODO: we should reserve the array linewise...
 void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
-	bool (*SCANFUNC)(FILE*, int*), int border)
+	void (*SCANFUNC)(const char *&, int *), int border)
 {
 	assert(SCANFUNC);
 
@@ -68,6 +71,47 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 
 	while(true)
 	{
+		const char* ptr = fgets(read_buffer, buffer_size, fp);
+		if(ptr == nullptr // eof
+			|| *ptr == '\n') // empty line = abort
+			break;
+
+		do
+		{
+			// scan symbol
+			SCANFUNC(ptr, &read_symbol);
+			if(!col_count) // (TODO: move this somewhere else?)
+			 insert_vertical_border(grid, grid->end(), border);
+			grid->push_back(read_symbol);
+			col_count++;
+
+			// read separating whitespace
+			read_symbol=*ptr++;
+			if(read_symbol == '\n')
+			{
+				// first newline => determine line length
+				if(! line_count) {
+					line_width = col_count;
+					insert_horizontal_border(grid, grid->begin(), line_width, border);
+				}
+				else
+				 assert(line_width == col_count);
+
+				line_count++;
+				col_count = 0;
+
+				insert_vertical_border(grid, grid->end(), border);
+			}
+			else
+			 assert(read_symbol == ' ');
+
+//			printf("ptr now: '%s'\n", ptr);
+//			printf("ptr is EOF? %d\n",read_symbol==EOF);
+
+		} while(read_symbol != '\n' && read_symbol != EOF);
+
+
+#if 0
 		// read first numeric
 		if(! SCANFUNC(fp, &read_symbol) )
 		 break; // eof
@@ -95,6 +139,7 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 		}
 		else
 		 assert(read_symbol == ' ');
+#endif
 	}
 
 	insert_horizontal_border(grid, grid->end(), line_width, border);
