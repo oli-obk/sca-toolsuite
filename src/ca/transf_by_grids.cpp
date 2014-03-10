@@ -24,16 +24,23 @@
 
 class MyProgram : public Program
 {
+	/**
+	 * @brief This class holds input and output values of a
+	 * local transition function.
+	 *
+	 * Where these values are depends on a neighborhood class,
+	 * which s not a part of this struct.
+	 */
 	class transition_function
 	{
 		// group parameters
-		const dimension dim;
-		const int neighbour_size;
+	//	const dimension dim;
+		const unsigned neighbour_size; //! size of input_vals
 		// differing parameters
-		std::vector<int> input_vals;
-		std::vector<bool> input_set;
-		int input_count = 0;
-		int output;
+		std::vector<int> input_vals; //!< function input values
+		std::vector<bool> input_set; //!< is the value a dontcare?
+		int input_count = 0; //!< number of set bits in input_set
+		int output; //! function output value
 
 		/*void rotate_idx_y(int& val, const dimension& dim)
 		{
@@ -46,7 +53,6 @@ class MyProgram : public Program
 		transition_function operator=(
 			const transition_function& other)
 		{
-			assert(dim == other.dim);
 			assert(neighbour_size == other.neighbour_size);
 			input_vals = other.input_vals;
 			input_set = other.input_set;
@@ -56,35 +62,39 @@ class MyProgram : public Program
 		}
 
 		transition_function(
-			const dimension& _dim,
-			const std::vector<int>& neighbours,
+			int _neighbour_size,
 			const std::vector<int>& input_grid,
-			int output_cell,
+			int output_val,
 			int rotation = 0,
 			bool mirror = false
 			) : // TODO: 2ctors + reuse
-			dim(_dim),
-			neighbour_size(neighbours.size()),
+			neighbour_size(_neighbour_size),
 			input_vals(neighbour_size),
 			input_set(neighbour_size, false),
-			output(output_cell)
+			output(output_val)
 		{
 			// TODO: better initialization for these?
-			if((!rotation) && (!mirror))
-			for(unsigned i = 0; i < neighbours.size(); ++i)
+		/*	if((!rotation) && (!mirror))
+			for(unsigned i = 0; i < neighbour_size; ++i)
 			 set_neighbour(i, input_grid[neighbours[i]]);
-			else
-			for(unsigned i = 0; i < neighbours.size(); ++i)
-			{
-				int id;
-				point p, out_p;
-				p = dim.id_to_coords(neighbours[i]);
-				out_p = dim.id_to_coords(output_cell);
+			else*/
 
-				id = dim.coords_to_id(p);
+#if 0
+			for(unsigned i = 0; i < neighbour_size; ++i)
+			{
+			/*	int id;
+				point p, out_p;
+				p = neighbour_dim.id_to_coords(neighbours[i]);
+				out_p = neighbour_dim.
+					id_to_coords(output_cell);
+
+				id = neighbour_dim.coords_to_id(p);*/
 				set_neighbour(i, input_grid[neighbours[i]]);
 
+
+
 			}
+#endif
 		}
 
 	/*	transition_function rotate_y(const dimension& dim)
@@ -117,7 +127,7 @@ class MyProgram : public Program
 			const transition_function& rhs)
 		{
 			// TODO: assert same neighbour size, grid size?
-			for(int i = 0; i<lhs.neighbour_size; ++i)
+			for(unsigned i = 0; i<lhs.neighbour_size; ++i)
 			{
 				if(lhs.input_set[i] || rhs.input_set[i])
 				{
@@ -146,7 +156,7 @@ class MyProgram : public Program
 		{
 			if(input_count != rhs.input_count)
 			 return false; // shortening
-			for(int i = 0; i<neighbour_size; ++i)
+			for(unsigned i = 0; i<neighbour_size; ++i)
 			{
 				if(input_set[i]&&rhs.input_set[i])
 				{
@@ -165,18 +175,110 @@ class MyProgram : public Program
 		}
 	};
 
+	class neighbourhood
+	{
+		//! neighbour positions, relative to center cell
+		std::vector<point> neighbours;
+		//! positive offset of center cell
+		point center_cell = point(-1, -1);
+		//! dimension of neighbours
+		dimension dim;
+
+		void init(const std::vector<int>& in_grid,
+			const dimension& in_dim)
+		{
+			for(unsigned y=0, id=0; y<in_dim.height; ++y)
+			for(unsigned x=0; x<in_dim.width; ++x, ++id) // TODO: remove id
+			{
+				int elem = in_grid[id];
+				switch(elem)
+				{
+				case 0:
+					//printf("%d\n",center_cell.x);
+					assert(center_cell.x < 0);
+					center_cell.set(x, y);
+					break;
+				case 1:
+				//	printf("%d\n",center_cell.x);
+					assert(center_cell.x < 0);
+					center_cell.set(x, y);
+				case 2:
+					neighbours.push_back(point(x,y));
+					break;
+				default: break;
+				}
+			}
+
+			// make it all relative to output_cell
+			for(point& p : neighbours)
+			 p -= center_cell;
+		}
+	public:
+		point operator[](unsigned i) const { return neighbours[i]; }
+		/*int grid_id(unsigned i) const {
+			dim.coords_to_id(operator[](i)+center_cell);
+		}*/
+
+		unsigned size() const { return neighbours.size(); }
+
+		transition_function make_transition_function(
+			const std::vector<int>& input_grid,
+			int output_val)
+		{
+			transition_function tf(size(), input_grid, output_val);
+			for(unsigned i = 0; i < size(); ++i)
+			 tf.set_neighbour(i, input_grid[dim.coords_to_id(operator[](i)+center_cell)]);
+			return tf;
+		}
+
+
+		/**
+		 * @brief Reads neighborhood from grid.
+		 *
+		 * Cell values:
+		 *  - 0 center cell which is *no* part of the nh.
+		 *  - 1 center cell which *is* part of the nh.
+		 *  - 2 nh cell
+		 *  - 3 other cell (TODO: change: 2 grids of 0,1)
+		 *
+		 * @param in_grid
+		 * @param in_dim
+		 */
+		neighbourhood(const std::vector<int>& in_grid,
+			const dimension& in_dim)
+		{
+			// TODO: parameter in_dim is useless?
+			init(in_grid, in_dim);
+		}
+
+		neighbourhood(FILE* fp)
+		{
+			std::vector<int> in_grid;
+			read_grid(stdin, &in_grid, &dim, 0);
+			init(in_grid, dim);
+		}
+	};
+
+
+/*	struct neighbour_grid
+	{
+		point output_cell;
+		std::vector<point> points;
+		dimension& dim;
+	};*/
+
 	static bool compare_by_input(const transition_function& lhs,
 			const transition_function& rhs)
 	{
 		return _compare_by_input(lhs, rhs);
 	}
 
-	static void set_output_cell(int* output_cell, int value)
+/*	static void set_output_cell(int* output_cell, int value)
 	{
 		// this forbids to have two output cells
 		assert(*output_cell < 0);
 		*output_cell = value;
-	}
+	}*/
 
 	enum class symmetry_type
 	{
@@ -221,32 +323,12 @@ class MyProgram : public Program
 				exit_usage();
 		}
 
-		dimension input_dim;
-		std::vector<int> neighbours;
-		int output_cell = -1;
+	//	dimension input_dim;
+		//std::vector<point> neighbours;
+		//int output_cell = -1;
 
 		// read neighbour grid
-		{
-			std::vector<int> neighbour_grid;
-			read_grid(stdin, &neighbour_grid, &input_dim, 0);
-			for(unsigned y=0, id=0; y<input_dim.height; ++y)
-			for(unsigned x=0; x<input_dim.width; ++x, ++id)
-			{
-				int elem = neighbour_grid[id];
-				switch(elem)
-				{
-				case 0:
-					set_output_cell(&output_cell, id);
-					break;
-				case 1:
-					set_output_cell(&output_cell, id);
-				case 2:
-					neighbours.push_back(id);
-					break;
-				default: break;
-				}
-			}
-		}
+		neighbourhood neighbours(stdin);
 
 		std::vector<transition_function> table;
 
@@ -261,7 +343,7 @@ class MyProgram : public Program
 				dimension cur_dim;
 
 				read_grid(stdin, &cur_grid, &cur_dim, 0);
-				assert(cur_dim == input_dim);
+			//	assert(cur_dim == input_dim);
 
 				read_grid(stdin, &out_grid, &cur_dim, 0);
 				assert(cur_dim.height == 1
@@ -269,8 +351,9 @@ class MyProgram : public Program
 				out_cell = out_grid[0];
 			}
 
-			table.push_back(transition_function(input_dim,
-				cur_grid, neighbours, out_cell));
+			table.push_back(
+				neighbours.make_transition_function(cur_grid, out_cell)
+				);
 
 			eof = feof(stdin);
 		}
@@ -299,16 +382,19 @@ class MyProgram : public Program
 		std::sort(table.begin(), table.end());
 		{
 			int out_x, out_y;
-			input_dim.id_to_coords(output_cell, &out_x, &out_y);
+		//	input_dim.id_to_coords(output_cell, &out_x, &out_y);
 
 			// print helper vars
 			for(unsigned i = 0; i < neighbours.size(); i++)
 			{
-				int rel_x, rel_y;
+		/*		int rel_x, rel_y;
 				input_dim.id_to_coords(neighbours[i],
 					&rel_x, &rel_y);
 				printf("h[%d]:=a[%d,%d],\n",
-					i, rel_x-out_x, rel_y-out_y);
+					i, rel_x-out_x, rel_y-out_y);*/
+				point p = neighbours[i];
+				printf("h[%d]:=a[%d,%d],\n",
+					i, p.x, p.y);
 			}
 
 			int recent_output = table[0].get_output();

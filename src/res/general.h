@@ -38,7 +38,7 @@
 inline void os_sleep(unsigned int seconds) { sleep(seconds); }
 inline void os_clear() { system("clear"); }
 
-typedef unsigned int coord_t;
+typedef int coord_t;
 
 //! Generic structure to store 2D coordinates
 struct point
@@ -46,6 +46,22 @@ struct point
 	coord_t x, y;
 	point(coord_t _x, coord_t _y) : x(_x), y(_y) {}
 	point() {}
+	void set(int _x, int _y) { x = _x; y = _y; }
+	//! one way to compare points: linewise
+	bool operator<(const point& rhs) const {
+		return (y==rhs.y)?(x<rhs.x):(y<rhs.y);
+	}
+	inline point operator-(const point& rhs) const {
+		return point(x-rhs.x, y-rhs.y);
+	}
+	inline point operator+(const point& rhs) const {
+		return point(x+rhs.x, y+rhs.y);
+	}
+	inline point& operator-=(const point& rhs) {
+		x -= rhs.x;
+		y -= rhs.y;
+		return *this;
+	}
 };
 
 //! Generic structure for a 2D rectangle dimension.
