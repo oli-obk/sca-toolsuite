@@ -114,7 +114,7 @@ class MyProgram : public Program
 		switch(sim)
 		{
 			case sim_type::role:
-				/*puts("");*/ break;
+				break;
 			case sim_type::anim:
 				os_clear(); break;
 			case sim_type::more:

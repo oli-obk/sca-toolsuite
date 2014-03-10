@@ -38,6 +38,16 @@
 inline void os_sleep(unsigned int seconds) { sleep(seconds); }
 inline void os_clear() { system("clear"); }
 
+typedef unsigned int coord_t;
+
+//! Generic structure to store 2D coordinates
+struct point
+{
+	coord_t x, y;
+	point(coord_t _x, coord_t _y) : x(_x), y(_y) {}
+	point() {}
+};
+
 //! Generic structure for a 2D rectangle dimension.
 struct dimension
 {
@@ -48,16 +58,23 @@ struct dimension
 		assert(height > 1); assert(width > 1);
 		return (height-2)*(width-2);
 	}
-	inline bool operator==(const dimension& other) {
+	inline bool operator==(const dimension& other) const {
 		return height == other.height && width == other.width;
 	}
-	inline bool operator!=(const dimension& other) {
+	inline bool operator!=(const dimension& other) const {
 		return !(operator ==(other));
 	}
 	int coords_to_id(int x, int y) const { return y * width + x; }
+	int coords_to_id(const point& p) const {
+		return coords_to_id(p.x, p.y);
+	}
 	void id_to_coords(int id, int* x, int* y) const {
 		*y = id / width;
 		*x = id - (*y) * width;
+	}
+	point id_to_coords(int id) const {
+		const int y = id / width;
+		return point(id - y * width, y);
 	}
 };
 

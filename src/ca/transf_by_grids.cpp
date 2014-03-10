@@ -26,21 +26,74 @@ class MyProgram : public Program
 {
 	class transition_function
 	{
-		static int neighbour_size;
+		// group parameters
+		const dimension dim;
+		const int neighbour_size;
+		// differing parameters
 		std::vector<int> input_vals;
 		std::vector<bool> input_set;
 		int input_count = 0;
 		int output;
-		bool initialized = false;
-	public:
-		transition_function() :
-			input_vals(neighbour_size),
-			input_set(neighbour_size, false)
+
+		/*void rotate_idx_y(int& val, const dimension& dim)
 		{
+			int x, y;
+			dim.id_to_coords(val, &x, &y);
+			dim.coords_to_id(val, )
+		}*/
+
+	public:
+		transition_function operator=(
+			const transition_function& other)
+		{
+			assert(dim == other.dim);
+			assert(neighbour_size == other.neighbour_size);
+			input_vals = other.input_vals;
+			input_set = other.input_set;
+			input_count = other.input_count;
+			output = other.output;
+			return *this;
 		}
-		static void set_neighbour_size(int sz) {
-			neighbour_size = sz;
+
+		transition_function(
+			const dimension& _dim,
+			const std::vector<int>& neighbours,
+			const std::vector<int>& input_grid,
+			int output_cell,
+			int rotation = 0,
+			bool mirror = false
+			) : // TODO: 2ctors + reuse
+			dim(_dim),
+			neighbour_size(neighbours.size()),
+			input_vals(neighbour_size),
+			input_set(neighbour_size, false),
+			output(output_cell)
+		{
+			// TODO: better initialization for these?
+			if((!rotation) && (!mirror))
+			for(unsigned i = 0; i < neighbours.size(); ++i)
+			 set_neighbour(i, input_grid[neighbours[i]]);
+			else
+			for(unsigned i = 0; i < neighbours.size(); ++i)
+			{
+				int id;
+				point p, out_p;
+				p = dim.id_to_coords(neighbours[i]);
+				out_p = dim.id_to_coords(output_cell);
+
+				id = dim.coords_to_id(p);
+				set_neighbour(i, input_grid[neighbours[i]]);
+
+			}
 		}
+
+	/*	transition_function rotate_y(const dimension& dim)
+		{
+			for(int i = 0; i < neighbour_size; ++i)
+			 if(input_set[i])
+			  rotate_idx_y(input_vals[i], dim);
+		}*/
+
 		void set_neighbour(int neighbour_id, int val)
 		{
 			input_vals[neighbour_id] = val;
@@ -51,10 +104,6 @@ class MyProgram : public Program
 			}
 			else assert(false);
 		}
-		void set_output(int val) {
-			initialized = true;
-			output = val;
-		}
 		int get_output() const { return output; }
 		bool input(int neighbour_id, int* result) {
 			bool is_set = input_set[neighbour_id];
@@ -62,15 +111,13 @@ class MyProgram : public Program
 			return is_set;
 		}
 
-
-		//bool is_initialized() const { return initialized; }
-
 		// compares lexicographical, returns results for operator<
 		// a dontcare in front counts as a smaller value
 		friend bool _compare_by_input(const transition_function& lhs,
 			const transition_function& rhs)
 		{
-			for(int i = 0; i<neighbour_size; ++i)
+			// TODO: assert same neighbour size, grid size?
+			for(int i = 0; i<lhs.neighbour_size; ++i)
 			{
 				if(lhs.input_set[i] || rhs.input_set[i])
 				{
@@ -131,11 +178,43 @@ class MyProgram : public Program
 		*output_cell = value;
 	}
 
+	enum class symmetry_type
+	{
+		none,
+		rotate,
+		rotate_mirror
+	};
+
+	struct symm_wrapper
+	{
+		symmetry_type t;
+		const char* str;
+	};
+
+	symm_wrapper wraps[4] = // TODO: why is 4 needed?
+	{
+		{ symmetry_type::none, "none" },
+		{ symmetry_type::rotate, "rotate" },
+		{ symmetry_type::rotate_mirror, "rotate+mirror" },
+	};
+
+	symmetry_type type_by_str(const char* str)
+	{
+		for(symm_wrapper& i : wraps)
+		 if(!strcmp(i.str, str))
+		  return i.t;
+		exitf("Invalid symmetry type %s", str);
+		return symmetry_type::none; // suppress compiler error
+	}
+
 	int main()
 	{
 		int number_of_states;
+		symmetry_type symm_type = symmetry_type::none;
 		switch(argc)
 		{
+			case 3:
+				symm_type = type_by_str(argv[2]);
 			case 2:
 				number_of_states = atoi(argv[1]); break;
 			default:
@@ -167,8 +246,6 @@ class MyProgram : public Program
 				default: break;
 				}
 			}
-			transition_function::set_neighbour_size(
-				neighbours.size());
 		}
 
 		std::vector<transition_function> table;
@@ -192,13 +269,8 @@ class MyProgram : public Program
 				out_cell = out_grid[0];
 			}
 
-			transition_function new_func;
-
-			for(unsigned i = 0; i < neighbours.size(); ++i)
-			 new_func.set_neighbour(i, cur_grid[neighbours[i]]);
-			new_func.set_output(out_cell);
-
-			table.push_back(new_func);
+			table.push_back(transition_function(input_dim,
+				cur_grid, neighbours, out_cell));
 
 			eof = feof(stdin);
 		}
@@ -206,8 +278,8 @@ class MyProgram : public Program
 		// uniq assertion
 		std::sort(table.begin(), table.end(), compare_by_input);
 		const transition_function* recent = &(table[0]);
-		// TODO: I do not know why refs for recent
-		// break the const here...
+		// TODO: I do not know why const tf&
+		// breaks the const here...
 		for(std::vector<transition_function>::const_iterator itr
 			= (++table.begin()); itr != table.end(); ++itr)
 		{
@@ -269,7 +341,7 @@ class MyProgram : public Program
 	}
 };
 
-int MyProgram::transition_function::neighbour_size;
+//int MyProgram::transition_function::neighbour_size;
 
 int main(int argc, char** argv)
 {
