@@ -20,9 +20,11 @@
 
 #include "equation_solver.h"
 #include "io.h"
+#include "ca_basics.h"
+
+#define TABLE_OPTIMIZATION
 
 // TODO: own sim type class, inherit
-
 class MyProgram : public Program
 {
 	enum class sim_type
@@ -111,6 +113,10 @@ class MyProgram : public Program
 		read_grid(stdin, old_grid, &dim, border_width);
 		grid[1] = grid[0]; // fit borders
 
+#ifdef TABLE_OPTIMIZATION
+
+#endif
+
 		switch(sim)
 		{
 			case sim_type::role:
@@ -131,12 +137,14 @@ class MyProgram : public Program
 
 			if(sim != sim_type::end)
 			{
+				if(sim == sim_type::anim)
+				 os_clear();
 				write_grid(stdout, old_grid, &dim, border_width);
 				puts("");
 				switch(sim)
 				{
 					case sim_type::anim:
-						os_sleep(1); os_clear();
+						os_sleep(1);
 						break;
 					case sim_type::more:
 						while(getchar()!='\n') ;

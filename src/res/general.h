@@ -64,6 +64,34 @@ struct point
 	}
 };
 
+//! Generic structure to store a 2D matrix
+class matrix
+{
+	int data[2][2];
+public:
+	point operator*(const point& rhs) const
+	{
+		return point(data[0][0]*rhs.x + data[0][1]*rhs.y,
+			data[1][0]*rhs.x + data[1][1]*rhs.y);
+	}
+	matrix operator*(const matrix& rhs) const
+	{
+		return matrix(data[0][0]*rhs.data[0][0] + data[0][1]*rhs.data[1][0],
+			data[0][0]*rhs.data[0][1] + data[0][1]*rhs.data[1][1],
+			data[1][0]*rhs.data[0][0] + data[1][1]*rhs.data[1][0],
+			data[1][0]*rhs.data[0][1] + data[1][1]*rhs.data[1][1]
+			);
+	}
+	matrix operator^(unsigned n) const {
+		matrix result(1,0,0,1);
+		for(unsigned i = 0; i < n; ++i)
+		 result = result * (*this);
+		return result;
+	}
+	matrix(int a, int b, int c, int d) : data {a,b,c,d} {}
+	const static matrix id;
+};
+
 //! Generic structure for a 2D rectangle dimension.
 struct dimension
 {

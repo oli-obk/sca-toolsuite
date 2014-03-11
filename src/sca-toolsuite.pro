@@ -19,7 +19,8 @@ HEADERS += res/io.h res/stack_algorithm.h \
     gui_qt/DrawArea.h \
     gui_qt/StateMachine.h \
     gui_qt/MenuBar.h \
-    res/random.h
+    res/random.h \
+    res/ca_basics.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \
@@ -54,9 +55,11 @@ SOURCES += algo/relax.cpp \
     math/filter.cpp \
     ca/ca.cpp \
     tsa/grid2tsagrid.cpp \
-    ca/transf_by_grids.cpp
+    ca/transf_by_grids.cpp \
+    res/general.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL \
 	../README.txt \
 	../FAQ \
+	../CMakeLists.txt \
 	test.sh

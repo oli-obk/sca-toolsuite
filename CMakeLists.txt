@@ -49,7 +49,7 @@ MESSAGE("-- Target host is ${OS}, ${MY_HOST_STR}")
 SET(src_base "${CMAKE_CURRENT_SOURCE_DIR}/src/")
 SET(res_dir "${src_base}res/")
 
-SET(io_files "${res_dir}/io.cpp" "${res_dir}/io.h" "${res_dir}/general.h")
+SET(io_files "${res_dir}/io.cpp" "${res_dir}/io.h" "${res_dir}/general.h" "${res_dir}/general.cpp")
 
 include_directories("${CMAKE_CURRENT_BINARY_DIR}src/") # for config.h
 include_directories("${res_dir}")
@@ -92,7 +92,7 @@ set(WARN_EXC "-Wno-unused-local-typedefs -Wno-maybe-uninitialized")
 
 # FLAGS
 # the order of -Wall -Wno-unknown-pragmas is important
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ${WARN_EXC} -std=c++11 -pipe")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ${WARN_EXC} -std=c++11 -pipe -g -O0")
 
 add_subdirectory(src)
 
