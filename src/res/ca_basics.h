@@ -123,6 +123,12 @@ public:
 	}
 };
 
+inline bool compare_by_input(const transition_function& lhs,
+		const transition_function& rhs)
+{
+	return _compare_by_input(lhs, rhs);
+}
+
 class neighbourhood
 {
 	//! neighbour positions, relative to center cell

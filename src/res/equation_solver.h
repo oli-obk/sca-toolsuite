@@ -222,6 +222,15 @@ namespace eqsolver
 	struct variable_print : public boost::static_visitor<visit_result_type>
 	{
 		variable_print(int _x) : x(_x) {}
+		/**
+		 * @brief variable_print
+		 * @param _height
+		 * @param _width
+		 * @param _x
+		 * @param _y
+		 * @param _v The address of the current element in the grid. Needed for neighbor calculations.
+		 * @param _h
+		 */
 		variable_print(int _height, int _width, int _x, int _y, const int* _v, const int* _h)
 			: height(_height), width(_width), x(_x), y(_y),
 			v((const int*)_v), helper_vars((int*)_h) {

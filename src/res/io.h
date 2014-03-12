@@ -639,9 +639,14 @@ struct converter
 };
 #endif
 
+inline bool is_number_parsable(char sgn)
+{
+	return isdigit(sgn) || (sgn == '-');
+}
+
 inline void read_number(const char*& ptr, int* read_symbol) {
 	*read_symbol = atoi(ptr);
-	while(isdigit(*++ptr));
+	while(is_number_parsable(*++ptr));
 }
 
 /**

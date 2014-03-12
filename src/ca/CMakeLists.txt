@@ -12,12 +12,13 @@ SET(src_dir "${CMAKE_CURRENT_SOURCE_DIR}")
 
 add_executable(ca "${src_dir}/ca.cpp"
 	${io_files}
-	"${res_dir}/equation_solver.cpp"
-	"${res_dir}/equation_solver.h"
+	${equation_solver}
+	${ca}
 )
 
 add_executable(transf_by_grids "${src_dir}/transf_by_grids.cpp"
 	${io_files}
+	${ca_basics}
 )
 
 #add_SOURCES=add.cpp ../res/io.cpp

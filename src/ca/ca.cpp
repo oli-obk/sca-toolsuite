@@ -20,7 +20,7 @@
 
 #include "equation_solver.h"
 #include "io.h"
-#include "ca_basics.h"
+#include "ca.h"
 
 #define TABLE_OPTIMIZATION
 
@@ -61,6 +61,7 @@ class MyProgram : public Program
 
 	int main()
 	{
+		const char* equation;
 		bool async = false;
 		int num_steps = INT_MAX;
 		eqsolver::expression_ast ast;
@@ -84,6 +85,7 @@ class MyProgram : public Program
 			case 2:
 				debug("Building AST from equation...\n");
 				build_tree_from_equation(argv[1], &ast);
+				equation = argv[1];
 				break;
 			case 1:
 			default:
@@ -94,22 +96,15 @@ class MyProgram : public Program
 		 seed = find_good_random_seed();
 		set_random_seed(seed);
 
-		eqsolver::ast_area<eqsolver::variable_area_grid> grid_solver;
-		const int border_width = (int)grid_solver(ast);
-		debugf("Size of Moore Neighbourhood: %d\n", border_width);
-
-		eqsolver::ast_area<eqsolver::variable_area_helpers> helpers_solver;
-		const int helpers_size = (int)helpers_solver(ast) + 1;
-		debugf("Size of Helper Variable Array: %d\n", helpers_size);
-		int *helper_vars = NULL;
-		if(helpers_size > 0)
-		 helper_vars = new int[helpers_size];
+		equation = argv[1];
+		ca_simulator_t simulator(equation);
 
 		int num_changed = 1;
 		dimension dim;
 		std::vector<int> grid[2];
 		std::vector<int> *old_grid = grid, *new_grid = grid;
 
+		const int border_width = simulator.get_border_width();
 		read_grid(stdin, old_grid, &dim, border_width);
 		grid[1] = grid[0]; // fit borders
 
@@ -153,28 +148,28 @@ class MyProgram : public Program
 				}
 			}
 
-			for(unsigned int y = border_width; y<dim.height-border_width; y++)
-			for(unsigned int x = border_width; x<dim.width-border_width; x++)
+			for(unsigned int y = 0; y<dim.height - (border_width<<1); ++y)
+			for(unsigned int x = 0; x<dim.width - (border_width<<1); ++x)
 			if(!async || get_random_int(1))
 			// TODO: use bool async template here to increase speed?
+			// plus: exploit code duplication?
 			{
-				const int internal = x+y*dim.width;
-				int new_value, old_value = (*old_grid)[internal];
+				const int internal = (x + border_width)
+					+ (y + border_width) * dim.width;
+				int new_value;
+				const int old_value = (*old_grid)[internal];
 
-				eqsolver::variable_print vprinter(dim.height, dim.width,
-					x-border_width,y-border_width,
-					&((*old_grid)[internal]), helper_vars);
-				eqsolver::ast_print<eqsolver::variable_print> solver(&vprinter);
-				(*new_grid)[internal] = (new_value = (int)solver(ast));
+				(*new_grid)[internal] = (new_value
+					= simulator.next_state(&((*old_grid)[internal]), x, y, dim));
 				num_changed += (int)(new_value!=old_value);
 			}
-			else { // we still need to assign the old value:
-				const int internal = x+y*dim.width; // TODO: code duplication
+			else
+			{	// i.e. async + not activated
+				// we still need to assign the old value:
+				int internal = (x + border_width) + (y + border_width) * dim.width;
 				(*new_grid)[internal] = (*old_grid)[internal];
 			}
 		}
-
-		delete[] helper_vars;
 
 		write_grid(stdout, new_grid, &dim, border_width);
 		if(sim == sim_type::anim) {

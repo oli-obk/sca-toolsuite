@@ -24,12 +24,6 @@
 // TODO: own symm type class, inherit
 class MyProgram : public Program
 {
-	static bool compare_by_input(const transition_function& lhs,
-			const transition_function& rhs)
-	{
-		return _compare_by_input(lhs, rhs);
-	}
-
 	enum class symmetry_type
 	{
 		none,

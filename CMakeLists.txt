@@ -50,6 +50,10 @@ SET(src_base "${CMAKE_CURRENT_SOURCE_DIR}/src/")
 SET(res_dir "${src_base}res/")
 
 SET(io_files "${res_dir}/io.cpp" "${res_dir}/io.h" "${res_dir}/general.h" "${res_dir}/general.cpp")
+SET(equation_solver "${res_dir}/equation_solver.cpp" "${res_dir}/equation_solver.h")
+SET(ca "${res_dir}/ca.h")
+SET(ca_basics "${res_dir}/ca_basics.h")
+
 
 include_directories("${CMAKE_CURRENT_BINARY_DIR}src/") # for config.h
 include_directories("${res_dir}")
