@@ -134,12 +134,14 @@ class neighbourhood
 	//! neighbour positions, relative to center cell
 	std::vector<point> neighbours;
 	//! positive offset of center cell
-	point center_cell = point(-1, -1);
+	//! this cell is obviously needed
+//	point center_cell = point(-1, -1);
 	dimension dim; 	//! < dimension of neighbours
 
 	void init(const std::vector<int>& in_grid,
 		const dimension& in_dim)
 	{
+		point center_cell(-1, -1);
 		for(unsigned y=0, id=0; y<in_dim.height; ++y)
 		for(unsigned x=0; x<in_dim.width; ++x, ++id) // TODO: remove id
 		{
@@ -162,9 +164,9 @@ class neighbourhood
 			}
 		}
 
-		// make it all relative to output_cell
+		// make it all relative to center_cell
 		for(point& p : neighbours)
-		 p -= center_cell;
+		 p -= center_cell; // TODO: make this in case 2?
 	}
 
 	point idx(int idx, int symm)
@@ -193,7 +195,7 @@ class neighbourhood
 	{
 		transition_function tf(size(), input_grid, output_val);
 		for(unsigned i = 0; i < size(); ++i)
-		 tf.set_neighbour(i, input_grid[dim.coords_to_id(idx(i, symm)+center_cell)]);
+		 tf.set_neighbour(i, input_grid[dim.coords_to_id(idx(i, symm)/*+center_cell*/)]);
 		*tfs = tf; // TODO: redundant
 	}
 
@@ -245,6 +247,43 @@ public:
 		read_grid(stdin, &in_grid, &dim, 0);
 		init(in_grid, dim);
 	}
+
+	/*neighbourhood(const dimension_container& _dim, point _center_cell = {0,0})
+		: center_cell(_center_cell),
+		dim({_dim.h, _dim.w})
+	{
+		neighbours.reserve(dim.area());
+		for( const point& p : _dim )
+		 neighbours.push_back(p);
+	}*/
+
+	//! assumes that no borders exist
+	neighbourhood(const dimension& _dim, point _center_cell = {0,0})
+		: //center_cell(_center_cell),
+		dim(_dim)
+	{
+		neighbours.reserve(_dim.area());
+		dimension_container cont(_dim.height, _dim.width, 0);
+		for( const point& p : cont )
+		{
+			std::cout << "creating n: " << p << std::endl;
+			neighbours.push_back(p - _center_cell);
+		}
+	}
+
+/*	neighbourhood(const std::vector<point>& _points, point _center_cell)
+		: center_cell(_center_cell)
+	{
+		neighbours.reserve(_points.size());
+		bounding_box bb;
+		for( const point& p : _points )
+		{
+			point new_p = p - _center_cell;
+			neighbours.push_back(new_p);
+			bb.add_point(new_p);
+		}
+		dim = bb.dim();
+	}*/
 };
 
 #endif // CA_BASICS_H

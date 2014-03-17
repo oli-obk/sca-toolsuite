@@ -21,6 +21,8 @@
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
+
+#include "general.h"
 #include "asm_basic.h"
 #include "io.h"
 

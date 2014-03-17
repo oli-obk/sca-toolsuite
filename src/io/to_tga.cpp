@@ -22,6 +22,7 @@
 #include <cstdio>
 #include <vector>
 
+#include "general.h"
 #include "image.h"
 #include "io.h"
 

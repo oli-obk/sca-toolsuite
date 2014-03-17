@@ -21,6 +21,9 @@
 #ifndef CA_H
 #define CA_H
 
+#include "ca_basics.h"
+#include "equation_solver.h"
+
 /**
  * @brief This class holds anything a cellular automaton's function
  * needs to know.
@@ -84,6 +87,19 @@ public:
 		return next_state(grid_ptr + internal, x, y, dim);
 	}
 
+	neighbourhood get_neighbourhood() const
+	{
+		// right now, only symmetric moore is supported
+	/*	std::vector<point> points;
+		for(int y = -border_width; y < border_width; ++y)
+		for(int x = -border_width; x < border_width; ++x)
+		points.push_back(point(x, y));
+		return neighbourhood(points, point(0, 0));*/
+		unsigned moore_width = (border_width<<1) + 1;
+		dimension moore = { moore_width, moore_width };
+		std::cout << "will create n" << std::endl;
+		return neighbourhood(moore, point(border_width, border_width));
+	}
 };
 
 #endif // CA_H

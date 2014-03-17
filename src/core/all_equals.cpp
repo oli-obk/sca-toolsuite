@@ -18,9 +18,11 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#include "io.h"
 #include <cstdlib>
 #include <cassert>
+
+#include "general.h"
+#include "io.h"
 
 class MyProgram : public Program
 {

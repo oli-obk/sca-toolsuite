@@ -30,8 +30,8 @@
 #include <climits>
 #include <boost/graph/adjacency_list.hpp>
 
-#include "general.h"
-
+//#include "general.h"
+struct dimension;
 
 //! Converts internal coordinates into human coordinats.
 inline unsigned int human2internal(unsigned int human, int internal_width) {

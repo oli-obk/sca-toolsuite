@@ -18,6 +18,7 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
+#include "general.h"
 #include "io.h"
 
 inline int add_ints(const int i1, const int i2) { return i1+i2; }

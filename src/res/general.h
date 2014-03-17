@@ -27,9 +27,11 @@
 #include <cstdio>
 #include <vector>
 #include <string>
+#include <iostream>
 #include <unistd.h>
 
 #include "random.h"
+#include "io.h"
 
 #ifndef GENERAL_H
 #define GENERAL_H
@@ -39,6 +41,7 @@ inline void os_sleep(unsigned int seconds) { sleep(seconds); }
 inline void os_clear() { system("clear"); }
 
 typedef int coord_t;
+typedef int cell_t; //!< state of a cell
 
 //! Generic structure to store 2D coordinates
 struct point
@@ -61,6 +64,57 @@ struct point
 		x -= rhs.x;
 		y -= rhs.y;
 		return *this;
+	}
+	bool operator==(const point& rhs) { return x == rhs.x && y == rhs.y; }
+	bool operator!=(const point& rhs) { return ! operator==(rhs); }
+
+	const static point zero;
+
+	friend std::ostream& operator<< (std::ostream& stream,
+		const point& p) {
+		stream << "(" << p.x << ", " << p.y << ")";
+		return stream;
+	}
+};
+
+struct point_itr
+{
+	const point min, max;
+	point position;
+public:
+	point_itr(point max, point min, point position) :
+		min(min), max(max), position(position)
+	{
+	}
+
+	point_itr(point max, point min = {0, 0}) :
+	//	min(min), max(max), position(min)
+		point_itr(max, min, min)
+	{
+	}
+
+	point& operator*() { return position; }
+	const point& operator*() const { return position; }
+
+	point_itr& operator++()
+	{
+		if(++position.x >= max.x)
+		{
+			position.x = min.x;
+			position.y++;
+		}
+		return *this;
+	}
+
+	bool operator!() {
+		return position.y >= max.y;
+	}
+
+	bool operator!=(const point_itr& rhs) {
+		return position != rhs.position; }
+
+	static point_itr from_end(point max, point min = {0,0}) {
+		return point_itr(max, min, {min.x, max.y});
 	}
 };
 
@@ -88,15 +142,36 @@ public:
 		 result = result * (*this);
 		return result;
 	}
-	matrix(int a, int b, int c, int d) : data {a,b,c,d} {}
+	matrix(int a, int b, int c, int d) : data {{a,b},{c,d}} {}
 	const static matrix id;
+};
+
+struct dimension_container
+{
+	// TODO: dimenion as member?
+	const unsigned h, w, bw;
+	dimension_container(unsigned h,
+		unsigned w,
+		unsigned bw)
+		: h(h), w(w), bw(bw)
+	{}
+
+	point_itr begin() const { return point_itr(
+		{(coord_t)(w-(bw<<1)), (coord_t)(h-(bw<<1))}
+		);
+	}
+	point_itr end() const {
+		return point_itr::from_end(
+			{(coord_t)(w-(bw<<1)), (coord_t)(h-(bw<<1))}
+			);
+	}
 };
 
 //! Generic structure for a 2D rectangle dimension.
 struct dimension
 {
-	unsigned int height;
-	unsigned int width;
+	unsigned height;
+	unsigned width;
 	inline unsigned int area() const { return height*width; }
 	inline unsigned int area_without_border() const {
 		assert(height > 1); assert(width > 1);
@@ -120,6 +195,130 @@ struct dimension
 		const int y = id / width;
 		return point(id - y * width, y);
 	}
+	dimension_container points(unsigned border_width) const {
+		return dimension_container(height, width, border_width); }
+};
+
+class bounding_box
+{
+	point _ul, _lr;
+public:
+	bounding_box() : _ul(1,1), _lr(0,0) {}
+	void add_point(const point& p)
+	{
+		if(_lr.x < _ul.x) // no point...
+			_lr = _ul = p;
+		else
+		{
+			if(p.x < _ul.x)
+			 _ul.x = p.x;
+			else if(p.x > _lr.x)
+			 _lr.x = p.x;
+			if(p.y < _ul.y)
+			 _ul.y = p.y;
+			else if(p.y > _lr.y)
+			 _lr.y = p.y;
+		}
+	}
+	// TODO: for those 3 cases: cover lr > ul
+	point ul() const { return _ul; }
+	point lr() const { return _lr; }
+	dimension dim() const {
+		return dimension { (unsigned)_lr.y - _ul.y,
+			(unsigned)_lr.x - _ul.x };
+	}
+};
+
+class cell_itr
+{
+	coord_t linewidth;
+	cell_t *ptr, *next_line_end;
+	coord_t bw_2;
+
+public:
+	cell_itr(cell_t* top_left, dimension dim, coord_t bw,
+		bool pos_is_begin = true) :
+		linewidth(dim.width),
+		ptr(top_left +
+			((pos_is_begin) ? bw * (linewidth+1)
+			: dim.area() - bw * (linewidth-1)) ),
+		next_line_end(ptr + linewidth - (bw << 1)),
+		bw_2(bw << 1)
+	{
+	}
+
+	cell_itr& operator++()
+	{
+		if((++ptr) == next_line_end)
+		{
+			ptr += bw_2;
+			next_line_end += linewidth;
+		}
+		return *this;
+	}
+
+	const cell_t& operator*() const { return *ptr; }
+	cell_t& operator*() { return *ptr; }
+
+	bool operator==(const cell_itr& rhs) { return ptr == rhs.ptr; }
+	bool operator!=(const cell_itr& rhs) { return !operator==(rhs); }
+};
+
+class grid_t
+{
+	std::vector<cell_t> data;
+	dimension _dim; //! dimension of data, including borders
+	coord_t border_width;
+public:
+	const dimension& dim() const { return _dim; }
+
+/*	grid(std::vector<int>& data, const dimension& dim, int border_width) :
+		data(data),
+		dim(dim),
+		border_width(border_width)
+	{
+	}*/
+
+	dimension_container points() const { return _dim.points(border_width); }
+
+	grid_t(FILE* fp, coord_t border_width) :
+		border_width(border_width)
+	{
+		read_grid(fp, &data, &_dim, border_width);
+	}
+
+	void write(FILE* fp)
+	{
+		write_grid(fp, &data, &_dim, border_width);
+	}
+
+
+
+	#if 0
+	cell_t direct_access(point p)
+	{
+		return data[p.y * dim.width + p.x];
+	}
+
+	cell_t operator[](point p)
+	{
+	/*	const int& w = _dim.width;
+		const int& bw = border_width;
+		printf("index: %d, ds: %d\n",((p.y + bw) * w) + bw + p.x,(int)data.size());
+		return data[((p.y + bw) * w) + bw + p.x];*/
+		return direct_access({p.x + bw, p.y+bw});
+	}
+	#endif
+
+	cell_t operator[](point p)
+	{
+		const int& w = _dim.width;
+		const int& bw = border_width;
+		return data[((p.y + bw) * w) + bw + p.x];
+	}
+
+	cell_itr begin() { return cell_itr(data.data(), _dim, border_width); }
+	cell_itr end() { return cell_itr(data.data(), _dim, border_width, false); }
 };
 
 //! Returns true iff @a idx is on the border for given dimension @a dim

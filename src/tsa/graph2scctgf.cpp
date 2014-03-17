@@ -20,6 +20,8 @@
 
 #include <cstdlib>
 #include <cstdio>
+
+#include "general.h"
 #include "io.h"
 
 //#include <boost/graph/detail/permutation.hpp> // NEW

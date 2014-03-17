@@ -20,5 +20,6 @@
 
 #include "general.h"
 
-const matrix matrix::id = matrix(1,0,0,1);
+const point point::zero = point(0, 0);
+const matrix matrix::id = matrix(1, 0, 0, 1);
 

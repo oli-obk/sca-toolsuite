@@ -33,6 +33,7 @@
 
 #include <boost/graph/strong_components.hpp>
 
+#include "general.h"
 #include "io.h"
 #include "stack_algorithm.h"
 

@@ -18,7 +18,7 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#include "equation_solver.h"
+#include "general.h"
 #include "io.h"
 #include "ca.h"
 
@@ -64,7 +64,6 @@ class MyProgram : public Program
 		const char* equation;
 		bool async = false;
 		int num_steps = INT_MAX;
-		eqsolver::expression_ast ast;
 		unsigned int seed;
 		sim_type sim = sim_type::end;
 
@@ -83,8 +82,6 @@ class MyProgram : public Program
 				if(sim == sim_type::undefined)
 				 exit_usage();
 			case 2:
-				debug("Building AST from equation...\n");
-				build_tree_from_equation(argv[1], &ast);
 				equation = argv[1];
 				break;
 			case 1:
@@ -96,7 +93,6 @@ class MyProgram : public Program
 		 seed = find_good_random_seed();
 		set_random_seed(seed);
 
-		equation = argv[1];
 		ca_simulator_t simulator(equation);
 
 		int num_changed = 1;

@@ -24,6 +24,7 @@
 #include <cstdio>
 #include <vector>
 
+#include "general.h"
 #include "io.h"
 #include "stack_algorithm.h"
 

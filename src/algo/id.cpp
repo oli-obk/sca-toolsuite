@@ -21,7 +21,9 @@
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
+
 #include "asm_basic.h"
+#include "general.h"
 #include "io.h"
 
 class MyProgram : public Program

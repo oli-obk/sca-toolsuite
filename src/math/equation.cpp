@@ -18,6 +18,7 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
+#include "general.h"
 #include "io.h"
 #include "equation_solver.h"
 

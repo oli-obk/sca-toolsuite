@@ -20,6 +20,8 @@
 
 #include <cstdlib>
 #include <cstdio>
+
+#include "general.h"
 #include "io.h"
 
 const unsigned int BUF_SIZE = 1024;
