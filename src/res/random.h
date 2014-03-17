@@ -1,5 +1,5 @@
 /*************************************************************************/
-/* sca toolsuite - a toolsuite to simulate sandpile cellular automata.   */
+/* sca toolsuite - a toolsuite to simulate cellular automata.            */
 /* Copyright (C) 2011-2014                                               */
 /* Johannes Lorenz                                                       */
 /* https://github.com/JohannesLorenz/sca-toolsuite                       */

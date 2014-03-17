@@ -1,6 +1,6 @@
 /*************************************************************************/
-/* sca toolsuite - a toolsuite to simulate sandpile cellular automata.   */
-/* Copyright (C) 2011-2012                                               */
+/* sca toolsuite - a toolsuite to simulate cellular automata.            */
+/* Copyright (C) 2011-2014                                               */
 /* Johannes Lorenz                                                       */
 /* https://github.com/JohannesLorenz/sca-toolsuite                       */
 /*                                                                       */
@@ -89,15 +89,8 @@ public:
 
 	neighbourhood get_neighbourhood() const
 	{
-		// right now, only symmetric moore is supported
-	/*	std::vector<point> points;
-		for(int y = -border_width; y < border_width; ++y)
-		for(int x = -border_width; x < border_width; ++x)
-		points.push_back(point(x, y));
-		return neighbourhood(points, point(0, 0));*/
 		unsigned moore_width = (border_width<<1) + 1;
 		dimension moore = { moore_width, moore_width };
-		std::cout << "will create n" << std::endl;
 		return neighbourhood(moore, point(border_width, border_width));
 	}
 };
