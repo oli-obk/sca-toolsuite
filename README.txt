@@ -25,11 +25,10 @@ cellular automata as introduced by Bak, Tang and Wiesenfeld in 1987. For more
 information about cellular automata, please consider [1]. Today, however, this
 toolsuite can simulate every cellular automaton which is
 
-  1. synchronous and
+  1. synchronous or purely asynchronous and
   2. uses a finite, two-dimensional grid
   
-Note that indeterminism is supposed to work; and that asynchronous cellular
-automata might be supported soon.
+Note that indeterminism is supposed to work.
 
 This toolsuite provides you with a number of tools to
 
@@ -80,21 +79,21 @@ Here are good reasons:
 3 License
 :::::::::
 
-Please see the COPYING file.
+Please see the LICENSE.txt file.
 
 4 Documentation
 :::::::::::::::
 
 You can
 
-  * find anything about Documentation in the DOCUMENTATION file.
-  * read the FAQ
+  * find anything about Documentation in the DOCUMENTATION.txt file.
+  * read the FAQ.txt
   * contact me: see `9 Contact'
 
 5 Installation & Debugging
 ::::::::::::::::::::::::::
 
-Please see the INSTALL file.
+Please see the INSTALL.txt file.
 
 6 Examples
 ::::::::::
