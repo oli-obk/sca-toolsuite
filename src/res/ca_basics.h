@@ -290,6 +290,18 @@ public:
 		}
 	}
 
+	bool contains(const point& p) {
+		for( const point& np : neighbours )
+		 if( p == np ) // :)
+		  return true;
+		return false;
+	}
+
+	typedef std::vector<point>::const_iterator const_iterator;
+	const_iterator begin() const { return neighbours.begin(); }
+	const_iterator end() const { return neighbours.end(); }
+
+
 /*	neighbourhood(const std::vector<point>& _points, point _center_cell)
 		: center_cell(_center_cell)
 	{

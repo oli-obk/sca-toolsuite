@@ -41,7 +41,15 @@ inline void os_sleep(unsigned int seconds) { sleep(seconds); }
 inline void os_clear() { system("clear"); }
 
 typedef int coord_t;
+typedef unsigned int u_coord_t;
+typedef unsigned int area_t;
 typedef int cell_t; //!< state of a cell
+
+enum class storage_t
+{
+	human,
+	internal
+};
 
 //! Generic structure to store 2D coordinates
 struct point
@@ -65,8 +73,8 @@ struct point
 		y -= rhs.y;
 		return *this;
 	}
-	bool operator==(const point& rhs) { return x == rhs.x && y == rhs.y; }
-	bool operator!=(const point& rhs) { return ! operator==(rhs); }
+	bool operator==(const point& rhs) const { return x == rhs.x && y == rhs.y; }
+	bool operator!=(const point& rhs) const { return ! operator==(rhs); }
 
 	const static point zero;
 
@@ -106,11 +114,11 @@ public:
 		return *this;
 	}
 
-	bool operator!() {
+	bool operator!() const {
 		return position.y >= max.y;
 	}
 
-	bool operator!=(const point_itr& rhs) {
+	bool operator!=(const point_itr& rhs) const {
 		return position != rhs.position; }
 
 	static point_itr from_end(point max, point min = {0,0}) {
@@ -170,12 +178,13 @@ struct dimension_container
 //! Generic structure for a 2D rectangle dimension.
 struct dimension
 {
-	unsigned height;
-	unsigned width;
+	u_coord_t height;
+	u_coord_t width;
 	inline unsigned int area() const { return height*width; }
-	inline unsigned int area_without_border() const {
-		assert(height > 1); assert(width > 1);
-		return (height-2)*(width-2);
+	inline area_t area_without_border(u_coord_t border_size = 1) const {
+		const u_coord_t bs_2 = border_size << 1;
+		assert(height >= bs_2); assert(width >= bs_2);
+		return (height-bs_2)*(width-bs_2);
 	}
 	inline bool operator==(const dimension& other) const {
 		return height == other.height && width == other.width;
@@ -195,6 +204,15 @@ struct dimension
 		const int y = id / width;
 		return point(id - y * width, y);
 	}
+
+	bool point_is_on_border(const point& p,
+		const u_coord_t border_size) const {
+		return p.x < (coord_t) border_size
+		|| p.x >= (coord_t) width - (coord_t) border_size
+		|| p.y < (coord_t) border_size
+		|| p.y >= (coord_t) height - (coord_t) border_size;
+	}
+
 	dimension_container points(unsigned border_width) const {
 		return dimension_container(height, width, border_width); }
 };
@@ -260,17 +278,39 @@ public:
 	const cell_t& operator*() const { return *ptr; }
 	cell_t& operator*() { return *ptr; }
 
-	bool operator==(const cell_itr& rhs) { return ptr == rhs.ptr; }
-	bool operator!=(const cell_itr& rhs) { return !operator==(rhs); }
+	bool operator==(const cell_itr& rhs) const { return ptr == rhs.ptr; }
+	bool operator!=(const cell_itr& rhs) const { return !operator==(rhs); }
 };
 
-class grid_t
+struct grid_t // TODO: class
 {
 	std::vector<cell_t> data;
 	dimension _dim; //! dimension of data, including borders
-	coord_t border_width;
+	const u_coord_t border_width;
+
+	//! returns array index for a human point @a p
+	int index(const point& p) const {
+		const int& w = _dim.width;
+		const int& bw = border_width;
+		return ((p.y + bw) * w) + bw + p.x;
+	}
+
+	dimension human_dim() const {
+		u_coord_t bw_2 = border_width << 1;
+		return dimension { _dim.height - bw_2, _dim.width - bw_2 };
+	}
+
+	static area_t internal_area(const dimension& human_dim,
+		u_coord_t border_width) {
+		u_coord_t bw_2 = border_width << 1;
+		return (human_dim.width + bw_2) * (human_dim.height + bw_2);
+	}
 public:
-	const dimension& dim() const { return _dim; }
+	//! returns *internal* dimension
+	const dimension& dim() const { return _dim; } // TODO: remove this?
+
+	const area_t size() const { return
+		_dim.area_without_border(border_width); }
 
 /*	grid(std::vector<int>& data, const dimension& dim, int border_width) :
 		data(data),
@@ -281,18 +321,44 @@ public:
 
 	dimension_container points() const { return _dim.points(border_width); }
 
-	grid_t(FILE* fp, coord_t border_width) :
+	//! simple constructor: empty grid
+	grid_t(u_coord_t border_width) :
 		border_width(border_width)
+	{}
+
+	//! simple constructor: fill grid
+	//! dimension is human
+	grid_t(u_coord_t border_width,
+		const dimension& dim, cell_t fill = 0) :
+		data(internal_area(dim, border_width), fill),
+		_dim(dim),
+		border_width(border_width)
+	{}
+
+	//! constructor which reads a grid immediatelly
+	grid_t(FILE* fp, u_coord_t border_width) :
+		border_width(border_width)
+	{
+		read(fp);
+	}
+
+	void read(FILE* fp)
 	{
 		read_grid(fp, &data, &_dim, border_width);
 	}
 
-	void write(FILE* fp)
+	void write(FILE* fp) const
 	{
 		write_grid(fp, &data, &_dim, border_width);
 	}
 
-
+	grid_t& operator=(const grid_t& rhs)
+	{
+		assert(border_width == rhs.border_width);
+		data = rhs.data;
+		_dim = rhs._dim;
+		return *this;
+	}
 
 	#if 0
 	cell_t direct_access(point p)
@@ -310,15 +376,25 @@ public:
 	}
 	#endif
 
-	cell_t operator[](point p)
+	cell_t& operator[](point p)
 	{
-		const int& w = _dim.width;
-		const int& bw = border_width;
-		return data[((p.y + bw) * w) + bw + p.x];
+		return data[index(p)];
+	}
+
+	const cell_t& operator[](point p) const
+	{
+		return data[index(p)];
 	}
 
 	cell_itr begin() { return cell_itr(data.data(), _dim, border_width); }
 	cell_itr end() { return cell_itr(data.data(), _dim, border_width, false); }
+
+	bool point_is_on_border(const point& p) const {
+		return human_dim().point_is_on_border(p, 0);
+	}
+
+//	friend std::ostream& operator<< (std::ostream& stream,
+//		const configuration& c);
 };
 
 //! Returns true iff @a idx is on the border for given dimension @a dim

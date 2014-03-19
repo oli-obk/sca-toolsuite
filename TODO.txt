@@ -1,5 +1,7 @@
 This file contains things that should be done in the future.
 
+"in the file DOCUMENTATION" -> txt
+
 General:
 
   * Instead of copying io.o etc. into the binarys every time, tell automake to

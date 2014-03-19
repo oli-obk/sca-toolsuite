@@ -62,7 +62,9 @@ public:
 	}
 	int get_border_width() { return border_width; }
 
-	int next_state(int *cell_ptr, int x, int y, const dimension& dim)
+	//! calculates next state at (human) position (x,y)
+	//! @param dim the grids internal dimension
+	int next_state(int *cell_ptr, int x, int y, const dimension& dim) const
 	{
 		// TODO: replace &((*old_grid)[internal]) by old_value
 		// and make old_value a ptr/ref?
@@ -72,19 +74,23 @@ public:
 		eqsolver::ast_print<eqsolver::variable_print> solver(&vprinter);
 		return (int)solver(ast);
 	}
-	int next_state_realxy(int *cell_ptr, int x, int y, const dimension& dim)
+	//! overload, with x and y in internal format. slower.
+	int next_state_realxy(int *cell_ptr, int x, int y, const dimension& dim) const
 	{
 		return next_state(cell_ptr, x-border_width, y-border_width, dim);
 	}
-	int next_state_gridptr_realxy(int *grid_ptr, int x, int y, const dimension& dim)
-	{
-		const int internal = x+y*dim.width;
-		return next_state_realxy(grid_ptr + internal, x, y, dim);
-	}
-	int next_state_gridptr(int *grid_ptr, int x, int y, const dimension& dim)
+	//! overload with human coordinates, but pointer to grid. slower.
+	int next_state_gridptr(int *grid_ptr, int x, int y, const dimension& dim) const
 	{
 		const int internal = (x + border_width) + (y + border_width) * dim.width;
 		return next_state(grid_ptr + internal, x, y, dim);
+	}
+	//! overload with x and y in internal format and
+	//! grid_ptr pointing to beginning of grid. most slow.
+	int next_state_gridptr_realxy(int *grid_ptr, int x, int y, const dimension& dim) const
+	{
+		const int internal = x+y*dim.width;
+		return next_state_realxy(grid_ptr + internal, x, y, dim);
 	}
 
 	neighbourhood get_neighbourhood() const
