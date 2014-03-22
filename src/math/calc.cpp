@@ -41,6 +41,7 @@ class MyProgram : public Program
 
 		int symbols_read;
 		int index;
+		set_random_seed();
 
 		do {
 			symbols_read = fscanf(read_fp, "%d", &index);

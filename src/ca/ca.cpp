@@ -130,7 +130,7 @@ class MyProgram : public Program
 		neighbourhood neighbours = simulator.get_neighbourhood();
 
 		std::vector<point> //recent_active_cells(old_grid->size()),
-			new_active_cells(old_grid->size());
+			new_active_cells(old_grid->size()); // TODO: this vector will shrink :/
 		std::set<point> cells_to_check; // TODO: use pointers here, like in grid
 		// make all cells active, but not those close to the border
 		// TODO: make this generic for arbitrary neighbourhoods
@@ -174,7 +174,7 @@ class MyProgram : public Program
 			}
 
 			for(const point& p : cells_to_check )
-			if(!async || get_random_int(1))
+			if(!async || get_random_int(2))
 			// TODO: use bool async template here to increase speed?
 			// plus: exploit code duplication?
 			{
@@ -206,14 +206,19 @@ class MyProgram : public Program
 				(*new_grid)[p] = (*old_grid)[p];
 			}
 
-
-		/*	{
+// unnecessary test:
+#if 0
+			{
 				grid_t changes(0, old_grid->human_dim(), 0);
 				for(const point& p : new_active_cells) {
 				for(const point& p2 : new_active_cells)
 					if(p!=p2)
 					{
 						point diff = p-p2;
+						if(!(diff.x>1||diff.x<-1) ||
+							(diff.y>1||diff.y<-1))
+							std::cout << "close:" << p << p2 << std::endl;
+
 						assert((diff.x>1||diff.x<-1) ||
 							(diff.y>1||diff.y<-1));
 					}
@@ -221,12 +226,14 @@ class MyProgram : public Program
 				puts("");
 				changes.write(out_fp);
 				puts("");
-			}*/
+			}
+#endif
 
+// deprecated:
 #if 0
 			for(unsigned int y = 0; y<dim.height - (border_width<<1); ++y)
 			for(unsigned int x = 0; x<dim.width - (border_width<<1); ++x)
-			if(!async || get_random_int(1))
+			if(!async || get_random_int(2))
 			// TODO: use bool async template here to increase speed?
 			// plus: exploit code duplication?
 			{

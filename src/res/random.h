@@ -36,9 +36,14 @@ inline unsigned int find_good_random_seed(void) {
 inline void set_random_seed(unsigned int seed) {
 	srandom(seed);
 }
-//! Returns a random value from the OS. Will be in range [0, max]
+//! Calls function of OS to set a randome seed value.
+inline void set_random_seed() {
+	srandom(find_good_random_seed());
+}
+//! Returns a random value out of max subsequent values, beginning with 0
+//! In other words, the result will be in [0, max-1]
 inline unsigned int get_random_int(unsigned int max) {
-	return (unsigned int) (((float)max+1.0)*random()/(RAND_MAX+1.0));
+	return (unsigned int) (((float)max)*random()/(RAND_MAX+1.0));
 }
 
 #endif // RANDOM_H

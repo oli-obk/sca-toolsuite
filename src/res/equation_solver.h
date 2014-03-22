@@ -32,6 +32,8 @@
 #include <boost/spirit/include/phoenix_bind.hpp>
 //#include <boost/phoenix/bind/bind_function.hpp>
 
+#include "random.h"
+
 const char* get_help_description();
 
 /*
@@ -91,6 +93,7 @@ namespace eqsolver
 	inline int f1i_neg(int arg1) { return -arg1; }
 	inline int f1i_abs(int arg1) { return std::abs(arg1); }
 	inline int f1i_sqrt(int arg1) { return (int)std::sqrt((int)arg1); }
+	inline int f1i_rand(int arg1) { return (int)get_random_int(arg1); }
 	inline int f2i_add(int arg1, int arg2) { return arg1 + arg2; }
 	inline int f2i_sub(int arg1, int arg2) { return arg1 - arg2; }
 	inline int f2i_mul(int arg1, int arg2) { return arg1 * arg2; }
@@ -403,6 +406,7 @@ namespace eqsolver
 	MAKE_UNARY_FUNC(not_func, '!', f1i_not);
 	MAKE_UNARY_FUNC(abs_func, 'a', f1i_abs);
 	MAKE_UNARY_FUNC(sqrt_func, 's', f1i_sqrt);
+	MAKE_UNARY_FUNC(rand_func, 'r', f1i_rand);
 	MAKE_BINARY_FUNC(min_func, 'm', f2i_min);
 	MAKE_BINARY_FUNC(max_func, 'n', f2i_max);
 	MAKE_BINARY_FUNC_ADDR(ass_func, 'h', f2i_asn);

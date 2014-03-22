@@ -1,13 +1,3 @@
-#
-# Compile
-#
-
-# set(WARN_EXC "-Wno-unused-local-typedefs -Wno-maybe-uninitialized")
-
-# FLAGS
-# the order of -Wall -Wno-unknown-pragmas is important
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ${WARN_EXC} -std=c++11 -pipe")
-
 SET(src_dir "${CMAKE_CURRENT_SOURCE_DIR}")
 
 add_executable(ca "${src_dir}/ca.cpp"
@@ -22,26 +12,5 @@ add_executable(transf_by_grids "${src_dir}/transf_by_grids.cpp"
 	${ca_basics}
 )
 
-add_executable(sweep "${src_dir}/sweep.cpp"
-	${io_files}
-	${equation_solver}
-	${ca_basics}
-	${ca}
-)
+cp_script(ca_file)
 
-#add_SOURCES=add.cpp ../res/io.cpp
-#equation_SOURCES=equation.cpp ../res/io.cpp ../res/equation_solver.cpp
-#comb_SOURCES=comb.cpp ../res/io.cpp
-#calc_SOURCES=calc.cpp ../res/io.cpp ../res/equation_solver.cpp
-
-#calc_SOURCES=calc.cpp ../res/io.cpp ../res/equation_solver.cpp 
-
-
-
-
-
-
-
-
-#set_target_properties(scat PROPERTIES COMPILE_FLAGS "-O3")
-#set_target_properties(scat PROPERTIES LINK_FLAGS "-O3")

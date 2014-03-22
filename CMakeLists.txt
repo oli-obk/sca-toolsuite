@@ -3,11 +3,11 @@
 #
 
 #Specify the version being used aswell as the language
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
 #Name your project here
 project(sca-toolsuite)
 
-SET(VERSION_MAJOR "0")
+SET(VERSION_MAJOR "1")
 SET(VERSION_MINOR "0")
 SET(VERSION_PATCH "0")
 SET(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
@@ -49,11 +49,15 @@ MESSAGE("-- Target host is ${OS}, ${MY_HOST_STR}")
 SET(src_base "${CMAKE_CURRENT_SOURCE_DIR}/src/")
 SET(res_dir "${src_base}res/")
 
-SET(io_files "${res_dir}/io.cpp" "${res_dir}/io.h" "${res_dir}/general.h" "${res_dir}/general.cpp")
+SET(io_files "${res_dir}/io.cpp" "${res_dir}/io.h" "${res_dir}/general.h" "${res_dir}/general.cpp" "${res_dir}/random.h")
 SET(equation_solver "${res_dir}/equation_solver.cpp" "${res_dir}/equation_solver.h")
 SET(ca "${res_dir}/ca.h")
 SET(ca_basics "${res_dir}/ca_basics.h")
 
+function(cp_script script_name)
+	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${script_name}
+		${CMAKE_CURRENT_BINARY_DIR}/${script_name} COPYONLY)
+endfunction()
 
 include_directories("${CMAKE_CURRENT_BINARY_DIR}src/") # for config.h
 include_directories("${res_dir}")
@@ -76,11 +80,23 @@ ${CMAKE_CURRENT_BINARY_DIR}/src/version.h)
 # INCLUDE (CheckIncludeFiles)
 
 
+# add the command to generate the source code
+add_custom_command (
+	OUTPUT _sza2
+	COMMAND echo ${VERSION} > ${CMAKE_CURRENT_BINARY_DIR}/sza2
+)
+
+add_custom_target (
+	sza2
+	DEPENDS _sza2
+)
 
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED OFF)
 set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost 1.49.0 COMPONENTS spirit)
+
+
 
 #if(Boost_FOUND)
 #	include_directories(${Boost_INCLUDE_DIRS})

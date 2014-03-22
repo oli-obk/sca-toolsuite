@@ -64,4 +64,11 @@ OTHER_FILES += ../DOCUMENTATION \
 	../README.txt \
 	../FAQ \
 	../CMakeLists.txt \
-	test.sh
+	test.sh \
+	CMakeLists.txt \
+	core/CMakeLists.txt \
+	algo/CMakeLists.txt \
+	io/CMakeLists.txt \
+	math/CMakeLists.txt \
+	ca/CMakeLists.txt \
+	rotor/CMakeLists.txt
