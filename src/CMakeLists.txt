@@ -6,7 +6,7 @@ add_subdirectory(ca)
 add_subdirectory(rotor)
 
 if(EXISTS "usr/CMakeLists.txt")
- add_subdirectory(user)
+ add_subdirectory(usr)
 endif()
 
 cp_script(test.sh)
