@@ -4,6 +4,7 @@ add_subdirectory(io)
 add_subdirectory(math)
 add_subdirectory(ca)
 add_subdirectory(rotor)
+add_subdirectory(gui_qt)
 
 if(EXISTS "usr/CMakeLists.txt")
  add_subdirectory(usr)
