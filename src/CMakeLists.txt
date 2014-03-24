@@ -6,7 +6,7 @@ add_subdirectory(ca)
 add_subdirectory(rotor)
 add_subdirectory(gui_qt)
 
-if(EXISTS "usr/CMakeLists.txt")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/usr/CMakeLists.txt")
  add_subdirectory(usr)
 endif()
 

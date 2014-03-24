@@ -152,6 +152,7 @@ inline bool compare_by_input(const transition_function& lhs,
 class neighbourhood
 {
 	//! neighbour positions, relative to center cell
+	//! @invariant The points are always sorted (linewise)
 	std::vector<point> neighbours;
 	//! positive offset of center cell
 	//! this cell is obviously needed
@@ -301,6 +302,56 @@ public:
 	const_iterator begin() const { return neighbours.begin(); }
 	const_iterator end() const { return neighbours.end(); }
 
+public:
+	// TODO: operator*
+	neighbourhood& operator*=(const neighbourhood& rhs)
+	{
+		std::set<point> neighbour_set;
+
+		for( const point& p : neighbours ) // TODO: const in all fors
+		{
+			for(unsigned i = 0; i < rhs.neighbours.size(); ++i)
+			{
+				neighbour_set.insert( p + rhs.neighbours[i] );
+			}
+		}
+
+	/*	for( const point& np : neighbours ) // but erase points that are in our own cell
+		 neighbour_set.erase(np);
+
+		for( const point& p : neighbour_set )
+		 neighbours.push_back(p);*/
+
+		neighbours.assign(neighbour_set.begin(), neighbour_set.end());
+
+		return *this;
+	}
+
+	neighbourhood& operator-=(const neighbourhood& rhs)
+	{
+		// we use a new set because erasing from a vector
+		// causes reallocations
+		std::set<point> n_set(neighbours.begin(), neighbours.end());
+		for(const point& p : rhs.neighbours)
+		 n_set.erase(p);
+		neighbours.assign(n_set.begin(), n_set.end());
+
+		return *this;
+	}
+
+	friend std::ostream& operator<< (std::ostream& stream,
+		const neighbourhood& n) {
+		stream << "Neighbourhood: (";
+		for( const point& p : n.neighbours) { stream << p << ", "; }
+		stream << ")";
+		return stream;
+	}
+
+/*	void shift(const point& p)
+	{
+		for(point& np : neighbours)
+		 np += p;
+	}*/
 
 /*	neighbourhood(const std::vector<point>& _points, point _center_cell)
 		: center_cell(_center_cell)

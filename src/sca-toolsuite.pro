@@ -15,13 +15,13 @@ HEADERS += res/io.h res/stack_algorithm.h \
 	res/rotor_algorithm.h \
 	res/image.h \
 	res/asm_basic.h \
-    gui_qt/MainWindow.h \
-    gui_qt/DrawArea.h \
-    gui_qt/StateMachine.h \
-    gui_qt/MenuBar.h \
-    res/random.h \
-    res/ca_basics.h \
-    res/ca.h
+	gui_qt/MainWindow.h \
+	gui_qt/DrawArea.h \
+	gui_qt/StateMachine.h \
+	gui_qt/MenuBar.h \
+	res/random.h \
+	res/ca_basics.h \
+	res/ca.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \
@@ -49,16 +49,15 @@ SOURCES += algo/relax.cpp \
 	io/to_tga.cpp \
 	algo/super.cpp \
 	gui_qt/main.cpp \
-    gui_qt/MainWindow.cpp \
-    gui_qt/DrawArea.cpp \
-    gui_qt/StateMachine.cpp \
-    gui_qt/MenuBar.cpp \
-    math/filter.cpp \
-    ca/ca.cpp \
-    tsa/grid2tsagrid.cpp \
-    ca/transf_by_grids.cpp \
-    res/general.cpp \
-    ca/sweep.cpp
+	gui_qt/MainWindow.cpp \
+	gui_qt/DrawArea.cpp \
+	gui_qt/StateMachine.cpp \
+	gui_qt/MenuBar.cpp \
+	math/filter.cpp \
+	ca/ca.cpp \
+	tsa/grid2tsagrid.cpp \
+	ca/transf_by_grids.cpp \
+	res/general.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL \
 	../README.txt \
@@ -71,4 +70,5 @@ OTHER_FILES += ../DOCUMENTATION \
 	io/CMakeLists.txt \
 	math/CMakeLists.txt \
 	ca/CMakeLists.txt \
-	rotor/CMakeLists.txt
+	rotor/CMakeLists.txt \
+	gui_qt/CMakeLists.txt
