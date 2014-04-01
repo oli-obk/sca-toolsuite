@@ -368,4 +368,57 @@ public:
 	}*/
 };
 
+class configuration
+{
+	std::vector<cell_t> data;
+public:
+	configuration(const neighbourhood& n, const grid_t& grid, point p = {0, 0})
+	{
+		for(unsigned i = 0; i < n.size(); ++i)
+		 data.push_back(grid[p + n[i]]);
+	}
+
+	configuration(const std::set<point>& points, const grid_t& grid, point p = {0, 0})
+	{
+		for(const point& p2 : points)
+		 data.push_back(grid[p + p2]);
+	}
+
+	configuration() {}
+
+	bool equals_grid(const std::set<point>& points, const grid_t& grid) const
+	{
+		auto vitr = data.begin();
+		for(auto itr = points.begin();
+			itr != points.end();
+			++itr, vitr++)
+		 if(grid[*itr] != *vitr)
+		  return false;
+		return true;
+	}
+
+	bool operator<(const configuration& rhs) const
+	{
+		unsigned size = data.size();
+		assert(size == rhs.data.size());
+		return data < rhs.data;
+	}
+
+	bool operator==(const configuration& rhs) const
+	{
+		unsigned size = data.size();
+		assert(size == rhs.data.size());
+		return (data == rhs.data);
+	}
+
+	friend std::ostream& operator<< (std::ostream& stream,
+		const configuration& c) {
+		stream << "Configuration: (";
+		for( const cell_t& i : c.data) { stream << i << ", "; }
+		stream << ")";
+		return stream;
+	}
+	cell_t operator[](unsigned id) const { return data[id]; }
+};
+
 #endif // CA_BASICS_H

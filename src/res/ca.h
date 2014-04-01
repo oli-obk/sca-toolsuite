@@ -21,6 +21,11 @@
 #ifndef CA_H
 #define CA_H
 
+#include <map>
+#include <stack>
+#include <boost/graph/graph_traits.hpp>
+#include <boost/graph/adjacency_list.hpp>
+
 #include "ca_basics.h"
 #include "equation_solver.h"
 
@@ -127,18 +132,23 @@ public:
 	grid_t& grid() { return *new_grid; }
 	const grid_t& grid() const { return *new_grid; }
 
-	void finalize()
+	//! prepares the ca to run only on cells from @a sim_rect
+	void finalize(const rect& sim_rect)
 	{
 		_grid[1] = _grid[0]; // fit borders
 
 		// make all cells active, but not those close to the border
 		// TODO: make this generic for arbitrary neighbourhoods
-		new_active_cells.reserve(old_grid->size());
-		for( const point &p : old_grid->points() ) {
+		new_active_cells.reserve(sim_rect.area());
+		for( const point &p : sim_rect ) {
 			new_active_cells.push_back(p); }
 	}
 
-	void run_once()
+	//! prepares the ca
+	void finalize() { finalize(_grid->dim()); }
+
+	//! runs the ca once, but only ever activating cells from @a sim_rect
+	void run_once(const rect& sim_rect)
 	{
 		old_grid = _grid + ((round+1)&1);
 		new_grid = _grid + ((round)&1);
@@ -148,7 +158,8 @@ public:
 		for(const point& np : neighbours)
 		{
 			const point p = ap + np;
-			if(!old_grid->point_is_on_border(p))
+			if(sim_rect.is_inside(p))
+		//	if(!_grid->point_is_on_border(p))
 			 cells_to_check.insert(p);
 		}
 		new_active_cells.clear();
@@ -160,7 +171,6 @@ public:
 		{
 			int new_value;
 			const int old_value = (*old_grid)[p];
-
 			(*new_grid)[p] = (new_value
 				= next_state(&((*old_grid)[p]), p, _grid->dim()));
 			if(new_value != old_value)
@@ -178,8 +188,89 @@ public:
 		++round;
 	}
 
-	bool can_run() {
-		return (new_active_cells.size()||async);
+	const std::vector<point>& active_cells() const { return new_active_cells; }
+
+	//! runs the whole ca
+	void run_once() {
+		run_once(rect(_grid->dim(), get_border_width())); }
+
+	//! returns true iff not all cells are inactive
+	bool can_run() const {
+		return (new_active_cells.size() || async); // TODO: async condition is wrong
+	}
+};
+
+class configuration_graph_types
+{
+protected:
+	struct vertex
+	{
+		configuration conf;
+	};
+	struct edge {};
+
+	typedef boost::adjacency_list<boost::listS, boost::vecS, boost::directedS, vertex, edge> graph_t;
+	typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
+	typedef boost::graph_traits<graph_t>::edge_descriptor edge_t;
+
+	typedef std::map<configuration, vertex_t> map_t;
+	typedef std::stack<vertex_t> stack_t;
+};
+
+class scientific_ca_t : public ca_simulator_t, public configuration_graph_types
+{
+	graph_t try_all() const
+	{
+		graph_t graph;
+		stack_t stack;
+		map_t map;
+
+		// start vertex
+		vertex_t v = boost::add_vertex(graph);
+		graph[v].conf = configuration(std::set<point>(), grid());
+		try_children(boost::add_vertex(graph), graph, map, stack);
+
+		return graph;
+	}
+
+	void try_children(vertex_t node, graph_t& graph, map_t& map, stack_t& stack) const
+	{
+		map_t::const_iterator itr;
+		configuration c(std::set<point>(), grid());
+		itr = map.find(c);
+		if(itr == map.end())
+		{ // vertex has not been initialized yet
+			vertex_t v = boost::add_vertex(graph);
+		//	(*graph)[v].conf =
+			map.insert(std::pair<configuration, vertex_t>(c, v));
+
+			// Create an edge conecting those two vertices
+			edge_t e; bool b;
+			if(!stack.empty()) // root can not have parents
+			 boost::tie(e,b) = boost::add_edge(stack.top(), v, graph);
+
+			// recurse
+			stack.push(v);
+			try_children(v, graph, map, stack);
+			stack.pop();
+
+			//std::cout << "Workgraph: erasing node " << graph[v].conf << std::endl;
+		}
+		else
+		{
+			std::cout << "Adding edge, but not node..." << std::endl;
+			std::cout << "  (to: " << (graph[node].conf) << ")" << std::endl;
+
+			boost::add_edge(itr->second, node, graph); // TODO: correct?
+		}
+	}
+
+public:
+	using ca_simulator_t::ca_simulator_t;
+
+	graph_t get_all_configurations(const rect& sim_rect)
+	{
+		return try_all();
 	}
 };
 

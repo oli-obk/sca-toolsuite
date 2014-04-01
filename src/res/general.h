@@ -217,6 +217,33 @@ struct dimension
 		return dimension_container(height, width, border_width); }
 };
 
+// TODO: protected members
+struct rect
+{
+	point ul, lr;
+	rect(const point& ul, const point& lr) : ul(ul), lr(lr) {}
+	//! constructs the rect from the inner part of a dim,
+	//! i.e. dim - border
+	rect(const dimension& d, const coord_t border_size = 0) :
+		ul(0, 0),
+		lr(d.width - (border_size << 1),
+			d.height - (border_size << 1)) {}
+
+	inline area_t area() const { return (lr.x - ul.x) * (lr.y - ul.y); }
+	bool is_inside(const point& p) const {
+		return p.x < lr.x && p.y < lr.y && ul.x <= p.x && ul.y <= p.y; }
+
+	point_itr begin() const { return point_itr(lr, ul); }
+	point_itr end() const { return point_itr::from_end(lr, ul); }
+
+	friend std::ostream& operator<< (std::ostream& stream,
+		const rect& r) {
+		stream << "rect (" << r.ul << ", " << r.lr << ")";
+		return stream;
+	}
+};
+
+// TODO: inherit from bounding box
 class bounding_box
 {
 	point _ul, _lr;
