@@ -64,33 +64,34 @@ public:
 
 	//! calculates next state at (human) position (x,y)
 	//! @param dim the grids internal dimension
-	int next_state(int *cell_ptr, int x, int y, const dimension& dim) const
+	int next_state(const int *cell_ptr, const point& p, const dimension& dim) const
 	{
 		// TODO: replace &((*old_grid)[internal]) by old_value
 		// and make old_value a ptr/ref?
 		eqsolver::variable_print vprinter(dim.height, dim.width,
-			x,y,
+			p.x, p.y,
 			cell_ptr, helper_vars);
 		eqsolver::ast_print<eqsolver::variable_print> solver(&vprinter);
 		return (int)solver(ast);
 	}
+
 	//! overload, with x and y in internal format. slower.
-	int next_state_realxy(int *cell_ptr, int x, int y, const dimension& dim) const
+	int next_state_realxy(const int *cell_ptr, const point& p, const dimension& dim) const
 	{
-		return next_state(cell_ptr, x-border_width, y-border_width, dim);
+		return next_state(cell_ptr, p - point { border_width, border_width }, dim);
 	}
 	//! overload with human coordinates, but pointer to grid. slower.
-	int next_state_gridptr(int *grid_ptr, int x, int y, const dimension& dim) const
+	int next_state_gridptr(const int *grid_ptr, const point& p, const dimension& dim) const
 	{
-		const int internal = (x + border_width) + (y + border_width) * dim.width;
-		return next_state(grid_ptr + internal, x, y, dim);
+		const int internal = (p.x + border_width) + (p.y + border_width) * dim.width;
+		return next_state(grid_ptr + internal, p, dim);
 	}
 	//! overload with x and y in internal format and
 	//! grid_ptr pointing to beginning of grid. most slow.
-	int next_state_gridptr_realxy(int *grid_ptr, int x, int y, const dimension& dim) const
-	{
-		const int internal = x+y*dim.width;
-		return next_state_realxy(grid_ptr + internal, x, y, dim);
+	int next_state_gridptr_realxy(const int *grid_ptr, const point& p, const dimension& dim) const
+	{ // TODO: save dim by using grid_t instead of grid_ptr
+		const int internal = p.x+p.y*dim.width;
+		return next_state_realxy(grid_ptr + internal, p, dim);
 	}
 
 	neighbourhood get_neighbourhood() const

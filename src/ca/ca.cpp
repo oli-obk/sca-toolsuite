@@ -191,7 +191,7 @@ class MyProgram : public Program
 					= simulator.next_state(&((*old_grid)[internal]), x, y, dim));
 				num_changed += (int)(new_value!=old_value);*/
 				(*new_grid)[p] = (new_value
-					= simulator.next_state(&((*old_grid)[p]), p.x, p.y, dim));
+					= simulator.next_state(&((*old_grid)[p]), p, dim));
 				if(new_value != old_value)
 				{
 					new_active_cells.push_back(p);
