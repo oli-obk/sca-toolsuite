@@ -102,11 +102,11 @@ public:
 		return next_state_realxy(grid_ptr + internal, p, dim);
 	}
 
-	neighbourhood get_neighbourhood() const
+	neighbourhood_t get_neighbourhood() const
 	{
 		unsigned moore_width = (border_width<<1) + 1;
 		dimension moore = { moore_width, moore_width };
-		return neighbourhood(moore, point(border_width, border_width));
+		return neighbourhood_t(moore, point(border_width, border_width));
 	}
 };
 
@@ -114,9 +114,9 @@ class ca_simulator_t : private ca_calculator_t
 {
 	grid_t _grid[2];
 	grid_t *old_grid = _grid, *new_grid = _grid;
-	neighbourhood neighbours;
+	neighbourhood_t neighbours;
 	std::vector<point> //recent_active_cells(old_grid->size()),
-			new_active_cells; // TODO: this vector will shrink :/
+			new_changed_cells; // TODO: this vector will shrink :/
 	std::set<point> cells_to_check; // TODO: use pointers here, like in grid
 	int round = 0;
 	bool async;
@@ -139,22 +139,36 @@ public:
 
 		// make all cells active, but not those close to the border
 		// TODO: make this generic for arbitrary neighbourhoods
-		new_active_cells.reserve(sim_rect.area());
+		new_changed_cells.reserve(sim_rect.area());
 		for( const point &p : sim_rect ) {
-			new_active_cells.push_back(p); }
+			new_changed_cells.push_back(p); }
 	}
 
 	//! prepares the ca
 	void finalize() { finalize(_grid->dim()); }
 
+	// TODO: function run_once_async()
+
+	struct default_asynchronicity
+	{
+		bool operator()(unsigned ) const { return get_random_int(2); }
+	};
+
+	struct synchronous
+	{
+		bool operator()(unsigned ) const { return true; }
+	};
+
 	//! runs the ca once, but only ever activating cells from @a sim_rect
-	void run_once(const rect& sim_rect)
+	template<class Asynchronicity>
+	void run_once(const rect& sim_rect,
+		const Asynchronicity& async = synchronous())
 	{
 		old_grid = _grid + ((round+1)&1);
 		new_grid = _grid + ((round)&1);
 
 		cells_to_check.clear();
-		for(const point& ap : new_active_cells)
+		for(const point& ap : new_changed_cells)
 		for(const point& np : neighbours)
 		{
 			const point p = ap + np;
@@ -162,10 +176,10 @@ public:
 		//	if(!_grid->point_is_on_border(p))
 			 cells_to_check.insert(p);
 		}
-		new_active_cells.clear();
+		new_changed_cells.clear();
 
 		for(const point& p : cells_to_check )
-		if(!async || get_random_int(2))
+		if(async(2))
 		// TODO: use bool async template here to increase speed?
 		// plus: exploit code duplication?
 		{
@@ -175,7 +189,7 @@ public:
 				= next_state(&((*old_grid)[p]), p, _grid->dim()));
 			if(new_value != old_value)
 			{
-				new_active_cells.push_back(p);
+				new_changed_cells.push_back(p);
 			}
 
 		}
@@ -188,15 +202,18 @@ public:
 		++round;
 	}
 
-	const std::vector<point>& active_cells() const { return new_active_cells; }
+	const std::vector<point>& active_cells() const { return new_changed_cells; }
 
 	//! runs the whole ca
-	void run_once() {
-		run_once(rect(_grid->dim(), get_border_width())); }
+	template<class Asynchronicity>
+	void run_once(const Asynchronicity& async = synchronous())
+	{
+		run_once(rect(_grid->dim(), get_border_width()), async);
+	}
 
 	//! returns true iff not all cells are inactive
 	bool can_run() const {
-		return (new_active_cells.size() || async); // TODO: async condition is wrong
+		return (new_changed_cells.size() || async); // TODO: async condition is wrong
 	}
 };
 
@@ -219,7 +236,21 @@ protected:
 
 class scientific_ca_t : public ca_simulator_t, public configuration_graph_types
 {
-	graph_t try_all() const
+	class asynchronicity
+	{
+		std::vector<bool> value;
+	public:
+		asynchronicity(std::size_t size) :
+			value(size) {}
+
+		void increase() {
+			for(const bool& b : value) {}
+		}
+		bool operator()(unsigned i) { return value[i]; }
+	};
+
+	// TODO: move down to public function?
+	graph_t try_all(const rect& sim_rect) const
 	{
 		graph_t graph;
 		stack_t stack;
@@ -228,15 +259,15 @@ class scientific_ca_t : public ca_simulator_t, public configuration_graph_types
 		// start vertex
 		vertex_t v = boost::add_vertex(graph);
 		graph[v].conf = configuration(std::set<point>(), grid());
-		try_children(boost::add_vertex(graph), graph, map, stack);
+		try_children(boost::add_vertex(graph), graph, map, stack, sim_rect);
 
 		return graph;
 	}
 
-	void try_children(vertex_t node, graph_t& graph, map_t& map, stack_t& stack) const
+	void try_children(vertex_t node, graph_t& graph, map_t& map, stack_t& stack, const rect& sim_rect) const
 	{
 		map_t::const_iterator itr;
-		configuration c(std::set<point>(), grid());
+		configuration c(sim_rect, grid());
 		itr = map.find(c);
 		if(itr == map.end())
 		{ // vertex has not been initialized yet
@@ -249,9 +280,12 @@ class scientific_ca_t : public ca_simulator_t, public configuration_graph_types
 			if(!stack.empty()) // root can not have parents
 			 boost::tie(e,b) = boost::add_edge(stack.top(), v, graph);
 
+			// get child vector
+			std::vector<configuration> next_confs;
+
 			// recurse
 			stack.push(v);
-			try_children(v, graph, map, stack);
+			try_children(v, graph, map, stack, sim_rect);
 			stack.pop();
 
 			//std::cout << "Workgraph: erasing node " << graph[v].conf << std::endl;
@@ -270,7 +304,7 @@ public:
 
 	graph_t get_all_configurations(const rect& sim_rect)
 	{
-		return try_all();
+		return try_all(sim_rect);
 	}
 };
 

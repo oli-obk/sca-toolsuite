@@ -149,7 +149,7 @@ inline bool compare_by_input(const transition_function& lhs,
 	return _compare_by_input(lhs, rhs);
 }
 
-class neighbourhood
+class neighbourhood_t
 {
 	//! neighbour positions, relative to center cell
 	//! @invariant The points are always sorted (linewise)
@@ -255,14 +255,14 @@ public:
 	 * @param in_grid
 	 * @param in_dim
 	 */
-	neighbourhood(const std::vector<int>& in_grid,
+	neighbourhood_t(const std::vector<int>& in_grid,
 		const dimension& in_dim)
 	{
 		// TODO: parameter in_dim is useless?
 		init(in_grid, in_dim);
 	}
 
-	neighbourhood(FILE* fp)
+	neighbourhood_t(FILE* fp)
 	{
 		std::vector<int> in_grid;
 		read_grid(stdin, &in_grid, &dim, 0);
@@ -279,7 +279,7 @@ public:
 	}*/
 
 	//! assumes that no borders exist
-	neighbourhood(const dimension& _dim, point _center_cell = {0,0})
+	neighbourhood_t(const dimension& _dim, point _center_cell = {0,0})
 		: //center_cell(_center_cell),
 		dim(_dim)
 	{
@@ -304,7 +304,7 @@ public:
 
 public:
 	// TODO: operator*
-	neighbourhood& operator*=(const neighbourhood& rhs)
+	neighbourhood_t& operator*=(const neighbourhood_t& rhs)
 	{
 		std::set<point> neighbour_set;
 
@@ -327,7 +327,7 @@ public:
 		return *this;
 	}
 
-	neighbourhood& operator-=(const neighbourhood& rhs)
+	neighbourhood_t& operator-=(const neighbourhood_t& rhs)
 	{
 		// we use a new set because erasing from a vector
 		// causes reallocations
@@ -340,7 +340,7 @@ public:
 	}
 
 	friend std::ostream& operator<< (std::ostream& stream,
-		const neighbourhood& n) {
+		const neighbourhood_t& n) {
 		stream << "Neighbourhood: (";
 		for( const point& p : n.neighbours) { stream << p << ", "; }
 		stream << ")";
@@ -370,9 +370,9 @@ public:
 
 class configuration
 {
-	std::vector<cell_t> data;
+	std::vector<cell_t> data; // TODO: list?
 public:
-	configuration(const neighbourhood& n, const grid_t& grid, point p = {0, 0})
+	configuration(const neighbourhood_t& n, const grid_t& grid, point p = {0, 0})
 	{
 		for(unsigned i = 0; i < n.size(); ++i)
 		 data.push_back(grid[p + n[i]]);
@@ -381,6 +381,12 @@ public:
 	configuration(const std::set<point>& points, const grid_t& grid, point p = {0, 0})
 	{
 		for(const point& p2 : points)
+		 data.push_back(grid[p + p2]);
+	}
+
+	configuration(const rect& points, const grid_t& grid, point p = {0, 0})
+	{
+		for(const point &p2 : points)
 		 data.push_back(grid[p + p2]);
 	}
 
@@ -419,6 +425,16 @@ public:
 		return stream;
 	}
 	cell_t operator[](unsigned id) const { return data[id]; }
+
+	//! @param pos position *before* which we should insert
+	void insert_at_position(std::size_t pos, const cell_t& value)
+	{
+		assert(pos <= data.size());
+		auto citr = data.begin();
+		for( std::size_t cpos = 0; cpos != pos && citr != data.end()
+			; ++citr, ++cpos ) ;
+		data.insert(citr, value);
+	}
 };
 
 #endif // CA_BASICS_H

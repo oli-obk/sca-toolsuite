@@ -130,7 +130,11 @@ class MyProgram : public Program
 				}
 			}
 
-			simulator.run_once();
+			// TODO: why is the param necessary?
+			if(async)
+			 simulator.run_once(ca_simulator_t::default_asynchronicity());
+			else
+			 simulator.run_once(ca_simulator_t::synchronous());
 		}
 
 		if(sim == sim_type::anim)

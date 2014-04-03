@@ -28,7 +28,10 @@
 #include <string>
 #include <cctype> // isdigit()
 #include <climits>
+#include <unistd.h>
+
 #include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/graphviz.hpp>
 
 //#include "general.h"
 struct dimension;
@@ -793,6 +796,43 @@ void create_boost_graph(FILE* fp, graph_t* boost_graph);
 
 //! dumps a boost graph into a trivial graphics file (TGF, see Wikipedia)
 void dump_graph_as_tgf(FILE* write_fp, const graph_t* boost_graph);
+
+/*//! dumps a boost graph into a PDF file, using graphviz
+template<class GraphType>
+void dump_graph_as_pdf(std::ostream& stream, const GraphType& boost_graph);
+
+//! dumps a boost graph into a PDF file, using graphviz
+//! if @a fname is nullptr, the filename is chosen at random
+template<class GraphType>
+void dump_graph_as_pdf(const GraphType &boost_graph, const char* fname = nullptr);
+*/
+template<class GraphType>
+void dump_graph_as_pdf(const GraphType &graph, std::ostream &stream)
+{
+	boost::dynamic_properties dp;
+//	dp.property("label", boost::get(&Vertex::name, g));
+	dp.property("node_id", get(boost::vertex_index, graph));
+
+	// TODO: separate write func?
+	write_graphviz_dp(stream, graph, dp);
+}
+
+template<class GraphType>
+void dump_graph_as_pdf(const GraphType &graph, const char* fname = nullptr)
+{
+	const char* filename;
+	if(fname)
+		filename = fname;
+	else
+	{
+		char temp[] = "graphXXXXXX";
+		mkstemp(temp);
+		filename = temp;
+	}
+
+	std::ofstream stream(filename);
+	dump_graph_as_pdf(graph, stream);
+}
 
 #endif // IO_H
 
