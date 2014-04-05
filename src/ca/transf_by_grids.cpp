@@ -70,7 +70,7 @@ class MyProgram : public Program
 		assert_usage(argc == 1);
 
 		// read neighbour grid
-		neighbourhood neighbours(stdin);
+		neighbourhood_t neighbours(stdin);
 
 		std::vector<transition_function> table;
 

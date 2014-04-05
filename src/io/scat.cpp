@@ -29,28 +29,26 @@ class MyProgram : public Program
 {
 	int main()
 	{
-		FILE* read_fp;
+		std::ifstream ifs;
+		std::istream *is_ptr;
+
 		switch(argc)
 		{
 			case 2:
-				read_fp = fopen(argv[1], "r");
-				if(read_fp==NULL)
+				//read_fp = fopen(argv[1], "r");
+				ifs.open(argv[1]);
+				if(!ifs.good())
 				 exit("Error opening infile");
+				is_ptr = &ifs;
 				break;
 			case 1:
-				read_fp = stdin;
+				is_ptr = &std::cin;
 				break;
 			default:
 				exit_usage();
 		}
 
-		std::vector<int> grid;
-		dimension dim;
-
-		read_grid(read_fp, &grid, &dim);
-		if(argc==2)
-		 fclose(read_fp);
-		write_grid(stdout, &grid, &dim);
+		std::cout << grid_t(*is_ptr);
 		return 0;
 	}
 };

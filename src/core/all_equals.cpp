@@ -28,8 +28,7 @@ class MyProgram : public Program
 {
 	int main()
 	{
-		std::vector<int> grid;
-		dimension dim;
+		grid_t grid();
 		int expected = 0;
 
 		if(argc==2)
@@ -37,12 +36,10 @@ class MyProgram : public Program
 		else
 		 exit_usage();
 
-		read_grid(stdin, &grid, &dim);
+		const auto& itr = grid.begin();
+		for( ; itr != grid.end() && *itr == expected; ++itr ) ;
 
-		unsigned int i=0;
-		for(; i<dim.area_without_border() && grid[human2internal(i,dim.width)]==expected; i++);
-
-		return (i!=dim.area_without_border());
+		return ( itr == grid.end() );
 	}
 };
 

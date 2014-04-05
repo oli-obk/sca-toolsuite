@@ -664,6 +664,9 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	void (*SCANFUNC)(const char*&, int*) = &read_number,
 	int border = 1);
 
+void read_grid(std::istream& is, std::vector<int>& grid, dimension& dim,
+	void (*SCANFUNC)(const char *&, int *), int border = -1);
+
 inline void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	int border)
 {
@@ -756,8 +759,12 @@ inline void write_array(FILE* fp, std::vector<int>* grid, dimension* dim) {
 }
 #endif
 
-inline void write_number(FILE* fp, int int_to_write) {
+inline void _write_number(FILE* fp, int int_to_write) {
 	fprintf(fp, "%d", int_to_write);
+}
+
+inline void write_number(char*& ptr, int int_to_write) {
+	ptr += sprintf(ptr, "%d", int_to_write);
 }
 
 /**
@@ -770,11 +777,14 @@ inline void write_number(FILE* fp, int int_to_write) {
 	@param border how thick the internal border shall be - internal use only
 */
 void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
-	void (*PRINTFUNC)(FILE*, int) = &write_number, int border = 1);
+	void (*PRINTFUNC)(FILE*, int) = &_write_number, int border = 1);
+
+void write_grid(std::ostream& os, const std::vector<int>& grid, const dimension& dim,
+	void (*PRINTFUNC)(char*&, int), int border);
 
 inline void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
 	int border) {
-	write_grid(fp, grid, dim, &write_number, border);
+	write_grid(fp, grid, dim, &_write_number, border);
 }
 
 

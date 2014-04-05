@@ -420,8 +420,18 @@ public:
 		return human_dim().point_is_on_border(p, 0);
 	}
 
-//	friend std::ostream& operator<< (std::ostream& stream,
-//		const configuration& c);
+	friend std::ostream& operator<< (std::ostream& stream,
+		const grid_t& g) {
+		write_grid(stream, g.data, g._dim, write_number, g.border_width);
+		return stream;
+	}
+
+	//! constructor which reads a grid immediatelly
+	grid_t(std::istream& stream = std::cin, u_coord_t border_width = 1) :
+		border_width(border_width)
+	{
+		read_grid(stream, data, _dim, read_number, border_width);
+	}
 };
 
 //! Returns true iff @a idx is on the border for given dimension @a dim

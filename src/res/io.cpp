@@ -58,7 +58,7 @@ inline void insert_vertical_border(std::vector<int>* grid,
  */
 
 constexpr size_t buffer_size = 4096; // TODO: cmake
-char read_buffer[buffer_size];
+char buffer[buffer_size];
 
 // reads grid from open file
 // TODO: we should reserve the array linewise...
@@ -72,7 +72,7 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 
 	while(true)
 	{
-		const char* ptr = fgets(read_buffer, buffer_size, fp);
+		const char* ptr = fgets(buffer, buffer_size, fp);
 		if(ptr == nullptr // eof
 			|| *ptr == '\n') // empty line = abort
 			break;
@@ -117,6 +117,73 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	assert(dim->area() == grid->size());
 }
 
+void read_grid(std::istream& is, std::vector<int>& grid, dimension& dim,
+	void (*SCANFUNC)(const char *&, int *), int border)
+{
+	assert(SCANFUNC);
+
+	int read_symbol;
+	int line_width = -1, col_count = 0, line_count = 0; // all excl. border
+
+	while(true)
+	{
+	/*	const char* ptr = fgets(read_buffer, buffer_size, fp);
+		if(ptr == nullptr // eof
+			|| *ptr == '\n') // empty line = abort
+			break;*/
+
+
+		is.getline(buffer, buffer_size);
+		if(!is.good())
+		 break; // eof or empty line (both means abort) or overflow
+		const char* ptr = buffer;
+
+		do
+		{
+			// scan symbol
+			SCANFUNC(ptr, &read_symbol);
+			if(!col_count) // (TODO: move this somewhere else?)
+			 insert_vertical_border(&grid, grid.end(), border); // TODO: ref instead of ptr
+			grid.push_back(read_symbol);
+			col_count++;
+
+			// read separating whitespace
+			read_symbol=*ptr++;
+			if(read_symbol == '\0')
+			{
+				// first newline => determine line length
+				if(! line_count) {
+					line_width = col_count;
+					insert_horizontal_border(&grid, grid.begin(), line_width, border);
+				}
+				else
+				 assert(line_width == col_count);
+
+				line_count++;
+				col_count = 0;
+
+				insert_vertical_border(&grid, grid.end(), border);
+			}
+			else
+			 assert(read_symbol == ' ');
+
+		} while(read_symbol != '\0' && read_symbol != EOF);
+	}
+
+	if(is.gcount() > 0 && is.fail())
+	{
+		// a bad error or a buffer overflow - we can not handle this
+		throw "Read IO error (buffer overflow?)";
+	} // otherwise, we have just reached the end of the grid
+
+	insert_horizontal_border(&grid, grid.end(), line_width, border);
+
+	dim.height = line_count + (((int)(border))<<1);
+	dim.width = line_width + (((int)(border))<<1);
+
+	assert(dim.area() == grid.size());
+}
+
 void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
 	void (*PRINTFUNC)(FILE*, int), int border)
 {
@@ -129,6 +196,27 @@ void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
 			PRINTFUNC(fp, (*grid)[x + (dim->width)*y]); // TODO: two [] operators
 			fputc((x == last_symbol) ? '\n':' ', fp);
 		}
+
+	}
+}
+
+void write_grid(std::ostream& os, const std::vector<int> &grid, const dimension &dim,
+	void (*PRINTFUNC)(char*&, int), int border)
+{
+	assert(PRINTFUNC);
+	unsigned int last_symbol = dim.width - 1 - border;
+
+
+	for(unsigned int y = border; y < dim.height - border; y++)
+	{
+		char* ptr = buffer;
+		for(unsigned int x = border; x < dim.width - border; x++) {
+		//	PRINTFUNC(fp, (*grid)[x + (dim->width)*y]); // TODO: two [] operators
+		//	fputc((x == last_symbol) ? '\n':' ', fp);
+			PRINTFUNC(ptr, grid[x + (dim.width)*y]);
+			*(ptr++) = (x == last_symbol) ? '\n':' ';
+		}
+		os << buffer;
 	}
 }
 
