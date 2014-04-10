@@ -16,7 +16,7 @@ Q: Are there any other COPYING restrictions than GPL3?
 A: None. This code was made by me in my free time, and I did not copy any line
    of code from other projects. This code was not written for any institution.
 
-Q: I miss the	 operator in the equation solver...
+Q: I miss the ternary operator in the equation solver...
 A: We have added it now. If you still miss it, please update your local
    version of the toolsuite.
 
@@ -34,7 +34,7 @@ A: No, the .pro file is only for people who use qt creator for coding. The
 :::::::::::
 
 Q: How fast is the sandpile algorithm?
-   There are different experiments:
+A: There are different experiments:
    
      * stabilize: stabilize one given (positive) configuration.
      * random throw: throw one grain at random position, then stabilize.

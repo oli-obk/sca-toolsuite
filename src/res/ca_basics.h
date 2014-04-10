@@ -437,4 +437,129 @@ public:
 	}
 };
 
+template<class C1, class C2, class Selector>
+void for_each_selection(const C1& cont1, const C2& cont2, const Selector& sel)
+{
+	auto itr1 = cont1.cbegin();
+	auto itr2 = cont2.cbegin();
+	for(; itr1 != cont1.cend() && itr2 != cont2.cend();)
+	{
+		if(*itr1 < *itr2)
+		{
+			sel.first(*itr1);
+			++itr1;
+		}
+		else if(*itr2 < *itr1)
+		{
+			sel.second(*itr2);
+			++itr2;
+		}
+		else {
+			sel.both(*itr1);
+			++itr1;
+			++itr2;
+		}
+	}
+
+	if(itr1 != cont1.cend() || itr2 != cont2.cend())
+	{
+		if(itr1 == cont1.cend())
+		{
+			for(; itr2 != cont2.cend(); ++itr2)
+			 sel.second(*itr2);
+		}
+		else // i.e. itr2 at end
+		{
+			for(; itr1 != cont1.cend(); ++itr1)
+			 sel.first(*itr1);
+		}
+	}
+
+}
+
+template<class Functor, class T>
+class base_selector
+{
+protected:
+	const Functor& f;
+public:
+	void both(const T& t) const { }
+	void first(const T& t) const { }
+	void second(const T& t) const { }
+	base_selector(const Functor& f) : f(f) {}
+};
+
+template<class Functor, class T>
+struct selector_intersection : base_selector<Functor, T>
+{
+	typedef base_selector<Functor, T> base;
+	using base::base_selector;
+	void both(const T& t) const { base::f(t); }
+};
+
+template<class Functor, class T>
+struct selector_first_only : base_selector<Functor, T>
+{
+	typedef base_selector<Functor, T> base;
+	using base::base_selector;
+	void first(const T& t) const { base::f(t); }
+};
+
+template<class Functor, class T>
+struct selector_union : base_selector<Functor, T>
+{
+	typedef base_selector<Functor, T> base;
+	using base::base_selector;
+	// TODO: sfinae to call argument-less
+	void both(const T& t) const { base::f(t); }
+	void first(const T& t) const { base::f(t); }
+	void second(const T& t) const { base::f(t); }
+};
+
+template<template<class, class> class Type, class C1, class C2, class Functor> // TODO: make union a template
+void for_each_points(const C1& cont1, const C2& cont2, const Functor& func)
+{
+	for_each_selection(cont1, cont2, Type<Functor, decltype(*cont1.begin())>(func));
+}
+
+template<class C> void dump_container(const C& cont, std::ostream& stream = std::cout) {
+	for(const auto& i : cont)
+	 stream << i;
+	stream << std::endl;
+}
+
+template<class C1, class C2>
+bool is_subset_of(const C1& cont1, const C2& cont2)
+{
+	bool is_subset = true;
+	using T = decltype(*cont1.begin());
+	std::cout << "subset?" << std::endl;
+	dump_container(cont1);
+	dump_container(cont2);
+	for_each_points<selector_first_only>(cont1, cont2, [&](const T& ){ is_subset = false; });
+	std::cout << is_subset << std::endl;
+	return is_subset;
+}
+
+/*
+template<class C1, class C2, class Functor>
+void for_each_same(const C1& cont1, const C2& cont2, const Functor& func)
+{
+	const auto itr1 = cont1.begin();
+	const auto itr2 = cont2.begin();
+	for(; itr1 != cont1.end() && itr2 != cont2.end();)
+	{
+		if(*itr1 > *itr2)
+		 ++itr2;
+		else if(*itr2 > *itr1)
+		 ++itr1;
+		else {
+			func(*itr1);
+			++itr1;
+			++itr2;
+		}
+	}
+}
+*/
+
 #endif // CA_BASICS_H

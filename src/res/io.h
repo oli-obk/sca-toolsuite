@@ -642,14 +642,81 @@ struct converter
 };
 #endif
 
-inline bool is_number_parsable(char sgn)
+class number_grid
 {
+	inline static bool is_number_parsable(char sgn)
+	{
+		return isdigit(sgn) || (sgn == '-');
+	}
+public:
+	inline static void write(char*& ptr, int int_to_write) {
+		ptr += sprintf(ptr, "%d", int_to_write);
+	}
+
+	inline static void read(const char*& ptr, int* read_symbol) {
+		*read_symbol = atoi(ptr);
+		while(is_number_parsable(*++ptr));
+	}
+
+	const char* name() { return "numbers"; }
+};
+
+struct arrow_grid
+{
+	using cell_type = int;
+	inline static int arrow_2_int(char read_char)
+	{
+		switch(read_char)
+		{
+			case '^': return 0;
+			case '>': return 1;
+			case 'v': return 2;
+			case '<': return 3;
+			default: {
+				std::string error = "Invalid arrow sign read: ";
+				error += read_char;
+				throw error;
+			}
+		}
+	}
+
+	inline static int int_2_arrow(const int* int_value)
+	{
+		static const int arrow_palette[4] = { '^', '>', 'v', '<' }; // TODO: ll, tt ?
+		if(*int_value != *int_value % 4) { // TODO: -3
+			std::string error = "Integer could not be converted to arrow.";
+			throw error;
+		}
+		else return arrow_palette[*int_value];
+	}
+
+	static bool parse_sign(FILE* fp, cell_type& sign)
+	{
+		char read_char;
+		const bool return_value = (fscanf(fp, "%c", &read_char) == 1);
+		if(return_value)
+		 sign = arrow_2_int(read_char);
+		return return_value;
+	}
+
+	static void put_sign(FILE* fp, const cell_type& sign) {
+		fprintf(fp, "%c", (char)int_2_arrow(&sign));
+	}
+
+	const char* name() { return "rotors"; }
+};
+
+inline bool _is_number_parsable(char sgn) {
 	return isdigit(sgn) || (sgn == '-');
 }
 
-inline void read_number(const char*& ptr, int* read_symbol) {
+inline static void write_number(char*& ptr, int int_to_write) {
+	ptr += sprintf(ptr, "%d", int_to_write);
+}
+
+inline static void read_number(const char*& ptr, int* read_symbol) {
 	*read_symbol = atoi(ptr);
-	while(is_number_parsable(*++ptr));
+	while(_is_number_parsable(*++ptr));
 }
 
 /**
@@ -763,10 +830,6 @@ inline void _write_number(FILE* fp, int int_to_write) {
 	fprintf(fp, "%d", int_to_write);
 }
 
-inline void write_number(char*& ptr, int int_to_write) {
-	ptr += sprintf(ptr, "%d", int_to_write);
-}
-
 /**
 	Write a grid to a file pointer (without border)
 	If border exists, its values are ignored.
@@ -817,18 +880,19 @@ template<class GraphType>
 void dump_graph_as_pdf(const GraphType &boost_graph, const char* fname = nullptr);
 */
 template<class GraphType>
-void dump_graph_as_pdf(const GraphType &graph, std::ostream &stream)
+void dump_graph_as_dot(const GraphType &graph, std::ostream &stream, const boost::dynamic_properties& dp)
 {
-	boost::dynamic_properties dp;
+//	boost::dynamic_properties dp;
 //	dp.property("label", boost::get(&Vertex::name, g));
-	dp.property("node_id", get(boost::vertex_index, graph));
+//	dp.property("node_id", get(boost::vertex_index, graph)); //TODO: boost::get?
 
 	// TODO: separate write func?
 	write_graphviz_dp(stream, graph, dp);
 }
 
 template<class GraphType>
-void dump_graph_as_pdf(const GraphType &graph, const char* fname = nullptr)
+void dump_graph_as_dot(const GraphType &graph, const boost::dynamic_properties& dp, const char* fname = nullptr
+	)
 {
 	const char* filename;
 	if(fname)
@@ -841,7 +905,7 @@ void dump_graph_as_pdf(const GraphType &graph, const char* fname = nullptr)
 	}
 
 	std::ofstream stream(filename);
-	dump_graph_as_pdf(graph, stream);
+	dump_graph_as_dot(graph, stream, dp);
 }
 
 #endif // IO_H
