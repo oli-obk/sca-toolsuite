@@ -88,18 +88,23 @@ public:
 	{
 		return next_state(cell_ptr, p - point { border_width, border_width }, dim);
 	}
-	//! overload with human coordinates, but pointer to grid. slower.
-	int next_state_gridptr(const int *grid_ptr, const point& p, const dimension& dim) const
+
+	//! overload with human coordinates and reference to grid. slower.
+	int next_state_gridptr(const grid_t &grid, const point& p) const
 	{
-		const int internal = (p.x + border_width) + (p.y + border_width) * dim.width;
-		return next_state(grid_ptr + internal, p, dim);
+		return next_state(&grid[p], p, grid.dim());
 	}
-	//! overload with x and y in internal format and
-	//! grid_ptr pointing to beginning of grid. most slow.
-	int next_state_gridptr_realxy(const int *grid_ptr, const point& p, const dimension& dim) const
-	{ // TODO: save dim by using grid_t instead of grid_ptr
-		const int internal = p.x+p.y*dim.width;
-		return next_state_realxy(grid_ptr + internal, p, dim);
+
+	//! returns whether cell at point @a p is active.
+	//! @a result is set to the result in all cases, if it is not nullptr
+	// TODO: overloads
+	bool is_cell_active(const grid_t& grid, const point& p, cell_t* result = nullptr)
+	{
+		const int* cell_ptr = &grid[p];
+		cell_t next = next_state(cell_ptr, p, grid.dim());
+		if(result)
+		 *result = next;
+		return next == *cell_ptr;
 	}
 
 	neighbourhood_t get_neighbourhood() const

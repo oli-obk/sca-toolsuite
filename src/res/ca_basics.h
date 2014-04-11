@@ -522,6 +522,15 @@ void for_each_points(const C1& cont1, const C2& cont2, const Functor& func)
 	for_each_selection(cont1, cont2, Type<Functor, decltype(*cont1.begin())>(func));
 }
 
+/* // TODO
+template<template<class, class> class Type, class R, class C1, class C2>
+R points_make(const C1& cont1, const C2& cont2)
+{
+	R return_value;
+	for_each_selection(cont1, cont2, Type<Functor, decltype(*cont1.begin())>(func));
+	return return_value;
+}*/
+
 template<class C> void dump_container(const C& cont, std::ostream& stream = std::cout) {
 	for(const auto& i : cont)
 	 stream << i;
