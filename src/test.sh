@@ -112,11 +112,14 @@ call_test "Testing rotor/rotor l" 1 "core/create 2 2 0 | math/equation 'min(x+y*
 #call_test "Testing io/convert" 1 "core/create 3 3 3 | io/convert numbers rotors | io/convert rotors numbers | core/all_equals 3"
 #call_test "Testing rotor/xrotor" 1 "core/create 3 3 3 | io/convert numbers rotors | rotor/xrotor s 'core/create 3 3 0' | io/convert rotors numbers | core/all_equals 3"
 
+# transition functions
+call_test "Testing ca/transf_by_grids " 1 "cat ../../data/ca_by_grid/circuit.txt  | ca/transf_by_grids | diff ../../data/ca/circuit.txt -"
+
 # scripts
 call_test "Testing math/add2" 1 "core/create 2 2 1 | math/add2 \"core/create 2 2 2\" | core/all_equals 3"
 call_test "Testing math/sub2" 1 "core/create 2 2 1 | math/sub2 \"core/create 2 2 2\" | core/all_equals -1"
 call_test "Testing core/diff2" 1 "core/create 9 9 3 | core/diff2 core/create 9 9 3"
 
-
+# obligatory
 call_test "Testing io/to_ods" 0 "core/create 9 4 4 | io/to_ods tmp"
 

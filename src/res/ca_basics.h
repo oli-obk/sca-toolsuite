@@ -235,13 +235,6 @@ class neighbourhood_t
 	{
 		transition_function tf(size(), input_grid, output_val);
 		for(unsigned i = 0; i < size(); ++i) {
-			if(symm == 0)
-			{
-			std::cout << "DBG:" << std::endl;
-			std::cout << i << std::endl;
-			std::cout << idx(i, symm) << std::endl;
-			}
-			//std::cout << dim.coords_to_id(idx(i, symm)) << std::endl;
 			tf.set_neighbour(i, input_grid[bb.coords_to_id(idx(i, symm)/*+center_cell*/)]);
 		}
 		*tfs = tf; // TODO: redundant

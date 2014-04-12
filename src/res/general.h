@@ -266,8 +266,8 @@ public:
 		}
 	}
 	// TODO: for those 3 cases: cover lr > ul
-	coord_t y_size() const { return _lr.y - _ul.y; }
-	coord_t x_size() const { return _lr.x - _ul.x; }
+	coord_t y_size() const { return _lr.y - _ul.y + 1; }
+	coord_t x_size() const { return _lr.x - _ul.x + 1; }
 	point ul() const { return _ul; }
 	point lr() const { return _lr; }
 	dimension dim() const {

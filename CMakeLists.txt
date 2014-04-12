@@ -112,7 +112,10 @@ set(WARN_EXC "-Wno-unused-local-typedefs -Wno-maybe-uninitialized")
 
 # FLAGS
 # the order of -Wall -Wno-unknown-pragmas is important
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ${WARN_EXC} -std=c++11 -pipe -g -O0")
+# TODO: -Werror
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ${WARN_EXC} -std=c++11 -pipe")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 add_subdirectory(src)
 

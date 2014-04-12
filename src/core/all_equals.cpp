@@ -39,7 +39,7 @@ class MyProgram : public Program
 		auto itr = grid.cbegin();
 		for( ; itr != grid.cend() && *itr == expected; ++itr ) ;
 
-		return ( itr == grid.end() );
+		return ( itr == grid.end() ) ? 0 : 1;
 	}
 };
 

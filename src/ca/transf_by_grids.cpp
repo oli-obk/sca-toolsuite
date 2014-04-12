@@ -85,7 +85,6 @@ class MyProgram : public Program
 				dimension cur_dim;
 
 				read_grid(stdin, &cur_grid, &cur_dim, 0);
-				write_grid(stdout, &cur_grid, &cur_dim, 0);
 			//	assert(cur_dim == input_dim);
 
 				read_grid(stdin, &out_grid, &cur_dim, 0);
@@ -107,15 +106,11 @@ class MyProgram : public Program
 		std::sort(table.begin(), table.end(), compare_by_input);
 		const transition_function* recent = &(table[0]);
 
-		for( const auto& tf : table )
-		 std::cout << tf << std::endl;
-
 		// TODO: I do not know why const tf&
 		// breaks the const here...
 		for(std::vector<transition_function>::const_iterator itr
 			= (++table.begin()); itr != table.end(); ++itr)
 		{
-			std::cout << *itr << std::endl;
 			assert(*itr != *recent);
 			recent = &(*itr);
 		}
