@@ -25,11 +25,14 @@
 #include "stack_algorithm.h"
 #include "io.h"
 
+namespace sandpile
+{
+
 inline void stabilize(std::vector<int>* grid, const dimension* dim)
 {
 	// +1 is an ugly, necessary trick
-	ArrayStack container(dim->area_without_border() /*+ 1*/);
-	FixLogS logger(NULL);
+	array_stack container(dim->area_without_border() /*+ 1*/);
+	fix_log_s logger(nullptr);
 	fix(grid, dim, &container, &logger);
 }
 
@@ -72,6 +75,8 @@ inline void superstabilize(std::vector<int>* grid, const dimension* dim)
 	std::vector<int> identity;
 	get_identity(&identity, dim);
 	superstabilize(grid, dim, &identity);
+}
+
 }
 
 #endif // ASM_BASIC_H

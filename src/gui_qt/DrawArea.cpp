@@ -74,7 +74,7 @@ void DrawArea::slot_timeout()
 		container->flush();
 		if(calc_grid[current_hint]>2)
 		{
-			avalanche_1d_hint_noflush(&calc_grid, &dim,
+			sandpile::avalanche_1d_hint_noflush(&calc_grid, &dim,
 				current_hint, container, NULL);
 		}
 		else {
@@ -138,7 +138,7 @@ void DrawArea::mousePressEvent(QMouseEvent *event)
 
 			current_hint = coords;
 			calc_grid[current_hint]--;
-			container = new ArrayQueueNoFile(dim.area());
+			container = new sandpile::array_queue_no_file(dim.area());
 
 			if(state_machine.get() != StateMachine::STATE_INSTABLE)
 			 next_fire_timer.start();
@@ -150,7 +150,7 @@ void DrawArea::fill_grid(FILE* fp)
 {
 	read_grid(fp, &calc_grid, &dim);
 	// TODO: progress dialog here?
-	stabilize(&calc_grid, &dim); // to keep invariant
+	sandpile::stabilize(&calc_grid, &dim); // to keep invariant
 	sim_grid = calc_grid;
 
 	ColorTable tmp_ct(min_color, max_color, 0, 7);

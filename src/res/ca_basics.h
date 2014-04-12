@@ -25,6 +25,9 @@
 #include <algorithm>
 #include "general.h"
 
+namespace ca_basics
+{
+
 /**
  * @brief This class holds input and output values of a
  * local transition function.
@@ -594,5 +597,7 @@ void for_each_same(const C1& cont1, const C2& cont2, const Functor& func)
 	}
 }
 */
+
+}
 
 #endif // CA_BASICS_H

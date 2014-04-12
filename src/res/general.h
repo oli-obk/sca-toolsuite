@@ -19,27 +19,21 @@
 /*************************************************************************/
 
 #include <cassert>
-#include <exception>
 #include <climits>
-#include <cstdarg>
-#include <cstdlib>
 #include <cstring>
-#include <cstdio>
+#include <cstdio> // TODO: remove soon
 #include <vector>
-#include <string>
 #include <iostream>
-#include <unistd.h>
 #include <fstream>
 
-#include "random.h"
 #include "io.h"
 
 #ifndef GENERAL_H
 #define GENERAL_H
 #define SCA_DEBUG
 
-inline void os_sleep(unsigned int seconds) { sleep(seconds); }
-inline void os_clear() { system("clear"); }
+void os_sleep(unsigned int seconds);
+void os_clear();
 
 typedef int coord_t;
 typedef unsigned int u_coord_t;
@@ -552,31 +546,7 @@ private:
 
 public:
 	//! Routine for inherited classes to call to start main().
-	int run(int _argc, char** _argv, const HelpStruct* _help)
-	{
-		argc = _argc; argv = _argv; help = _help;
-
-		assert(help->description && help->syntax);
-		if(argc > 1 && (!strcmp(argv[1],"--help")||!strcmp(argv[1],"-help")))
-		{
-			help->print_help();
-			::exit(0);
-		}
-
-		int return_value = 0;
-		try {
-			return_value = main();
-		} catch(const char* str) {
-			exit(str);
-		} catch(const std::string& str) {
-			exit(str.c_str());
-		}/* catch(std::exception e) {
-			exit(e.what());
-		} catch(...) {
-			exit("Unknown error caught. This should never happen.");
-		}*/
-		return return_value;
-	}
+	int run(int _argc, char** _argv, const HelpStruct* _help);
 	static inline int safe_atoi(const char* str) { return str?atoi(str):0; }
 	Program() : env_debug(safe_atoi(getenv("SCA_DEBUG"))) {}
 	virtual ~Program() {}
@@ -594,13 +564,11 @@ protected:
 	}
 
 	//! Exit program with format string @a format
-	inline void exitf(const char* format, ...) const
+	template<class ...Args>
+	inline void exitf(const char* format, Args... args) const
 	{
 		print_termination_string();
-		va_list args;
-		va_start(args, format);
-		vfprintf(stderr, format, args);
-		va_end(args);
+		fprintf(stderr, format, args...);
 		internal_exit();
 	}
 
@@ -615,16 +583,11 @@ protected:
 	//! Prints format if shell sets SCA_DEBUG and macro SCA_DEBUG is
 	//! defined.
 	//! Programmers can put these everywhere without runtime worries
-	inline void debugf(const char* format, ...) const
+	template<class ...Args>
+	inline void debugf(const char* format, Args... args) const
 	{
 #ifdef SCA_DEBUG
-		if(env_debug)
-		{
-			va_list args;
-			va_start(args, format);
-			vfprintf(stderr, format, args);
-			va_end(args);
-		}
+		if(env_debug) fprintf(stderr, format, args...);
 #endif
 	}
 

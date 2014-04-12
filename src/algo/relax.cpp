@@ -33,9 +33,9 @@ class MyProgram : public Program
 	{
 		AvalancheContainer container(dim.area());
 		if(times < 0)
-		 l_hint(&grid, &dim, hint, &container, stdout);
+		 sandpile::l_hint(&grid, &dim, hint, &container, stdout);
 		else
-		 lx_hint(&grid, &dim, hint, &container, stdout, times);
+		 sandpile::lx_hint(&grid, &dim, hint, &container, stdout, times);
 	}
 
 	int main()
@@ -86,9 +86,9 @@ class MyProgram : public Program
 		}
 
 		if(avalanches) {
-			start<ArrayQueue>(grid, dim, human2internal(hint, dim.width), times);
+			start<sandpile::array_queue>(grid, dim, human2internal(hint, dim.width), times);
 		} else {
-			start<ArrayStack>(grid, dim, human2internal(hint, dim.width), times);
+			start<sandpile::array_stack>(grid, dim, human2internal(hint, dim.width), times);
 			write_grid(stdout, &grid, &dim);
 		}
 		return 0;

@@ -23,11 +23,16 @@
 
 #include <map>
 #include <stack>
+#if 0
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
+#endif
 
 #include "ca_basics.h"
 #include "equation_solver.h"
+
+namespace ca
+{
 
 // TODO:
 #define TABLE_OPTIMIZATION
@@ -52,7 +57,7 @@ public:
 	ca_calculator_t(const char* equation)
 	{
 	//	debug("Building AST from equation...\n");
-		build_tree_from_equation(equation, &ast);
+		eqsolver::build_tree(equation, &ast);
 
 		eqsolver::ast_area<eqsolver::variable_area_grid>
 			grid_solver;
@@ -107,11 +112,11 @@ public:
 		return next != *cell_ptr;
 	}
 
-	neighbourhood_t get_neighbourhood() const
+	ca_basics::neighbourhood_t get_neighbourhood() const
 	{
 		unsigned moore_width = (border_width<<1) + 1;
 		dimension moore = { moore_width, moore_width };
-		return neighbourhood_t(moore, point(border_width, border_width));
+		return ca_basics::neighbourhood_t(moore, point(border_width, border_width));
 	}
 };
 
@@ -119,7 +124,7 @@ class ca_simulator_t : private ca_calculator_t
 {
 	grid_t _grid[2];
 	grid_t *old_grid = _grid, *new_grid = _grid;
-	neighbourhood_t neighbours;
+	ca_basics::neighbourhood_t neighbours;
 	std::vector<point> //recent_active_cells(old_grid->size()),
 			new_changed_cells; // TODO: this vector will shrink :/
 	std::set<point> cells_to_check; // TODO: use pointers here, like in grid
@@ -156,7 +161,7 @@ public:
 
 	struct default_asynchronicity
 	{
-		bool operator()(unsigned ) const { return get_random_int(2); }
+		bool operator()(unsigned ) const { return sca_random::get_int(2); }
 	};
 
 	struct synchronous
@@ -225,10 +230,11 @@ public:
 
 class configuration_graph_types
 {
+#if 0
 protected:
 	struct vertex
 	{
-		configuration conf;
+		ca_basics::configuration conf;
 	};
 	struct edge {};
 
@@ -236,12 +242,14 @@ protected:
 	typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
 	typedef boost::graph_traits<graph_t>::edge_descriptor edge_t;
 
-	typedef std::map<configuration, vertex_t> map_t;
+	typedef std::map<ca_basics::configuration, vertex_t> map_t;
 	typedef std::stack<vertex_t> stack_t;
+#endif
 };
 
 class scientific_ca_t : public ca_simulator_t, public configuration_graph_types
 {
+#if 0
 	class asynchronicity
 	{
 		std::vector<bool> value;
@@ -250,7 +258,7 @@ class scientific_ca_t : public ca_simulator_t, public configuration_graph_types
 			value(size) {}
 
 		void increase() {
-			for(const bool& b : value) {}
+			for(const bool& b : value) { (void)b; }
 		}
 		bool operator()(unsigned i) { return value[i]; }
 	};
@@ -264,7 +272,7 @@ class scientific_ca_t : public ca_simulator_t, public configuration_graph_types
 
 		// start vertex
 		vertex_t v = boost::add_vertex(graph);
-		graph[v].conf = configuration(std::set<point>(), grid());
+		graph[v].conf = ca_basics::configuration(std::set<point>(), grid());
 		try_children(boost::add_vertex(graph), graph, map, stack, sim_rect);
 
 		return graph;
@@ -273,13 +281,14 @@ class scientific_ca_t : public ca_simulator_t, public configuration_graph_types
 	void try_children(vertex_t node, graph_t& graph, map_t& map, stack_t& stack, const rect& sim_rect) const
 	{
 		map_t::const_iterator itr;
-		configuration c(sim_rect, grid());
+		ca_basics::configuration c(sim_rect, grid());
 		itr = map.find(c);
 		if(itr == map.end())
 		{ // vertex has not been initialized yet
 			vertex_t v = boost::add_vertex(graph);
 		//	(*graph)[v].conf =
-			map.insert(std::pair<configuration, vertex_t>(c, v));
+			map.insert(std::pair<ca_basics::configuration,
+				vertex_t>(c, v));
 
 			// Create an edge conecting those two vertices
 			edge_t e; bool b;
@@ -287,7 +296,7 @@ class scientific_ca_t : public ca_simulator_t, public configuration_graph_types
 			 boost::tie(e,b) = boost::add_edge(stack.top(), v, graph);
 
 			// get child vector
-			std::vector<configuration> next_confs;
+			std::vector<ca_basics::configuration> next_confs;
 
 			// recurse
 			stack.push(v);
@@ -312,6 +321,9 @@ public:
 	{
 		return try_all(sim_rect);
 	}
+#endif
 };
+
+}
 
 #endif // CA_H

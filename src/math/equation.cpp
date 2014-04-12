@@ -33,7 +33,7 @@ class MyProgram : public Program
 			default: exit_usage();
 		}
 		eqsolver::expression_ast ast;
-		build_tree_from_equation(equation, &ast);
+		eqsolver::build_tree(equation, &ast);
 
 		std::vector<int> grid, result;
 		dimension dim;
@@ -82,7 +82,7 @@ int main(int argc, char** argv)
 {
 	HelpStruct help;
 	help.syntax = "math/equation <equation>";
-	help.description = get_help_description();
+	help.description = eqsolver::get_help_description();
 	help.input = "grid to be modified";
 	help.output = "modified grid";
 	help.add_param("<equation>", "Manipulation formula in x,y and v(=value). Double quotes suggested.");

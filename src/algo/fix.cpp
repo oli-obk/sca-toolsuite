@@ -65,10 +65,15 @@ class MyProgram : public Program
 		read_grid(read_fp, &grid, &dim);
 
 		switch(output_type) {
-			case 'l': ::run<ArrayStack, FixLogL>(grid, dim, hint); break;
+			case 'l': ::run<sandpile::array_stack,
+					sandpile::fix_log_l>(
+					grid, dim, hint);
+				break;
 		//	case 'h': run<ArrayStack, FixLogLHuman>(grid, dim, hint); break;
 			case 's':
-				::run<ArrayStack, FixLogS>(grid, dim, hint);
+				::run<sandpile::array_stack,
+					sandpile::fix_log_s>(
+					grid, dim, hint);
 				write_grid(stdout, &grid, &dim);
 				break;
 		}

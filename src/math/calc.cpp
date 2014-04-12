@@ -37,11 +37,11 @@ class MyProgram : public Program
 			default: exit_usage();
 		}
 		eqsolver::expression_ast ast;
-		build_tree_from_equation(equation, &ast);
+		eqsolver::build_tree(equation, &ast);
 
 		int symbols_read;
 		int index;
-		set_random_seed();
+		sca_random::set_seed();
 
 		do {
 			symbols_read = fscanf(read_fp, "%d", &index);
@@ -59,7 +59,7 @@ int main(int argc, char** argv)
 {
 	HelpStruct help;
 	help.syntax = "math/calc <equation> [newlines]";
-	help.description = get_help_description();
+	help.description = eqsolver::get_help_description();
 	help.input = "sequence to be modified";
 	help.output = "modified sequence";
 	help.add_param("<equation>", "Manipulation formula in x. Double quotes suggested.");

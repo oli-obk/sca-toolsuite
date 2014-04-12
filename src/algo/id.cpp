@@ -37,7 +37,7 @@ class MyProgram : public Program
 		dim.width = atoi(argv[1]) + 2;
 		dim.height = atoi(argv[2]) + 2;
 
-		get_identity(&grid, &dim);
+		sandpile::get_identity(&grid, &dim);
 		write_grid(stdout, &grid, &dim);
 
 		return 0;

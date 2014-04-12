@@ -24,20 +24,23 @@
 #include <cassert>
 #include <vector>
 
+namespace sandpile
+{
+
 /**
 	@brief Class for stack algorithm using a stack for the avalanches.
 
 	This is the faster way for simulation, but avalanches can not be logged detailled.
 	@invariant stack_ptr points to top element
 */
-class ArrayStack
+class array_stack
 {
 	int* const array; //! first element will never be read: "sentinel"
 	int* stack_ptr;
 public:
-	inline ArrayStack(int human_grid_size) :
+	inline array_stack(int human_grid_size) :
 		array(new int[human_grid_size+1]), stack_ptr(array) {}
-	inline ~ArrayStack() { delete[] array; }
+	inline ~array_stack() { delete[] array; }
 	inline unsigned int pop() { return *(stack_ptr--); }
 	inline void push(unsigned int i) { *(++stack_ptr) = i; }
 	inline bool empty() const { return stack_ptr == array; }
@@ -51,20 +54,20 @@ public:
 
 	This is the way you should go if you are interested in the detailled avalanches.
 	They are stored in the array right after the algorithm. If you need to store the
-	avalanches in a file, look for ArrayQueue instead.
+	avalanches in a file, look for array_queue instead.
 	@invariant write_ptr always points to the element last written
 */
-class ArrayQueueNoFile
+class array_queue_no_file
 {
 protected:
 	int* const array; //! first element will never be read
 	int* read_ptr;
 	int* write_ptr;
 public:
-	inline ArrayQueueNoFile(int human_grid_size) :
+	inline array_queue_no_file(int human_grid_size) :
 		array(new int[human_grid_size+1]),
 		read_ptr(array), write_ptr(array) {}
-	inline ~ArrayQueueNoFile() { delete[] array; }
+	inline ~array_queue_no_file() { delete[] array; }
 	inline unsigned int pop() { return *(++read_ptr); assert(read_ptr <= write_ptr); }
 	inline void push(unsigned int i) { *(++write_ptr) = i; }
 	inline bool empty() const { return read_ptr == write_ptr; }
@@ -79,13 +82,13 @@ public:
 	@brief Class for stack algorithm (and IO) using a queue for the avalanches.
 
 	This is the IO efficient way for detailled avalanche logging in files.
-	If this is not wanted, ArrayStack is faster.
+	If this is not wanted, array_stack is faster.
 	@invariant write_ptr always points to the element last written
 */
-class ArrayQueue : public ArrayQueueNoFile
+class array_queue : public array_queue_no_file
 {
 public:
-	inline ArrayQueue(int human_grid_size) : ArrayQueueNoFile(human_grid_size) {}
+	inline array_queue(int human_grid_size) : array_queue_no_file(human_grid_size) {}
 	inline void write_to_file(FILE* fp) const { fwrite(array+1, 4, write_ptr-array, fp); }
 	inline void write_separator(FILE* fp) const {
 		const int minus1 = -1; fwrite(&minus1,4,1, fp);
@@ -162,8 +165,8 @@ inline void lx_hint(std::vector<int>* grid, const dimension* dim, int hint, Aval
 
 /**
 	Develops a full avalanche and writes avalanche seperator afterwards.
-	@param array container of type ArrayStack or ArrayQueue.
-		ArrayStack is faster (1-2 times), but ArrayQueue can handle IO (instantly!).
+	@param array container of type array_stack or array_queue.
+		array_stack is faster (1-2 times), but array_queue can handle IO (instantly!).
 */
 template<class AvalancheContainer>
 inline void l_hint(std::vector<int>* grid, const dimension* dim, int hint, AvalancheContainer* array, FILE* avalanche_fp)
@@ -192,11 +195,11 @@ inline void l2_hint(std::vector<int>* grid, const dimension* dim, int hint, Aval
 #endif
 
 //! Class for fix algorithm in order to log avalanches binary
-class FixLogL
+class fix_log_l
 {
 	FILE* avalanche_fp;
 public:
-	inline FixLogL(FILE* _avalanche_fp) : avalanche_fp(_avalanche_fp) {}
+	inline fix_log_l(FILE* _avalanche_fp) : avalanche_fp(_avalanche_fp) {}
 	inline void write_avalanche_counter() {}
 	inline void write_int_to_file(const int* int_ptr, const unsigned int* ntimes) {
 		for(unsigned int i = 0; i < *ntimes; i++)
@@ -226,10 +229,10 @@ public:
 };*/
 
 //! Class for fix algorithm to log nothing. Can be used to output grid afterwards, instead of the avalanche.
-class FixLogS
+class fix_log_s
 {
 public:
-	inline FixLogS(FILE* fp) { (void) fp; }
+	inline fix_log_s(FILE* fp) { (void) fp; }
 	inline void write_avalanche_counter() {}
 	inline void write_int_to_file(const int* int_ptr,  const unsigned int* ntimes) {
 		(void) int_ptr;
@@ -309,6 +312,8 @@ inline void fix(std::vector<int>* grid, const dimension* dim, AvalancheContainer
 
 	// note: hint does not matter for correctness
 	do_fix(grid, dim, array, result_logger);
+}
+
 }
 
 #endif // STACK_ALGORITHM_H

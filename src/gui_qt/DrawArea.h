@@ -53,7 +53,7 @@ class DrawArea : public QLabel
 
 	unsigned int next_cell;
 	int current_hint;
-	ArrayQueueNoFile* container;
+	sandpile::array_queue_no_file* container;
 	QTimer next_fire_timer;
 
 private slots:

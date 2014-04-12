@@ -18,8 +18,40 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
+#include <cstdlib>
+#include <unistd.h>
+#include <string>
+#include <exception>
 #include "general.h"
 
 const point point::zero = point(0, 0);
 const matrix matrix::id = matrix(1, 0, 0, 1);
 
+void os_sleep(unsigned int seconds) { sleep(seconds); }
+void os_clear() { system("clear"); }
+
+int Program::run(int _argc, char **_argv, const HelpStruct *_help)
+{
+	argc = _argc; argv = _argv; help = _help;
+
+	assert(help->description && help->syntax);
+	if(argc > 1 && (!strcmp(argv[1],"--help")||!strcmp(argv[1],"-help")))
+		{
+			help->print_help();
+			::exit(0);
+		}
+
+	int return_value = 0;
+	try {
+		return_value = main();
+	} catch(const char* str) {
+		exit(str);
+	} catch(const std::string& str) {
+		exit(str.c_str());
+	} catch(std::exception e) {
+		exit(e.what());
+	} catch(...) {
+		exit("Unknown error caught. This should never happen.");
+	}
+	return return_value;
+}

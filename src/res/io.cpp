@@ -19,7 +19,6 @@
 /*************************************************************************/
 
 #include <climits>
-#include <cstdio>
 
 // for get_input:
 #include <cstring>
@@ -220,6 +219,7 @@ void write_grid(const base_grid* grid_class, std::ostream& os, const std::vector
 	}
 }
 
+// TODO: move this out?
 bool get_input(const char* shell_command)
 {
 	int pipefd[2];

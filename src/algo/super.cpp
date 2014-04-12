@@ -36,7 +36,7 @@ class MyProgram : public Program
 		dimension dim;
 
 		read_grid(stdin, &grid, &dim);
-		superstabilize(&grid, &dim);
+		sandpile::superstabilize(&grid, &dim);
 		write_grid(stdout, &grid, &dim);
 
 		return 0;

@@ -40,11 +40,11 @@ void run(std::vector<int>& grid, std::vector<int>& chips, const dimension& dim, 
 			rotor_fix(&grid, &chips, &dim, internal, &container, &logger);
 		}*/
 		//fix(&chips, &dim, &container, &logger);
-		superstabilize(&chips, &dim);
-		rotor_fix_naive(&grid, &chips, &dim, &container, &logger);
+		sandpile::superstabilize(&chips, &dim);
+		rotor::rotor_fix_naive(&grid, &chips, &dim, &container, &logger); // TODO: is naive wanted??
 	}
 	else
-	 rotor_fix(&grid, &chips, &dim, human2internal(hint, dim.width), &container, &logger);
+	 rotor::rotor_fix(&grid, &chips, &dim, human2internal(hint, dim.width), &container, &logger);
 }
 
 class MyProgram : public Program
@@ -85,9 +85,9 @@ class MyProgram : public Program
 		 exit("Different dimensions in both grids are not allowed.");
 
 		switch(output_type) {
-			case 'l': ::run<ArrayStack, FixLogL>(grid, chips, dim, hint); break;
+			case 'l': ::run<sandpile::array_stack, sandpile::fix_log_l>(grid, chips, dim, hint); break;
 			case 's':
-				::run<ArrayStack, FixLogS>(grid, chips, dim, hint);
+				::run<sandpile::array_stack, sandpile::fix_log_s>(grid, chips, dim, hint);
 				write_grid(stdout, &grid, &dim);
 				break;
 		}

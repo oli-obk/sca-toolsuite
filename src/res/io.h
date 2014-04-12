@@ -21,14 +21,9 @@
 #ifndef IO_H
 #define IO_H
 
-#include <cassert>
-#include <cstdlib>
-#include <cstdio>
 #include <vector>
-#include <string>
 #include <cctype> // isdigit()
-#include <climits>
-#include <unistd.h>
+#include <iostream>
 
 //#include "general.h"
 struct dimension;
@@ -196,8 +191,8 @@ class arrow_grid : public base_grid
 			case 'v': return 2;
 			case '<': return 3;
 			default: {
-				std::string error = "Invalid arrow sign read: ";
-				error += read_char;
+				char error[] = "Invalid arrow sign read:  ";
+				error[strlen(error-3)] = read_char;
 				throw error;
 			}
 		}
@@ -207,7 +202,7 @@ class arrow_grid : public base_grid
 	{
 		static const int arrow_palette[4] = { '^', '>', 'v', '<' }; // TODO: ll, tt ?
 		if(*int_value != *int_value % 4) { // TODO: -3
-			std::string error = "Integer could not be converted to arrow.";
+			const char* error = "Integer could not be converted to arrow.";
 			throw error;
 		}
 		else return arrow_palette[*int_value];
@@ -240,6 +235,13 @@ public:
 
 	const char* name() { return "rotors"; }
 };
+
+/*
+template<class ...TypeList>
+void read_file(const char* type_name)
+{
+
+}*/
 
 inline bool _is_number_parsable(char sgn) {
 	return isdigit(sgn) || (sgn == '-');

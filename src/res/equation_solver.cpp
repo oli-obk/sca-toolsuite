@@ -21,6 +21,9 @@
 #include <string>
 #include "equation_solver.h"
 
+namespace eqsolver
+{
+
 const char* EQUATION_HELP_STR =
 "Manipulates input by formula in x, y and value.\n"
 "Booleans are treated as integer values 0 and 1.\n"
@@ -46,8 +49,6 @@ const char* get_help_description() { return EQUATION_HELP_STR; }
 		return *this; \
 	}
 
-namespace eqsolver // TODO: everything should be in this namespace?!
-{
 	// static variable definitions
 /*	int variable_print::width;
 	variable_print::result_type variable_print::x, variable_print::y;
@@ -67,9 +68,8 @@ namespace eqsolver // TODO: everything should be in this namespace?!
 	MAKE_OP(!=,'!',f2i_neq);
 	MAKE_OP(&&,'&',f2i_and);
 	MAKE_OP(||,'|',f2i_or);
-}
 
-void build_tree_from_equation(const char* equation, eqsolver::expression_ast* ast)
+void build_tree(const char* equation, eqsolver::expression_ast* ast)
 {
 	using boost::spirit::ascii::space;
 
@@ -94,7 +94,7 @@ void build_tree_from_equation(const char* equation, eqsolver::expression_ast* as
 	}
 }
 
-int solve_single_equation(const char* equation, int height, int width, int x, int y, int* v)
+int solve(const char* equation, int height, int width, int x, int y, int* v)
 {
 /*	eqsolver::expression_ast ast;
 	build_tree_from_equation(equation, &ast);
@@ -104,3 +104,6 @@ int solve_single_equation(const char* equation, int height, int width, int x, in
 	return solver(ast);*/
 	exit(99); // TODO!
 }
+
+}
+

@@ -90,8 +90,8 @@ class MyProgram : public Program
 		}
 
 		if(argc < 6)
-		 seed = find_good_random_seed();
-		set_random_seed(seed);
+		 seed = sca_random::find_good_seed();
+		sca_random::set_seed(seed);
 
 		switch(sim)
 		{
@@ -105,7 +105,7 @@ class MyProgram : public Program
 				break;
 		}
 
-		ca_simulator_t simulator(equation, async);
+		ca::ca_simulator_t simulator(equation, async);
 
 		simulator.grid().read(in_fp);
 		simulator.finalize();
@@ -132,9 +132,9 @@ class MyProgram : public Program
 
 			// TODO: why is the param necessary?
 			if(async)
-			 simulator.run_once(ca_simulator_t::default_asynchronicity());
+			 simulator.run_once(ca::ca_simulator_t::default_asynchronicity());
 			else
-			 simulator.run_once(ca_simulator_t::synchronous());
+			 simulator.run_once(ca::ca_simulator_t::synchronous());
 		}
 
 		if(sim == sim_type::anim)

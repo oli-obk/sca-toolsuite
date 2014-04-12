@@ -26,24 +26,28 @@
 #include <ctime>
 
 // TODO: do not inline the first two functions -> cpp file
-// TODO: namespace
+
+namespace sca_random
+{
 
 //! Gets a seed which should differ much enough from time to time.
-inline unsigned int find_good_random_seed(void) {
+inline unsigned int find_good_seed(void) {
 	return (unsigned int)time(NULL) + getpid() + getppid() + 42;
 }
 //! Calls function of OS to set a randome seed value.
-inline void set_random_seed(unsigned int seed) {
+inline void set_seed(unsigned int seed) {
 	srandom(seed);
 }
 //! Calls function of OS to set a randome seed value.
-inline void set_random_seed() {
-	srandom(find_good_random_seed());
+inline void set_seed() {
+	srandom(find_good_seed());
 }
 //! Returns a random value out of max subsequent values, beginning with 0
 //! In other words, the result will be in [0, max-1]
-inline unsigned int get_random_int(unsigned int max) {
+inline unsigned int get_int(unsigned int max) {
 	return (unsigned int) (((float)max)*random()/(RAND_MAX+1.0));
+}
+
 }
 
 #endif // RANDOM_H

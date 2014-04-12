@@ -23,6 +23,11 @@
 
 #include <stack_algorithm.h>
 
+namespace rotor
+{
+namespace helpers
+{
+
 const int INVERT_BIT = (1 << 31);
 
 template<class AvalancheContainer>
@@ -53,7 +58,10 @@ inline void do_rotor_fix(std::vector<int>* grid, std::vector<int>* chips,
 {
 	const int INVERT_BIT = (1 << 31);
 	const int GRAIN_BITS = (-1) ^ INVERT_BIT;
-	const int PALETTE[7] = { -dim->width, 1, dim->width, -1, -dim->width, 1, dim->width };
+	const coord_t PALETTE[7] = { -((coord_t)dim->width), 1,
+		(coord_t)dim->width, -1,
+		-((coord_t)dim->width), 1,
+		(coord_t)dim->width };
 
 	result_logger->write_avalanche_counter();
 
@@ -94,6 +102,7 @@ inline void do_rotor_fix(std::vector<int>* grid, std::vector<int>* chips,
 
 }
 
+}
 
 template<class AvalancheContainer, class ResultType>
 inline void rotor_fix(std::vector<int>* grid, std::vector<int>* chips,
@@ -102,7 +111,7 @@ inline void rotor_fix(std::vector<int>* grid, std::vector<int>* chips,
 	if((*chips)[hint]>0) // otherwise, we would need an additional "case 0" label
 	{
 		array->push(hint);
-		do_rotor_fix(grid, chips, dim, array, result_logger);
+		helpers::do_rotor_fix(grid, chips, dim, array, result_logger);
 	}
 	result_logger->write_separator();
 	array->flush(); // note: empty does not always imply being flushed!
@@ -122,14 +131,15 @@ inline void rotor_fix(std::vector<int>* grid, std::vector<int>* chips,
 	}
 
 	// note: hint does not matter for correctness
-	do_rotor_fix(grid, chips, dim, array, result_logger);
+	helpers::do_rotor_fix(grid, chips, dim, array, result_logger);
 }
 
 template<class AvalancheContainer, class ResultType>
 inline void rotor_fix_naive(std::vector<int>* grid, std::vector<int>* chips,
-	const dimension* dim, AvalancheContainer* array, ResultType* result_logger)
+	const dimension* dim, AvalancheContainer*, ResultType* result_logger)
 {
-	const int PALETTE[4] = { -dim->width, 1, dim->width, -1 };
+	const coord_t PALETTE[4]
+		= { -((coord_t)dim->width), 1, (coord_t)dim->width, -1 };
 	const unsigned int ONCE = 1;
 	//unsigned int area = dim->area();
 	int cur_field;
@@ -152,6 +162,8 @@ inline void rotor_fix_naive(std::vector<int>* grid, std::vector<int>* chips,
 		}
 	}
 	result_logger->write_separator();
+}
+
 }
 
 #endif // ROTOR_ALGORITHM_H

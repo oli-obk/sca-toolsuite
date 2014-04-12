@@ -48,17 +48,18 @@ class MyProgram : public Program
 
 		// stabilize everything
 		// note: it is not completely trivial that every cell fires at most once
-		ArrayQueue array(dim.area());
+		sandpile::array_queue array(dim.area());
 		for(unsigned int human = 0; human<dim.area_without_border(); human++)
 		{
 			const int as_internal = human2internal(human, dim.width);
 			if(grid[as_internal]>3)
-			 avalanche_1d_hint_noflush(&grid, &dim, as_internal, &array, stdout);
+			 sandpile::avalanche_1d_hint_noflush(
+				&grid, &dim, as_internal, &array, stdout);
 		}
 
 		const bool recurrent = array.size() == dim.area_without_border();
 		array.flush();
-		return recurrent?0:1;
+		return recurrent ? 0 : 1;
 	}
 };
 

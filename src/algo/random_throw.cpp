@@ -24,6 +24,7 @@
 #include <cstdio>
 #include <vector>
 
+#include "random.h"
 #include "general.h"
 #include "io.h"
 #include "stack_algorithm.h"
@@ -42,7 +43,8 @@ class MyProgram : public Program
 		for(unsigned int round = 0; round < random_seq.size(); round++)
 		{
 			grid[random_seq[round]]++;
-			l_hint(&grid, &dim, random_seq[round], &avalanche_container, out_fp);
+			sandpile::l_hint(&grid, &dim, random_seq[round],
+				&avalanche_container, out_fp);
 		}
 	}
 
@@ -59,13 +61,13 @@ class MyProgram : public Program
 			read_grid(stdin, &grid, &dim);
 
 			random_seq.resize(atoi(argv[2]));
-			set_random_seed(atoi(argv[3]));
+			sca_random::set_seed(atoi(argv[3]));
 
 			const int area = dim.area_without_border();
 
 			for(std::vector<int>::iterator itr = random_seq.begin();
 				itr != random_seq.end(); itr++) {
-				*itr = human2internal(get_random_int(area-1), dim.width);
+				*itr = human2internal(sca_random::get_int(area-1), dim.width);
 			}
 		}
 		else if(!strcmp(argv[1], "input"))
@@ -96,9 +98,9 @@ class MyProgram : public Program
 		}
 
 		if(log_avalanches) {
-			start<ArrayQueue>(grid, dim, random_seq);
+			start<sandpile::array_queue>(grid, dim, random_seq);
 		} else {
-			start<ArrayStack>(grid, dim, random_seq);
+			start<sandpile::array_stack>(grid, dim, random_seq);
 			write_grid(stdout, &grid, &dim);
 		}
 
