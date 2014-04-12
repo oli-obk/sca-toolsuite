@@ -20,6 +20,8 @@
 
 #include <QProgressDialog>
 #include <QMouseEvent>
+#include <QPainter>
+#include <QPaintEvent>
 #include "asm_basic.h"
 #include "DrawArea.h"
 
@@ -42,6 +44,7 @@ void DrawArea::increase_cell(int x, int y, int steps)
 {
 	unsigned int coord = (y*dim.width)+x;
 
+	std::cout << coord << std::endl;
 	const int new_value = sim_grid[coord] + steps;
 	sim_grid[coord] = new_value;
 

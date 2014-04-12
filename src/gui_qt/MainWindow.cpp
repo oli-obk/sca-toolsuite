@@ -22,19 +22,15 @@
 #include <QStatusBar>
 #include "MainWindow.h"
 
-void MainWindow::retranslate_ui()
+template<class QtWidget>
+LabeledWidget<QtWidget>::LabeledWidget(const char *text) :
+	lbl(text)
 {
-	btn_run.setText("Pause");
-	btn_step.setText("Step");
+	_layout.addWidget(&lbl);
+	_layout.addWidget(&_widget, 1);
 }
 
-MainWindow::MainWindow(QWidget *parent) :
-	QMainWindow(parent),
-	menu_bar(this),
-	tool_bar(this),
-	central_widget(this),
-	hbox_main(&central_widget),
-	draw_area(state_machine)
+void MainWindow::setup_ui()
 {
 	/*
 		MENU BAR
@@ -44,31 +40,30 @@ MainWindow::MainWindow(QWidget *parent) :
 	/*
 		TOOL BAR
 	*/
-	tool_bar.setIconSize(QSize(24, 24));
-	addToolBar(Qt::TopToolBarArea, &tool_bar);
+//	tool_bar.setIconSize(QSize(24, 24));
+//	addToolBar(Qt::TopToolBarArea, &tool_bar);
 
 	/*
 		CENTRAL WIDGET
 	*/
 	setCentralWidget(&central_widget);
-	hbox_main.addLayout(&vbox_left, 0);
-	hbox_main.addLayout(&vbox_right, 1);
+	hbox_main.addLayout(&vbox_left, 1);
+	hbox_main.addLayout(&vbox_right);
 
-	vbox_left.addStretch(1);
 	vbox_left.addWidget(&draw_area, 0);
-	vbox_left.addStretch(1);
+	vbox_right.addWidget(&spacer, 1);
 	vbox_right.addWidget(&btn_run);
 	vbox_right.addWidget(&btn_step);
-	vbox_right.addWidget(&pixel_size_chooser);
-	vbox_right.addWidget(&time_interval_chooser);
+	vbox_right.addLayout(&pixel_size_chooser.layout());
+	vbox_right.addLayout(&time_interval_chooser.layout());
 	btn_run.setCheckable(true);
 
 	draw_area.fill_grid();
-	draw_area.set_pixel_size(pixel_size_chooser.value());
+	draw_area.set_pixel_size(pixel_size_chooser.widget().value());
 
-	connect(&time_interval_chooser, SIGNAL(valueChanged(int)),
+	connect(&time_interval_chooser.widget(), SIGNAL(valueChanged(int)),
 		&draw_area, SLOT(set_timeout_interval(int)));
-	connect(&pixel_size_chooser, SIGNAL(valueChanged(int)),
+	connect(&pixel_size_chooser.widget(), SIGNAL(valueChanged(int)),
 		this, SLOT(change_pixel_size(int)));
 	connect(&state_machine, SIGNAL(updated(StateMachine::STATE)),
 		this, SLOT(state_updated(StateMachine::STATE)));
@@ -77,32 +72,70 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(&btn_run, SIGNAL(released()),
 		&state_machine, SLOT(trigger_pause()));
 
-	pixel_size_chooser.setMinimum(1);
-	pixel_size_chooser.setMaximum(255);
-	pixel_size_chooser.setValue(4);
-	time_interval_chooser.setMinimum(0);
-	time_interval_chooser.setMaximum(1000);
-	time_interval_chooser.setValue(10);
+	pixel_size_chooser.widget().setMinimum(1);
+	pixel_size_chooser.widget().setMaximum(255);
+	pixel_size_chooser.widget().setValue(4);
+	time_interval_chooser.widget().setMinimum(0);
+	time_interval_chooser.widget().setMaximum(1000);
+	time_interval_chooser.widget().setValue(10);
+}
 
+void MainWindow::retranslate_ui()
+{
+	btn_run.setText("Pause");
+	btn_step.setText("Step");
+}
+
+MainWindow::MainWindow(QWidget *parent) :
+	QMainWindow(parent),
+	menu_bar(this),
+//	tool_bar(this),
+	central_widget(this),
+	hbox_main(&central_widget),
+	draw_area(state_machine),
+	pixel_size_chooser("UI size: "),
+	time_interval_chooser("Step time: "),
+	ca_type_chooser("CA input type: "),
+	ca_formula_edit("CA formula: ")
+{
+	setup_ui();
 	retranslate_ui();
-
 	state_machine.set(StateMachine::STATE_WELCOME, true);
+}
+
+void MainWindow::slot_help_about()
+{
+	QMessageBox::about ( NULL, "About",
+			     "<h1>Qt GUI for sca-toolsuite</h1>"
+			     "<i>(c) 2012-2012</i><br/>"
+			     "by Johannes Lorenz<br/><br/>"
+			     "<a href=\"https://github.com/JohannesLorenz/sca-toolsuite\">https://github.com/JohannesLorenz/sca-toolsuite</a>");
+
+}
+
+void MainWindow::slot_help_about_qt() {
+	QMessageBox::aboutQt ( NULL, tr("About - Qt") );
 }
 
 void MainWindow::state_updated(StateMachine::STATE new_state)
 {
 	switch (new_state)
-	{
+		{
 		case StateMachine::STATE_INSTABLE:
 			btn_step.setEnabled(true);
 			break;
 		default:
 			btn_step.setDisabled(true);
 			break;
-	}
+		}
 
 	menu_bar.state_updated(new_state);
 
 	statusBar()->showMessage(state_machine.status_msg());
+}
+
+void MainWindow::change_pixel_size(int new_size)
+{
+	draw_area.set_pixel_size(new_size);
 }
 

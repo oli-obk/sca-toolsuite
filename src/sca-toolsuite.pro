@@ -21,7 +21,8 @@ HEADERS += res/io.h res/stack_algorithm.h \
 	gui_qt/MenuBar.h \
 	res/random.h \
 	res/ca_basics.h \
-	res/ca.h
+	res/ca.h \
+    res/graph_io.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \
@@ -57,7 +58,8 @@ SOURCES += algo/relax.cpp \
 	ca/ca.cpp \
 	tsa/grid2tsagrid.cpp \
 	ca/transf_by_grids.cpp \
-	res/general.cpp
+	res/general.cpp \
+    res/graph_io.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL \
 	../README.txt \

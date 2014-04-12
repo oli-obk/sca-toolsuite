@@ -29,6 +29,7 @@
 #include <string>
 #include <iostream>
 #include <unistd.h>
+#include <fstream>
 
 #include "random.h"
 #include "io.h"
@@ -438,7 +439,7 @@ public:
 
 	friend std::ostream& operator<< (std::ostream& stream,
 		const grid_t& g) {
-		write_grid(stream, g.data, g._dim, write_number, g.border_width);
+		write_grid(stream, g.data, g._dim, g.border_width);
 		return stream;
 	}
 
@@ -446,7 +447,24 @@ public:
 	grid_t(std::istream& stream = std::cin, u_coord_t border_width = 1) :
 		border_width(border_width)
 	{
-		read_grid(stream, data, _dim, read_number, border_width);
+		read_grid(stream, data, _dim, border_width);
+	}
+
+	//! constructor which reads a grid immediatelly
+	grid_t(const char* filename, u_coord_t border_width = 1) :
+		border_width(border_width)
+	{
+		std::ifstream ifs;
+		std::istream* is_ptr;
+		if(filename) {
+			ifs.open(filename);
+			if(!ifs.good())
+			 puts("Error opening infile");
+			is_ptr = &ifs;
+		}
+		else
+		 is_ptr = &std::cin;
+		read_grid(*is_ptr, data, _dim, border_width);
 	}
 };
 

@@ -208,6 +208,7 @@ public:
 	}
 
 	const std::vector<point>& active_cells() const { return new_changed_cells; }
+	bool has_active_cells() const { return active_cells().empty(); }
 
 	//! runs the whole ca
 	template<class Asynchronicity>

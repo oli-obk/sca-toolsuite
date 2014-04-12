@@ -21,12 +21,16 @@
 #ifndef EQUATION_SOLVER_H
 #define EQUATION_SOLVER_H
 
-#include <map>
+#include <cmath>
 
 #include <boost/config/warning_disable.hpp>
-#include <boost/spirit/include/qi.hpp>
 #include <boost/variant/recursive_variant.hpp>
 #include <boost/variant/apply_visitor.hpp>
+#include <boost/spirit/include/qi.hpp>
+/*#include <boost/spirit/include/qi_action.hpp>
+#include <boost/spirit/include/qi_grammar.hpp>
+#include <boost/spirit/include/qi_uint.hpp>
+#include <boost/spirit/include/qi_char.hpp>*/
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_function.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>

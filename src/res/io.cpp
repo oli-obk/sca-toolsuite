@@ -117,10 +117,10 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	assert(dim->area() == grid->size());
 }
 
-void read_grid(std::istream& is, std::vector<int>& grid, dimension& dim,
-	void (*SCANFUNC)(const char *&, int *), int border)
+void read_grid(const base_grid* grid_class, std::istream& is, std::vector<int>& grid, dimension& dim,
+	/*void (*SCANFUNC)(const char *&, int *),*/ int border)
 {
-	assert(SCANFUNC);
+	assert(grid_class);
 
 	int read_symbol;
 	int line_width = -1, col_count = 0, line_count = 0; // all excl. border
@@ -141,7 +141,7 @@ void read_grid(std::istream& is, std::vector<int>& grid, dimension& dim,
 		do
 		{
 			// scan symbol
-			SCANFUNC(ptr, &read_symbol);
+			grid_class->read(ptr, &read_symbol);
 			if(!col_count) // (TODO: move this somewhere else?)
 			 insert_vertical_border(&grid, grid.end(), border); // TODO: ref instead of ptr
 			grid.push_back(read_symbol);
@@ -200,10 +200,10 @@ void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
 	}
 }
 
-void write_grid(std::ostream& os, const std::vector<int> &grid, const dimension &dim,
-	void (*PRINTFUNC)(char*&, int), int border)
+void write_grid(const base_grid* grid_class, std::ostream& os, const std::vector<int> &grid, const dimension &dim,
+	int border)
 {
-	assert(PRINTFUNC);
+	assert(grid_class);
 	unsigned int last_symbol = dim.width - 1 - border;
 
 
@@ -213,71 +213,10 @@ void write_grid(std::ostream& os, const std::vector<int> &grid, const dimension 
 		for(unsigned int x = border; x < dim.width - border; x++) {
 		//	PRINTFUNC(fp, (*grid)[x + (dim->width)*y]); // TODO: two [] operators
 		//	fputc((x == last_symbol) ? '\n':' ', fp);
-			PRINTFUNC(ptr, grid[x + (dim.width)*y]);
+			grid_class->write(ptr, grid[x + (dim.width)*y]);
 			*(ptr++) = (x == last_symbol) ? '\n':' ';
 		}
 		os << buffer;
-	}
-}
-
-void create_boost_graph(FILE* read_fp, graph_t* boost_graph)
-{
-
-	unsigned int num_nodes = 0;
-	unsigned int width, height;
-	fread(&width, 4, 1, read_fp);
-	fread(&height, 4, 1, read_fp);
-	num_nodes = (width-2) * (height-2);
-	for(unsigned int i=0; i<num_nodes;i++)
-	 boost::add_vertex(*boost_graph);
-//	 fprintf(write_fp, "%d v_%d\n",i,i);
-
-
-//	fprintf(write_fp, "#\n");
-
-	unsigned int current_node = 0;
-	int current_int;
-	while(current_node < num_nodes)
-	{
-		{
-			const int num_read = fread(&current_int, 4, 1, read_fp);
-			assert(num_read > 0);
-		}
-		if(current_int == -1)
-		{
-			current_node++;
-		}
-		else
-		{
-			const unsigned int to_node = internal2human(current_int,width);
-			if(to_node != current_node) // avoid loops
-			 boost::add_edge(current_node, to_node, *boost_graph);
-			//printf("read edge %d %d\n",current_node, to_node);
-			// fprintf(write_fp, "%d %d\n", current_node, to_node);
-		}
-	}
-}
-
-void dump_graph_as_tgf(FILE* write_fp, const graph_t* graph)
-{
-	// dump nodes
-	for(unsigned int i=1; i<=num_vertices(*graph);i++)
-	 fprintf(write_fp, "%d v_%d\n",i,i);
-
-	// get the property map for vertex indices
-	typedef property_map<graph_t, vertex_index_t>::type IndexMap;
-	IndexMap index = get(vertex_index, *graph);
-
-	// dump seperator
-	fprintf(write_fp, "#\n");
-
-	// dump edges
-	graph_traits<graph_t>::edge_iterator ei, ei_end;
-	for (tie(ei, ei_end) = edges(*graph); ei != ei_end; ++ei)
-	{
-		const int cur_source = index[source(*ei, *graph)];
-		const int cur_target = index[target(*ei, *graph)];
-		fprintf(write_fp, "%d %d\n", cur_source+1, cur_target+1);
 	}
 }
 

@@ -30,9 +30,6 @@
 #include <climits>
 #include <unistd.h>
 
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/graphviz.hpp>
-
 //#include "general.h"
 struct dimension;
 
@@ -160,26 +157,34 @@ struct converter
 };
 #endif
 
-class number_grid
+class base_grid
+{
+public:
+	virtual void write(char*& ptr, int int_to_write) const = 0;
+	virtual void read(const char*& ptr, int* read_symbol) const = 0;
+	virtual const char* name() const = 0;
+};
+
+class number_grid : public base_grid
 {
 	inline static bool is_number_parsable(char sgn)
 	{
 		return isdigit(sgn) || (sgn == '-');
 	}
 public:
-	inline static void write(char*& ptr, int int_to_write) {
+	inline void write(char*& ptr, int int_to_write) const {
 		ptr += sprintf(ptr, "%d", int_to_write);
 	}
 
-	inline static void read(const char*& ptr, int* read_symbol) {
+	inline void read(const char*& ptr, int* read_symbol) const {
 		*read_symbol = atoi(ptr);
 		while(is_number_parsable(*++ptr));
 	}
 
-	const char* name() { return "numbers"; }
+	const char* name() const { return "numbers"; }
 };
 
-struct arrow_grid
+class arrow_grid : public base_grid
 {
 	using cell_type = int;
 	inline static int arrow_2_int(char read_char)
@@ -220,13 +225,13 @@ struct arrow_grid
 	static void put_sign(FILE* fp, const cell_type& sign) {
 		fprintf(fp, "%c", (char)int_2_arrow(&sign));
 	}*/
-
-	inline static void write(char*& ptr, int int_to_write) {
+public:
+	inline void write(char*& ptr, int int_to_write) const {
 //		ptr += sprintf(ptr, "%d", int_to_write);
 		*(ptr++) = int_2_arrow(&int_to_write);
 	}
 
-	inline static void read(const char*& ptr, int* read_symbol) {
+	inline void read(const char*& ptr, int* read_symbol) const {
 		//*read_symbol = atoi(ptr);
 		//while(is_number_parsable(*++ptr));
 		*read_symbol = arrow_2_int(*(ptr++));
@@ -264,8 +269,8 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	void (*SCANFUNC)(const char*&, int*) = &read_number,
 	int border = 1);
 
-void read_grid(std::istream& is, std::vector<int>& grid, dimension& dim,
-	void (*SCANFUNC)(const char *&, int *), int border = -1);
+//void read_grid(std::istream& is, std::vector<int>& grid, dimension& dim,
+//	void (*SCANFUNC)(const char *&, int *), int border = -1);
 
 inline void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	int border)
@@ -273,105 +278,16 @@ inline void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	read_grid(fp, grid, dim, &read_number, border);
 }
 
-/*
-void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
-	void (*SCANFUNC)(const char*&, int*) = &read_number,
-	int border = 1);
+void read_grid(const base_grid* grid_class, std::istream& is, std::vector<int>& grid, dimension& dim,
+	int border = -1);
 
-void read_grid(std::istream& is, std::vector<int>& grid, dimension& dim,
-	void (*SCANFUNC)(const char *&, int *), int border = -1);
-
-inline void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
-	int border)
-{
-	read_grid(fp, grid, dim, &read_number, border);
-}*/
-
-#if 0
-template<class grid_serializer>
-void _read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, int border_width = 1)
-{
-	grid_serializer ser(grid);
-	_read_grid(fp, grid, dim, &ser, border_width);
+template<class GridType = number_grid>
+void read_grid(std::istream& is, std::vector<int>& grid, dimension& dim, int border = -1) {
+	GridType grid_class;
+	read_grid(&grid_class, is, grid, dim, border);
 }
 
-//! @todo: use default templates when c++11 gets default
-/*inline void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim, int border = 1)
-{
-	default_serializer serializer;
-	serializer.grid = grid;
-	_read_grid<default_serializer>(fp, grid, dim, &serializer, border);
-}*/
 
-inline void read_grid(FILE* _fp, std::vector<int>* _vector, dimension* _dim, int _border = 1)
-{
-	const FileGrid infile(_fp);
-	default_grid grid(_grid(*_vector, *_dim, _border));
-	converter<FileGrid, default_grid> c(infile, grid);
-	c.convert();
-}
-
-template<class grid_writer>
-inline void read_array(FILE* fp, std::vector<int>* grid, dimension* dim) {
-	_read_grid<grid_writer>(fp, grid, dim, 0);
-}
-
-/*inline void write_arrow(FILE* fp, int int_to_write) {
-	fprintf(fp, "%c", (char)int_2_arrow(&int_to_write));
-}*/
-
-inline void write_number(FILE* fp, int int_to_write) {
-	fprintf(fp, "%d", int_to_write);
-}
-
-/**
-	Write a grid to a file pointer (without border)
-	If border exists, its values are ignored.
-	@param fp open file, writable
-	@param grid pointer to vector, shall contain the grid
-	@param dim shall contain real dimension of the grid, i.e. including border
-	@param PRINTFUNC function which converts numbers to chars for readability
-	@param border how thick the internal border shall be - internal use only
-*/
-template<class grid_serializer>
-void _write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
-	grid_serializer* serializer, int border)
-{
-	unsigned int last_symbol = dim->width - 1 - border;
-
-	for(unsigned int y = border; y < dim->height - border; y++)
-	{
-		for(unsigned int x = border; x < dim->width - border; x++) {
-			serializer->write_cell(fp, (*grid)[x + (dim->width)*y]); // TODO: two [] operators
-			serializer->write_border(fp, x, y, 1, 0);
-			//fputc((x == last_symbol) ? '\n':' ', fp);
-		}
-		fputc('\n', fp);
-		for(unsigned int yoff = 1;
-			yoff <= grid_serializer::horizontal_separators_each() - border; yoff++)
-		for(unsigned int x = border; x < dim->width - border; x++) {
-			serializer->write_border(fp, x, y, 0, yoff); // TODO: two [] operators
-			serializer->write_border(fp, x, y, 1, yoff);
-			//fputc((x == last_symbol) ? '\n':' ', fp);
-		}
-		fputc('\n', fp);
-	}
-}
-
-inline void write_grid(FILE* _fp, const std::vector<int>* _vector, const dimension* _dim,
-	int _border_width = 1)
-{
-	FileGrid outfile(_fp);
-	const_default_grid grid(_const_grid(*_vector, *_dim, _border_width));
-	converter<const_default_grid, FileGrid> c(grid, outfile);
-	c.convert();
-}
-
-template<class grid_writer>
-inline void write_array(FILE* fp, std::vector<int>* grid, dimension* dim) {
-	_write_grid<grid_writer>(fp, grid, dim, 0);
-}
-#endif
 
 inline void _write_number(FILE* fp, int int_to_write) {
 	fprintf(fp, "%d", int_to_write);
@@ -389,12 +305,23 @@ inline void _write_number(FILE* fp, int int_to_write) {
 void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
 	void (*PRINTFUNC)(FILE*, int) = &_write_number, int border = 1);
 
-void write_grid(std::ostream& os, const std::vector<int>& grid, const dimension& dim,
-	void (*PRINTFUNC)(char*&, int), int border);
+//void write_grid(std::ostream& os, const std::vector<int>& grid, const dimension& dim,
+//	void (*PRINTFUNC)(char*&, int), int border);
+
+void write_grid(const base_grid* grid_class, std::ostream& os, const std::vector<int>& grid, const dimension& dim,
+	int border);
 
 inline void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
 	int border) {
 	write_grid(fp, grid, dim, &_write_number, border);
+}
+
+template<class GridType = number_grid>
+void write_grid(std::ostream& os, const std::vector<int>& grid, const dimension& dim,
+	int border)
+{
+	GridType grid_class;
+	write_grid(&grid_class, os, grid, dim, border);
 }
 
 
@@ -405,55 +332,6 @@ inline void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* 
 	@return true iff new process could be started
 */
 bool get_input(const char* shell_command);
-
-#include <boost/graph/adjacency_list.hpp>
-using namespace boost;
-typedef boost::adjacency_list<
-		vecS,vecS,directedS, property<vertex_index_t, int>
-	> graph_t;
-//! to be documented
-void create_boost_graph(FILE* fp, graph_t* boost_graph);
-
-//! dumps a boost graph into a trivial graphics file (TGF, see Wikipedia)
-void dump_graph_as_tgf(FILE* write_fp, const graph_t* boost_graph);
-
-/*//! dumps a boost graph into a PDF file, using graphviz
-template<class GraphType>
-void dump_graph_as_pdf(std::ostream& stream, const GraphType& boost_graph);
-
-//! dumps a boost graph into a PDF file, using graphviz
-//! if @a fname is nullptr, the filename is chosen at random
-template<class GraphType>
-void dump_graph_as_pdf(const GraphType &boost_graph, const char* fname = nullptr);
-*/
-template<class GraphType>
-void dump_graph_as_dot(const GraphType &graph, std::ostream &stream, const boost::dynamic_properties& dp)
-{
-//	boost::dynamic_properties dp;
-//	dp.property("label", boost::get(&Vertex::name, g));
-//	dp.property("node_id", get(boost::vertex_index, graph)); //TODO: boost::get?
-
-	// TODO: separate write func?
-	write_graphviz_dp(stream, graph, dp);
-}
-
-template<class GraphType>
-void dump_graph_as_dot(const GraphType &graph, const boost::dynamic_properties& dp, const char* fname = nullptr
-	)
-{
-	const char* filename;
-	if(fname)
-		filename = fname;
-	else
-	{
-		char temp[] = "graphXXXXXX";
-		mkstemp(temp);
-		filename = temp;
-	}
-
-	std::ofstream stream(filename);
-	dump_graph_as_dot(graph, stream, dp);
-}
 
 #endif // IO_H
 

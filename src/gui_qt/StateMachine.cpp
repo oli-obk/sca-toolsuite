@@ -28,7 +28,7 @@ const char* (StateMachine::msg[6]) = {
 	"Step.",
 	"Stable, Paused." };
 
-StateMachine::StateMachine()
+StateMachine::StateMachine() :
+	state(STATE_WELCOME)
 {
-	set(STATE_WELCOME);
 }

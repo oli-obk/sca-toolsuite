@@ -25,17 +25,35 @@
 #include <QImage>
 #include <QPushButton>
 #include <QMenuBar>
-#include <QToolBar>
+//#include <QToolBar>
 #include <QWidget>
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QSpinBox>
+#include <QLineEdit>
+#include <QComboBox>
 #include <QMessageBox>
 
 #include "StateMachine.h"
 #include "DrawArea.h"
 #include "MenuBar.h"
+
+template<class QtWidget>
+class LabeledWidget
+{
+	QLabel lbl;
+	QtWidget _widget;
+	QHBoxLayout _layout;
+
+public:
+	QHBoxLayout& layout() { return _layout; }
+	const QHBoxLayout& layout() const { return _layout; }
+	QtWidget& widget() { return _widget; }
+	const QtWidget& widget() const { return _widget; }
+
+	LabeledWidget(const char* text);
+};
 
 class MainWindow : public QMainWindow
 {
@@ -44,7 +62,7 @@ class MainWindow : public QMainWindow
 	StateMachine state_machine;
 
 	MenuBar menu_bar;
-	QToolBar tool_bar;
+	//QToolBar tool_bar;
 	QWidget central_widget;
 	QHBoxLayout hbox_main;
 
@@ -52,39 +70,25 @@ class MainWindow : public QMainWindow
 	DrawArea draw_area;
 
 	QVBoxLayout vbox_right;
+	QWidget spacer;
 	QPushButton btn_run, btn_step;
-	QSpinBox pixel_size_chooser, time_interval_chooser;
+	LabeledWidget<QSpinBox> pixel_size_chooser, time_interval_chooser;
+	LabeledWidget<QComboBox> ca_type_chooser;
+	LabeledWidget<QLineEdit> ca_formula_edit;
 
+	void setup_ui();
 	void retranslate_ui();
 
 private slots:
 	void state_updated(StateMachine::STATE new_state);
-	inline void change_pixel_size(int new_size) {
-		draw_area.set_pixel_size(new_size);
-	}
+	void change_pixel_size(int new_size);
 
 public:
 	explicit MainWindow(QWidget *parent = 0);
 
-signals:
-
 public slots:
-
-	inline void slot_help_about ()
-	{
-		QMessageBox::about ( NULL, "About",
-					"<h1>Qt GUI for sca-toolsuite</h1>"
-					"<i>(c) 2012-2012</i><br/>"
-					"by Johannes Lorenz<br/><br/>"
-					"<a href=\"https://github.com/JohannesLorenz/sca-toolsuite\">https://github.com/JohannesLorenz/sca-toolsuite</a>");
-
-	}
-
-	inline void slot_help_about_qt () {
-		QMessageBox::aboutQt ( NULL, tr("About - Qt") );
-	}
-
-
+	void slot_help_about ();
+	void slot_help_about_qt ();
 };
 
 #endif // MAINWINDOW_H

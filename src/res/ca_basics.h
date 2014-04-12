@@ -21,6 +21,8 @@
 #ifndef CA_BASICS_H
 #define CA_BASICS_H
 
+#include <set>
+#include <algorithm>
 #include "general.h"
 
 /**

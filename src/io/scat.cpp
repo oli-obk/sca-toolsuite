@@ -29,26 +29,18 @@ class MyProgram : public Program
 {
 	int main()
 	{
-		std::ifstream ifs;
-		std::istream *is_ptr;
-
+		const char* fname = nullptr;
 		switch(argc)
 		{
 			case 2:
-				//read_fp = fopen(argv[1], "r");
-				ifs.open(argv[1]);
-				if(!ifs.good())
-				 exit("Error opening infile");
-				is_ptr = &ifs;
-				break;
+				fname = argv[1];
 			case 1:
-				is_ptr = &std::cin;
 				break;
 			default:
 				exit_usage();
 		}
 
-		std::cout << grid_t(*is_ptr);
+		std::cout << grid_t(fname, 0);
 		return 0;
 	}
 };

@@ -24,8 +24,6 @@
 #include <cstdio>
 #include <QLabel>
 #include <QTimer>
-#include <QPainter> // TODO: cpp
-#include <QPaintEvent> // TODO: cpp
 
 #include "StateMachine.h"
 #include "io.h"
