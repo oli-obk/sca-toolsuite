@@ -28,7 +28,7 @@ class MyProgram : public Program
 {
 	int main()
 	{
-		grid_t grid();
+		grid_t grid;
 		int expected = 0;
 
 		if(argc==2)
@@ -36,8 +36,8 @@ class MyProgram : public Program
 		else
 		 exit_usage();
 
-		const auto& itr = grid.begin();
-		for( ; itr != grid.end() && *itr == expected; ++itr ) ;
+		auto itr = grid.cbegin();
+		for( ; itr != grid.cend() && *itr == expected; ++itr ) ;
 
 		return ( itr == grid.end() );
 	}

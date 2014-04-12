@@ -98,13 +98,13 @@ public:
 	//! returns whether cell at point @a p is active.
 	//! @a result is set to the result in all cases, if it is not nullptr
 	// TODO: overloads
-	bool is_cell_active(const grid_t& grid, const point& p, cell_t* result = nullptr)
+	bool is_cell_active(const grid_t& grid, const point& p, cell_t* result = nullptr) const
 	{
 		const int* cell_ptr = &grid[p];
 		cell_t next = next_state(cell_ptr, p, grid.dim());
 		if(result)
 		 *result = next;
-		return next == *cell_ptr;
+		return next != *cell_ptr;
 	}
 
 	neighbourhood_t get_neighbourhood() const

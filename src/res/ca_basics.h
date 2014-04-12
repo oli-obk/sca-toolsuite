@@ -141,6 +141,20 @@ public:
 	{
 		return ! operator==(rhs);
 	}
+
+	friend std::ostream& operator<< (std::ostream& stream,
+		const transition_function& tf) {
+		stream << "Transition function: (";
+		for( unsigned i = 0; i < tf.neighbour_size; ++i)
+		{
+			if(tf.input_set[i])
+			 stream << (tf.input_vals[i]) << ' ';
+			else
+			 stream << "- ";
+		}
+		stream << ") - > " << tf.output;
+		return stream;
+	}
 };
 
 inline bool compare_by_input(const transition_function& lhs,
@@ -157,7 +171,8 @@ class neighbourhood_t
 	//! positive offset of center cell
 	//! this cell is obviously needed
 //	point center_cell = point(-1, -1);
-	dimension dim; 	//! < dimension of neighbours
+//	dimension dim; 	//! < dimension of neighbours
+	bounding_box bb;
 
 	void init(const std::vector<int>& in_grid,
 		const dimension& in_dim)
@@ -187,7 +202,11 @@ class neighbourhood_t
 
 		// make it all relative to center_cell
 		for(point& p : neighbours)
-		 p -= center_cell; // TODO: make this in case 2?
+		{
+			// TODO: can be computed from dim?
+			// TODO: but do not remove p-=...
+			bb.add_point( p -= center_cell );
+		}
 	}
 
 	point idx(int idx, int symm)
@@ -215,8 +234,16 @@ class neighbourhood_t
 		int symm)
 	{
 		transition_function tf(size(), input_grid, output_val);
-		for(unsigned i = 0; i < size(); ++i)
-		 tf.set_neighbour(i, input_grid[dim.coords_to_id(idx(i, symm)/*+center_cell*/)]);
+		for(unsigned i = 0; i < size(); ++i) {
+			if(symm == 0)
+			{
+			std::cout << "DBG:" << std::endl;
+			std::cout << i << std::endl;
+			std::cout << idx(i, symm) << std::endl;
+			}
+			//std::cout << dim.coords_to_id(idx(i, symm)) << std::endl;
+			tf.set_neighbour(i, input_grid[bb.coords_to_id(idx(i, symm)/*+center_cell*/)]);
+		}
 		*tfs = tf; // TODO: redundant
 	}
 
@@ -265,8 +292,9 @@ public:
 	neighbourhood_t(FILE* fp)
 	{
 		std::vector<int> in_grid;
-		read_grid(stdin, &in_grid, &dim, 0);
-		init(in_grid, dim);
+		dimension tmp_dim;
+		read_grid(stdin, &in_grid, &tmp_dim, 0);
+		init(in_grid, tmp_dim);
 	}
 
 	/*neighbourhood(const dimension_container& _dim, point _center_cell = {0,0})
@@ -280,14 +308,15 @@ public:
 
 	//! assumes that no borders exist
 	neighbourhood_t(const dimension& _dim, point _center_cell = {0,0})
-		: //center_cell(_center_cell),
-		dim(_dim)
+		//: //center_cell(_center_cell),
+		//dim(_dim)
 	{
 		neighbours.reserve(_dim.area());
 		dimension_container cont(_dim.height, _dim.width, 0);
 		for( const point& p : cont )
 		{
 			neighbours.push_back(p - _center_cell);
+			bb.add_point(neighbours.back());
 		}
 	}
 

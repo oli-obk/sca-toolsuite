@@ -266,22 +266,28 @@ public:
 		}
 	}
 	// TODO: for those 3 cases: cover lr > ul
+	coord_t y_size() const { return _lr.y - _ul.y; }
+	coord_t x_size() const { return _lr.x - _ul.x; }
 	point ul() const { return _ul; }
 	point lr() const { return _lr; }
 	dimension dim() const {
-		return dimension { (unsigned)_lr.y - _ul.y,
-			(unsigned)_lr.x - _ul.x };
+		return dimension { (u_coord_t) y_size(),
+			(u_coord_t) x_size() };
+	}
+	u_coord_t coords_to_id(const point& p) const {
+		return (p.y - _ul.y) * y_size() + (p.x - _ul.x);
 	}
 };
 
-class cell_itr
+class const_cell_itr
 {
+protected:
 	coord_t linewidth;
 	cell_t *ptr, *next_line_end;
 	coord_t bw_2;
 
 public:
-	cell_itr(cell_t* top_left, dimension dim, coord_t bw,
+	const_cell_itr(cell_t* top_left, dimension dim, coord_t bw,
 		bool pos_is_begin = true) :
 		linewidth(dim.width),
 		ptr(top_left +
@@ -292,7 +298,7 @@ public:
 	{
 	}
 
-	cell_itr& operator++()
+	const_cell_itr& operator++()
 	{
 		if((++ptr) == next_line_end)
 		{
@@ -303,10 +309,18 @@ public:
 	}
 
 	const cell_t& operator*() const { return *ptr; }
-	cell_t& operator*() { return *ptr; }
 
-	bool operator==(const cell_itr& rhs) const { return ptr == rhs.ptr; }
-	bool operator!=(const cell_itr& rhs) const { return !operator==(rhs); }
+	bool operator==(const const_cell_itr& rhs) const {
+		return ptr == rhs.ptr; }
+	bool operator!=(const const_cell_itr& rhs) const {
+		return !operator==(rhs); }
+};
+
+class cell_itr : public const_cell_itr
+{
+public:
+	using const_cell_itr::const_cell_itr;
+	cell_t& operator*() { return *ptr; }
 };
 
 struct grid_t // TODO: class
@@ -415,6 +429,8 @@ public:
 
 	cell_itr begin() { return cell_itr(data.data(), _dim, border_width); }
 	cell_itr end() { return cell_itr(data.data(), _dim, border_width, false); }
+	const_cell_itr cbegin() { return const_cell_itr(data.data(), _dim, border_width); }
+	const_cell_itr cend() { return const_cell_itr(data.data(), _dim, border_width, false); }
 
 	bool point_is_on_border(const point& p) const {
 		return human_dim().point_is_on_border(p, 0);

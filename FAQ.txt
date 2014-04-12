@@ -64,5 +64,11 @@ A: Then we are even a lot faster, since n^2 avalanches can be thrown at once.
 Q: Why is the sandpile algorithm so fast, even though it is sequential?
 A: The reason for the speedup is that avalanches are developped in multiple
    levels, where in each level, each cell on the grid is assured to only fire
-   once. This makes branch prediction and memory usage much easier.
+   once. Thus, we don't need to assure that a cell is not added multiple times
+   to the stack of active cells. This makes branch prediction and memory usage
+   much easier.
+
+Q: Can our sequential sandpile algorithm be parallelized?
+A: Maybe. We have not tested it yet.
+
 

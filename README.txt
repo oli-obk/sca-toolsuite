@@ -54,21 +54,24 @@ Here are good reasons:
 
     Efficiency, because we use a special boost parser to build ASTs, and then
     try to easify those (future feature). Simulators with precompilation are
-    usually faster, but I think the factor should not be more than 3-4.
+    usually faster, but the factor should not be more than 3-4.
 
-  * For sandpiles, our computation time was 68 per cent of the fastest
-    algorithm we knew of before. For details, see the file `FAQ'.
+  * For sandpiles, we provide the (probably) worlds fastest algorithm. our
+    computation time was 68 per cent of the fastest algorithm we knew of
+    before. For details, see the file `FAQ'.
 
-  * We have a GUI :) It works for all ca, with special functionality for sandpiles.
+  * We have a GUI. It works for all ca, with special functionality for
+    sandpiles.
 
   * The code is quite bug safe. All algorithms were designed both easy and
     fast. Also, we propose the file src/test.sh to test all our programs.
 
-  * We give a good documentation: doxygen and --help for all C++ programs.
+  * We give a lot of documentation: doxygen and --help for all C++ programs.
 
   * Besides cellular automata, there are many more applications of this
     toolsuite:
-
+      
+      * rotor-routing (as described by Priezzhev et al, 1996)
       * image manipulation (future feature), e.g. with filters
       * solving math equations (future feature) or calculating
       * writing C code in scripts
