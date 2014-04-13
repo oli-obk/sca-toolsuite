@@ -31,8 +31,7 @@
 #include "ca_basics.h"
 #include "equation_solver.h"
 
-namespace ca
-{
+namespace sca { namespace ca {
 
 // TODO:
 #define TABLE_OPTIMIZATION
@@ -112,11 +111,11 @@ public:
 		return next != *cell_ptr;
 	}
 
-	ca_basics::neighbourhood_t get_neighbourhood() const
+	n_t get_neighbourhood() const
 	{
 		unsigned moore_width = (border_width<<1) + 1;
 		dimension moore = { moore_width, moore_width };
-		return ca_basics::neighbourhood_t(moore, point(border_width, border_width));
+		return n_t(moore, point(border_width, border_width));
 	}
 };
 
@@ -124,7 +123,7 @@ class ca_simulator_t : private ca_calculator_t
 {
 	grid_t _grid[2];
 	grid_t *old_grid = _grid, *new_grid = _grid;
-	ca_basics::neighbourhood_t neighbours;
+	n_t neighbours;
 	std::vector<point> //recent_active_cells(old_grid->size()),
 			new_changed_cells; // TODO: this vector will shrink :/
 	std::set<point> cells_to_check; // TODO: use pointers here, like in grid
@@ -234,7 +233,7 @@ class configuration_graph_types
 protected:
 	struct vertex
 	{
-		ca_basics::configuration conf;
+		configuration conf;
 	};
 	struct edge {};
 
@@ -242,7 +241,7 @@ protected:
 	typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
 	typedef boost::graph_traits<graph_t>::edge_descriptor edge_t;
 
-	typedef std::map<ca_basics::configuration, vertex_t> map_t;
+	typedef std::map<configuration, vertex_t> map_t;
 	typedef std::stack<vertex_t> stack_t;
 #endif
 };
@@ -272,7 +271,7 @@ class scientific_ca_t : public ca_simulator_t, public configuration_graph_types
 
 		// start vertex
 		vertex_t v = boost::add_vertex(graph);
-		graph[v].conf = ca_basics::configuration(std::set<point>(), grid());
+		graph[v].conf = configuration(std::set<point>(), grid());
 		try_children(boost::add_vertex(graph), graph, map, stack, sim_rect);
 
 		return graph;
@@ -281,13 +280,13 @@ class scientific_ca_t : public ca_simulator_t, public configuration_graph_types
 	void try_children(vertex_t node, graph_t& graph, map_t& map, stack_t& stack, const rect& sim_rect) const
 	{
 		map_t::const_iterator itr;
-		ca_basics::configuration c(sim_rect, grid());
+		configuration c(sim_rect, grid());
 		itr = map.find(c);
 		if(itr == map.end())
 		{ // vertex has not been initialized yet
 			vertex_t v = boost::add_vertex(graph);
 		//	(*graph)[v].conf =
-			map.insert(std::pair<ca_basics::configuration,
+			map.insert(std::pair<configuration,
 				vertex_t>(c, v));
 
 			// Create an edge conecting those two vertices
@@ -296,7 +295,7 @@ class scientific_ca_t : public ca_simulator_t, public configuration_graph_types
 			 boost::tie(e,b) = boost::add_edge(stack.top(), v, graph);
 
 			// get child vector
-			std::vector<ca_basics::configuration> next_confs;
+			std::vector<configuration> next_confs;
 
 			// recurse
 			stack.push(v);
@@ -324,6 +323,6 @@ public:
 #endif
 };
 
-}
+} }
 
 #endif // CA_H

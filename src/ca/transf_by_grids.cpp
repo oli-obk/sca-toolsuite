@@ -22,6 +22,8 @@
 #include "io.h"
 #include "ca_basics.h" // TODO: -> cmake deps
 
+using namespace sca;
+
 // TODO: own symm type class, inherit
 class MyProgram : public Program
 {
@@ -70,9 +72,9 @@ class MyProgram : public Program
 		assert_usage(argc == 1);
 
 		// read neighbour grid
-		ca_basics::neighbourhood_t neighbours(stdin);
+		ca::n_t neighbours(stdin);
 
-		std::vector<ca_basics::transition_function> table;
+		std::vector<ca::trans_t> table;
 
 		// read other grids into table
 		bool eof = false;
@@ -103,12 +105,12 @@ class MyProgram : public Program
 		assert(table.size() > 0);
 
 		// uniq assertion
-		std::sort(table.begin(), table.end(), ca_basics::compare_by_input);
-		const ca_basics::transition_function* recent = &(table[0]);
+		std::sort(table.begin(), table.end(), ca::compare_by_input);
+		const ca::trans_t* recent = &(table[0]);
 
 		// TODO: I do not know why const tf&
 		// breaks the const here...
-		for(std::vector<ca_basics::transition_function>::const_iterator itr
+		for(std::vector<ca::trans_t>::const_iterator itr
 			= (++table.begin()); itr != table.end(); ++itr)
 		{
 			assert(*itr != *recent);

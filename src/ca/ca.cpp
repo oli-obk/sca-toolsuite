@@ -22,6 +22,8 @@
 #include "io.h"
 #include "ca.h"
 
+using namespace sca;
+
 // TODO: own sim type class, inherit
 class MyProgram : public Program
 {

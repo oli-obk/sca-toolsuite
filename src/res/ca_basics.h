@@ -25,8 +25,7 @@
 #include <algorithm>
 #include "general.h"
 
-namespace ca_basics
-{
+namespace sca { namespace ca {
 
 /**
  * @brief This class holds input and output values of a
@@ -35,7 +34,7 @@ namespace ca_basics
  * Where these values are depends on a neighborhood class,
  * which s not a part of this struct.
  */
-class transition_function
+class trans_t
 {
 	// group parameters
 	const unsigned neighbour_size; //! size of input_vals
@@ -46,7 +45,7 @@ class transition_function
 	int output; //! function output value
 
 public:
-	transition_function(const unsigned _neighbour_size)
+	trans_t(const unsigned _neighbour_size)
 	:
 		neighbour_size(_neighbour_size),
 		input_vals(neighbour_size),
@@ -54,8 +53,8 @@ public:
 	{
 	}
 
-	transition_function operator=(
-		const transition_function& other)
+	trans_t operator=(
+		const trans_t& other)
 	{
 		assert(neighbour_size == other.neighbour_size);
 		input_vals = other.input_vals;
@@ -65,7 +64,7 @@ public:
 		return *this;
 	}
 
-	transition_function(
+	trans_t(
 		int _neighbour_size,
 		const std::vector<int>& input_grid,
 		int output_val
@@ -96,8 +95,8 @@ public:
 
 	// compares lexicographical, returns results for operator<
 	// a dontcare in front counts as a smaller value
-	friend bool _compare_by_input(const transition_function& lhs,
-		const transition_function& rhs)
+	friend bool _compare_by_input(const trans_t& lhs,
+		const trans_t& rhs)
 	{
 		// TODO: assert same neighbour size, grid size?
 		for(unsigned i = 0; i<lhs.neighbour_size; ++i)
@@ -118,14 +117,14 @@ public:
 		return false; // if both are equal
 	}
 
-	bool operator<(const transition_function& rhs) const
+	bool operator<(const trans_t& rhs) const
 	{
 		return (output == rhs.output)
 			? _compare_by_input(*this, rhs)
 			: (output < rhs.output);
 	}
 
-	bool operator==(const transition_function& rhs) const
+	bool operator==(const trans_t& rhs) const
 	{
 		if(input_count != rhs.input_count)
 		 return false; // shortening
@@ -142,13 +141,13 @@ public:
 		return true;
 	}
 
-	bool operator!=(const transition_function& rhs) const
+	bool operator!=(const trans_t& rhs) const
 	{
 		return ! operator==(rhs);
 	}
 
 	friend std::ostream& operator<< (std::ostream& stream,
-		const transition_function& tf) {
+		const trans_t& tf) {
 		stream << "Transition function: (";
 		for( unsigned i = 0; i < tf.neighbour_size; ++i)
 		{
@@ -162,13 +161,13 @@ public:
 	}
 };
 
-inline bool compare_by_input(const transition_function& lhs,
-		const transition_function& rhs)
+inline bool compare_by_input(const trans_t& lhs,
+		const trans_t& rhs)
 {
 	return _compare_by_input(lhs, rhs);
 }
 
-class neighbourhood_t
+class n_t
 {
 	//! neighbour positions, relative to center cell
 	//! @invariant The points are always sorted (linewise)
@@ -233,12 +232,12 @@ class neighbourhood_t
 
 
 	void add_single_tf(
-		transition_function* tfs,
+		trans_t* tfs,
 		const std::vector<int>& input_grid,
 		int output_val,
 		int symm)
 	{
-		transition_function tf(size(), input_grid, output_val);
+		trans_t tf(size(), input_grid, output_val);
 		for(unsigned i = 0; i < size(); ++i) {
 			tf.set_neighbour(i, input_grid[bb.coords_to_id(idx(i, symm)/*+center_cell*/)]);
 		}
@@ -250,11 +249,11 @@ public:
 	unsigned size() const { return neighbours.size(); }
 
 	void add_transition_functions(
-		std::vector<transition_function>& tf_vector,
+		std::vector<trans_t>& tf_vector,
 		const std::vector<int>& input_grid,
 		int output_val)
 	{
-		static transition_function tfs[8]
+		static trans_t tfs[8]
 		 = {size(), size(), size(), size(),
 			size(), size(), size(), size()};
 
@@ -280,14 +279,14 @@ public:
 	 * @param in_grid
 	 * @param in_dim
 	 */
-	neighbourhood_t(const std::vector<int>& in_grid,
+	n_t(const std::vector<int>& in_grid,
 		const dimension& in_dim)
 	{
 		// TODO: parameter in_dim is useless?
 		init(in_grid, in_dim);
 	}
 
-	neighbourhood_t(FILE* fp)
+	n_t(FILE* fp)
 	{
 		std::vector<int> in_grid;
 		dimension tmp_dim;
@@ -305,7 +304,7 @@ public:
 	}*/
 
 	//! assumes that no borders exist
-	neighbourhood_t(const dimension& _dim, point _center_cell = {0,0})
+	n_t(const dimension& _dim, point _center_cell = {0,0})
 		//: //center_cell(_center_cell),
 		//dim(_dim)
 	{
@@ -331,7 +330,7 @@ public:
 
 public:
 	// TODO: operator*
-	neighbourhood_t& operator*=(const neighbourhood_t& rhs)
+	n_t& operator*=(const n_t& rhs)
 	{
 		std::set<point> neighbour_set;
 
@@ -354,7 +353,7 @@ public:
 		return *this;
 	}
 
-	neighbourhood_t& operator-=(const neighbourhood_t& rhs)
+	n_t& operator-=(const n_t& rhs)
 	{
 		// we use a new set because erasing from a vector
 		// causes reallocations
@@ -367,7 +366,7 @@ public:
 	}
 
 	friend std::ostream& operator<< (std::ostream& stream,
-		const neighbourhood_t& n) {
+		const n_t& n) {
 		stream << "Neighbourhood: (";
 		for( const point& p : n.neighbours) { stream << p << ", "; }
 		stream << ")";
@@ -395,29 +394,29 @@ public:
 	}*/
 };
 
-class conf
+class conf_t
 {
 	std::vector<cell_t> data; // TODO: list?
 public:
-	conf(const neighbourhood_t& n, const grid_t& grid, point p = {0, 0})
+	conf_t(const n_t& n, const grid_t& grid, point p = {0, 0})
 	{
 		for(unsigned i = 0; i < n.size(); ++i)
 		 data.push_back(grid[p + n[i]]);
 	}
 
-	conf(const std::set<point>& points, const grid_t& grid, point p = {0, 0})
+	conf_t(const std::set<point>& points, const grid_t& grid, point p = {0, 0})
 	{
 		for(const point& p2 : points)
 		 data.push_back(grid[p + p2]);
 	}
 
-	conf(const rect& points, const grid_t& grid, point p = {0, 0})
+	conf_t(const rect& points, const grid_t& grid, point p = {0, 0})
 	{
 		for(const point &p2 : points)
 		 data.push_back(grid[p + p2]);
 	}
 
-	conf() {}
+	conf_t() {}
 
 	bool equals_grid(const std::set<point>& points, const grid_t& grid) const
 	{
@@ -430,14 +429,14 @@ public:
 		return true;
 	}
 
-	bool operator<(const conf& rhs) const
+	bool operator<(const conf_t& rhs) const
 	{
 		unsigned size = data.size();
 		assert(size == rhs.data.size());
 		return data < rhs.data;
 	}
 
-	bool operator==(const conf& rhs) const
+	bool operator==(const conf_t& rhs) const
 	{
 		unsigned size = data.size();
 		assert(size == rhs.data.size());
@@ -445,8 +444,8 @@ public:
 	}
 
 	friend std::ostream& operator<< (std::ostream& stream,
-		const conf& c) {
-		stream << "configuration: (";
+		const conf_t& c) {
+		stream << "conf_tiguration: (";
 		for( const cell_t& i : c.data) { stream << i << ", "; }
 		stream << ")";
 		return stream;
@@ -598,6 +597,6 @@ void for_each_same(const C1& cont1, const C2& cont2, const Functor& func)
 }
 */
 
-}
+} }
 
 #endif // CA_BASICS_H
