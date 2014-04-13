@@ -395,29 +395,29 @@ public:
 	}*/
 };
 
-class configuration
+class conf
 {
 	std::vector<cell_t> data; // TODO: list?
 public:
-	configuration(const neighbourhood_t& n, const grid_t& grid, point p = {0, 0})
+	conf(const neighbourhood_t& n, const grid_t& grid, point p = {0, 0})
 	{
 		for(unsigned i = 0; i < n.size(); ++i)
 		 data.push_back(grid[p + n[i]]);
 	}
 
-	configuration(const std::set<point>& points, const grid_t& grid, point p = {0, 0})
+	conf(const std::set<point>& points, const grid_t& grid, point p = {0, 0})
 	{
 		for(const point& p2 : points)
 		 data.push_back(grid[p + p2]);
 	}
 
-	configuration(const rect& points, const grid_t& grid, point p = {0, 0})
+	conf(const rect& points, const grid_t& grid, point p = {0, 0})
 	{
 		for(const point &p2 : points)
 		 data.push_back(grid[p + p2]);
 	}
 
-	configuration() {}
+	conf() {}
 
 	bool equals_grid(const std::set<point>& points, const grid_t& grid) const
 	{
@@ -430,14 +430,14 @@ public:
 		return true;
 	}
 
-	bool operator<(const configuration& rhs) const
+	bool operator<(const conf& rhs) const
 	{
 		unsigned size = data.size();
 		assert(size == rhs.data.size());
 		return data < rhs.data;
 	}
 
-	bool operator==(const configuration& rhs) const
+	bool operator==(const conf& rhs) const
 	{
 		unsigned size = data.size();
 		assert(size == rhs.data.size());
@@ -445,8 +445,8 @@ public:
 	}
 
 	friend std::ostream& operator<< (std::ostream& stream,
-		const configuration& c) {
-		stream << "Configuration: (";
+		const conf& c) {
+		stream << "configuration: (";
 		for( const cell_t& i : c.data) { stream << i << ", "; }
 		stream << ")";
 		return stream;
