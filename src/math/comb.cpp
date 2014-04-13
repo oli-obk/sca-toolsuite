@@ -19,7 +19,7 @@
 /*************************************************************************/
 
 #include "general.h"
-#include "io.h"
+#include "geometry.h"
 
 inline int add_ints(const int i1, const int i2) { return i1+i2; }
 inline int sub_ints(const int i1, const int i2) { return i1-i2; }

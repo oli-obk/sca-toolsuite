@@ -23,6 +23,7 @@
 
 #include <cassert>
 #include <vector>
+#include "geometry.h"
 
 namespace sandpile
 {

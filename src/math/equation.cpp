@@ -19,7 +19,7 @@
 /*************************************************************************/
 
 #include "general.h"
-#include "io.h"
+#include "geometry.h"
 #include "equation_solver.h"
 
 class MyProgram : public Program

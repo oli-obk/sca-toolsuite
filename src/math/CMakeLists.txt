@@ -1,23 +1,21 @@
 SET(src_dir "${CMAKE_CURRENT_SOURCE_DIR}")
 
 add_executable(add "${src_dir}/add.cpp"
-	${io_files}
+	${general}
 )
 
 add_executable(comb "${src_dir}/comb.cpp"
-	${io_files}
+	${general}
 )
 
 add_executable(calc "${src_dir}/calc.cpp"
-	${io_files}
-	"${res_dir}/equation_solver.cpp"
-	"${res_dir}/equation_solver.h"
+	${general}
+	${eq_solver}
 )
 
 add_executable(equation "${src_dir}/equation.cpp"
-	${io_files}
-	"${res_dir}/equation_solver.cpp"
-	"${res_dir}/equation_solver.h"
+	${general}
+	${eq_solver}
 )
 
 cp_script(add2)

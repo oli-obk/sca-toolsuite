@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "general.h"
-#include "io.h"
+#include "geometry.h"
 
 /*template<typename function>
 call_function(const char* key, FILE* fp, std::vector<int>* grid, dimension* dim, int border_width = 1)

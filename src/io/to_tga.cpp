@@ -24,7 +24,6 @@
 
 #include "general.h"
 #include "image.h"
-#include "io.h"
 
 class MyProgram : public Program
 {

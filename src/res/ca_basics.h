@@ -23,7 +23,7 @@
 
 #include <set>
 #include <algorithm>
-#include "general.h"
+#include "geometry.h"
 
 namespace sca { namespace ca {
 

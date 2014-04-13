@@ -28,7 +28,7 @@
 #include <cassert>
 
 #include "io.h"
-#include "general.h"
+#include "geometry.h"
 
 inline void insert_horizontal_border(std::vector<int>* grid,
 	std::vector<int>::iterator itr,

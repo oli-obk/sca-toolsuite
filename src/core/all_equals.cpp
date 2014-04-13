@@ -21,8 +21,8 @@
 #include <cstdlib>
 #include <cassert>
 
+#include "geometry.h"
 #include "general.h"
-#include "io.h"
 
 class MyProgram : public Program
 {

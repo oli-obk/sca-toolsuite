@@ -24,7 +24,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "general.h"
+#include "geometry.h"
 
 class rgb
 {

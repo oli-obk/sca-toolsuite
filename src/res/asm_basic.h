@@ -21,7 +21,7 @@
 #ifndef ASM_BASIC_H
 #define ASM_BASIC_H
 
-#include "general.h"
+#include "geometry.h"
 #include "stack_algorithm.h"
 #include "io.h"
 

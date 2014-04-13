@@ -24,8 +24,8 @@
 #include <vector>
 #include <cctype> // isdigit()
 #include <iostream>
+#include <cstring>
 
-//#include "general.h"
 struct dimension;
 
 //! Converts internal coordinates into human coordinats.

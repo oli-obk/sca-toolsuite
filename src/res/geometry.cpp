@@ -18,43 +18,8 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#include <cstdio>
-#include <vector>
-
-#include "general.h"
 #include "geometry.h"
 
-class MyProgram : public Program
-{
-	int main()
-	{
-		std::vector<int> grid;
-		dimension dim;
-		read_grid(stdin, &grid, &dim);
-		const int grid_size = dim.area_without_border();
-		register int idx;
-		for(int i = 1; i < argc; i++)
-		{
-			idx = atoi(argv[i]);
-			if(! human_idx_on_grid(grid_size, idx))
-			 exit("You must assert for each index i: 0 <= i < area.");
-			grid[human2internal(atoi(argv[i]),dim.width)]++;
-		}
-
-		write_grid(stdout, &grid, &dim);
-		return 0;
-	}
-};
-
-int main(int argc, char** argv)
-{
-	HelpStruct help;
-	help.description = "Throws grains on specified cells of the grid.\n"
-		"Throwing is meant without any stabilization.";
-	help.syntax = "math/add <i1> <i2> ... <in>";
-	help.add_param("<i1> <i2> ... <in>", "Numbers to be addded. 0 <= n.");
-
-	MyProgram program;
-	return program.run(argc, argv, &help);
-}
+const point point::zero = point(0, 0);
+const matrix matrix::id = matrix(1, 0, 0, 1);
 
