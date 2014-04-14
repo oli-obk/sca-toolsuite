@@ -43,44 +43,36 @@
 /*
 	Again, I think these macros are okay here.
 */
-#define MAKE_UNARY_FUNC(OP, VISUAL, EXECUTE) struct OP \
+#define MAKE_UNARY_FUNC(OP) struct OP \
 { \
 	template <typename T> \
 	struct result { typedef T type; }; \
-	inline expression_ast operator()(expression_ast const& expr) const { \
-		return expression_ast(unary_op_i(VISUAL, EXECUTE, expr)); \
-	} \
+	expression_ast operator()(expression_ast const& expr) const; \
 }; \
 const boost::phoenix::function<OP> OP;
 
-#define MAKE_BINARY_FUNC(OP, VISUAL, EXECUTE) struct OP \
+#define MAKE_BINARY_FUNC(OP) struct OP \
 { \
 	template <typename T1, typename T2> \
 	struct result { typedef T2 type; }; \
-	inline expression_ast operator()(expression_ast const& expr1, expression_ast const& expr2) const { \
-		return expression_ast(binary_op_i(VISUAL, EXECUTE, expr1, expr2)); \
-	} \
+	expression_ast operator()(expression_ast const& expr1, expression_ast const& expr2) const; \
 }; \
 const boost::phoenix::function<OP> OP;
 
-#define MAKE_BINARY_FUNC_ADDR(OP, VISUAL, EXECUTE) struct OP \
+#define MAKE_BINARY_FUNC_ADDR(OP) struct OP \
 { \
 	template <typename T1, typename T2> \
 	struct result { typedef T2 type; }; \
-	inline expression_ast operator()(expression_ast const& expr1, expression_ast const& expr2) const { \
-		return expression_ast(binary_op<int, int*, int>(VISUAL, EXECUTE, expr1, expr2)); \
-	} \
+	expression_ast operator()(expression_ast const& expr1, expression_ast const& expr2) const; \
 }; \
 const boost::phoenix::function<OP> OP;
 
-#define MAKE_TERNARY_FUNC(OP, VISUAL, EXECUTE) struct OP \
+#define MAKE_TERNARY_FUNC(OP) struct OP \
 { \
 	template <typename T1, typename T2, typename T3> \
 	struct result { typedef T3 type; }; \
-	inline expression_ast operator()(expression_ast const& expr1, expression_ast const& expr2, \
-		expression_ast const& expr3) const { \
-		return expression_ast(ternary_op_i(VISUAL, EXECUTE, expr1, expr2, expr3)); \
-	} \
+	expression_ast operator()(expression_ast const& expr1, expression_ast const& expr2, \
+		expression_ast const& expr3) const; \
 }; \
 const boost::phoenix::function<OP> OP;
 
@@ -348,6 +340,22 @@ struct expression_ast
 	type expr;
 };
 
+// We should be using expression_ast::operator-. There's a bug
+// in phoenix type deduction mechanism that prevents us from
+// doing so. Phoenix will be switching to BOOST_TYPEOF. In the
+// meantime, we will use a phoenix::function below:
+MAKE_UNARY_FUNC(neg);
+MAKE_UNARY_FUNC(not_func);
+MAKE_UNARY_FUNC(abs_func);
+MAKE_UNARY_FUNC(sqrt_func);
+MAKE_UNARY_FUNC(rand_func);
+MAKE_BINARY_FUNC(min_func);
+MAKE_BINARY_FUNC(max_func);
+MAKE_BINARY_FUNC_ADDR(ass_func);
+MAKE_BINARY_FUNC(com_func);
+MAKE_TERNARY_FUNC(tern_func);
+
+
 // TODO: we might want to introduce "nary_op"
 //! expression tree node extension for ternary operators
 template<class Ret, class ...Args>
@@ -399,23 +407,6 @@ struct unary_op
 	fptr_base<Ret, Args...> fptr;
 	expression_ast subject;
 };
-
-
-
-// We should be using expression_ast::operator-. There's a bug
-// in phoenix type deduction mechanism that prevents us from
-// doing so. Phoenix will be switching to BOOST_TYPEOF. In the
-// meantime, we will use a phoenix::function below:
-MAKE_UNARY_FUNC(neg, '-', f1i_neg);
-MAKE_UNARY_FUNC(not_func, '!', f1i_not);
-MAKE_UNARY_FUNC(abs_func, 'a', f1i_abs);
-MAKE_UNARY_FUNC(sqrt_func, 's', f1i_sqrt);
-MAKE_UNARY_FUNC(rand_func, 'r', f1i_rand);
-MAKE_BINARY_FUNC(min_func, 'm', f2i_min);
-MAKE_BINARY_FUNC(max_func, 'n', f2i_max);
-MAKE_BINARY_FUNC_ADDR(ass_func, 'h', f2i_asn);
-MAKE_BINARY_FUNC(com_func, ',', f2i_com);
-MAKE_TERNARY_FUNC(tern_func, '?', f3i_tern);
 
 inline int array_subscript_to_coord(std::string* str, int width) {
 	const int comma_pos = str->find(',');

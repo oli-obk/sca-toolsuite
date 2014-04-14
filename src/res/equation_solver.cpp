@@ -49,25 +49,58 @@ const char* get_help_description() { return EQUATION_HELP_STR; }
 		return *this; \
 	}
 
-	// static variable definitions
+// static variable definitions
 /*	int variable_print::width;
 	variable_print::result_type variable_print::x, variable_print::y;
 	const variable_print::result_type *variable_print::v;
 	int* variable_print::helper_vars;
 */
-	MAKE_OP(+=,'+',f2i_add);
-	MAKE_OP(-=,'-',f2i_sub);
-	MAKE_OP(*=,'*',f2i_mul);
-	MAKE_OP(/=,'/',f2i_div);
-	MAKE_OP(%=,'%',f2i_mod);
-	MAKE_OP(<,'<',f2i_lt);
-	MAKE_OP(>,'>',f2i_gt);
-	MAKE_OP(<=,'l',f2i_le);
-	MAKE_OP(>=,'g',f2i_ge);
-	MAKE_OP(==,'=',f2i_eq);
-	MAKE_OP(!=,'!',f2i_neq);
-	MAKE_OP(&&,'&',f2i_and);
-	MAKE_OP(||,'|',f2i_or);
+MAKE_OP(+=,'+',f2i_add);
+MAKE_OP(-=,'-',f2i_sub);
+MAKE_OP(*=,'*',f2i_mul);
+MAKE_OP(/=,'/',f2i_div);
+MAKE_OP(%=,'%',f2i_mod);
+MAKE_OP(<,'<',f2i_lt);
+MAKE_OP(>,'>',f2i_gt);
+MAKE_OP(<=,'l',f2i_le);
+MAKE_OP(>=,'g',f2i_ge);
+MAKE_OP(==,'=',f2i_eq);
+MAKE_OP(!=,'!',f2i_neq);
+MAKE_OP(&&,'&',f2i_and);
+MAKE_OP(||,'|',f2i_or);
+
+
+#define DEF_UNARY_FUNC(OP, VISUAL, EXECUTE) \
+expression_ast OP::operator()(expression_ast const& expr) const { \
+		return expression_ast(unary_op_i(VISUAL, EXECUTE, expr)); \
+}
+
+#define DEF_BINARY_FUNC(OP, VISUAL, EXECUTE) \
+expression_ast OP::operator()(expression_ast const& expr1, expression_ast const& expr2) const { \
+	return expression_ast(binary_op_i(VISUAL, EXECUTE, expr1, expr2)); \
+}
+
+#define DEF_BINARY_FUNC_ADDR(OP, VISUAL, EXECUTE) \
+expression_ast OP::operator()(expression_ast const& expr1, expression_ast const& expr2) const { \
+	return expression_ast(binary_op<int, int*, int>(VISUAL, EXECUTE, expr1, expr2)); \
+}
+
+#define DEF_TERNARY_FUNC(OP, VISUAL, EXECUTE) \
+expression_ast OP::operator()(expression_ast const& expr1, expression_ast const& expr2, \
+	expression_ast const& expr3) const{ \
+	return expression_ast(ternary_op_i(VISUAL, EXECUTE, expr1, expr2, expr3)); \
+}
+
+DEF_UNARY_FUNC(neg, '-', f1i_neg);
+DEF_UNARY_FUNC(not_func, '!', f1i_not);
+DEF_UNARY_FUNC(abs_func, 'a', f1i_abs);
+DEF_UNARY_FUNC(sqrt_func, 's', f1i_sqrt);
+DEF_UNARY_FUNC(rand_func, 'r', f1i_rand);
+DEF_BINARY_FUNC(min_func, 'm', f2i_min);
+DEF_BINARY_FUNC(max_func, 'n', f2i_max);
+DEF_BINARY_FUNC_ADDR(ass_func, 'h', f2i_asn);
+DEF_BINARY_FUNC(com_func, ',', f2i_com);
+DEF_TERNARY_FUNC(tern_func, '?', f3i_tern);
 
 void build_tree(const char* equation, eqsolver::expression_ast* ast)
 {

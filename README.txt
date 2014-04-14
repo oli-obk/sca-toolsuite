@@ -142,10 +142,11 @@ core/create 9 6 0 | math/add 10 11 19 20 32 33 34 | ca/ca "`cat ../data/ca/game_
 
 In alphabetical order, I thank:
 
-  * Dr Thomas Worsch [2] @ The Karlsruhe Institute of Technology (KIT) [3].
+  * All people who give support for bost::spirit [6].
+  * Oliver Schneider. (TODO: Website?)
   * Philipp Lorenz.
   * Sebastian Frehmel, his diploma thesis at [4].
-  * Seth Heeren [5] and all other people who give support for bost::spirit [6].
+  * Dr Thomas Worsch [2] @ The Karlsruhe Institute of Technology (KIT) [3].
 
 8 Links
 :::::::
@@ -154,7 +155,6 @@ In alphabetical order, I thank:
 [2] http://liinwww.ira.uka.de/~thw/
 [3] http://www.kit.edu/index.php
 [4] http://www.sebastianfrehmel.de/studium/diplomarbeit/
-[5] https://github.com/sehe
 [6] http://boost-spirit.com/home/feedback-and-support/
 
 9 Contact

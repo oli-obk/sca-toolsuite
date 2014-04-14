@@ -542,6 +542,7 @@ struct selector_union : base_selector<Functor, T>
 	void second(const T& t) const { base::f(t); }
 };
 
+// TODO: all to geometry
 template<template<class, class> class Type, class C1, class C2, class Functor> // TODO: make union a template
 void for_each_points(const C1& cont1, const C2& cont2, const Functor& func)
 {
