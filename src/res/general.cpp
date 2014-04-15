@@ -93,7 +93,7 @@ void Program::assert_usage(bool assertion) const { if(!assertion) exit_usage(); 
 
 void HelpStruct::print_usage() const {
 	if(syntax)
-		std::cerr << "Usage: " << syntax << std::endl;
+	 std::cerr << "Usage: " << syntax << std::endl;
 }
 
 void HelpStruct::print_help() const
@@ -101,10 +101,10 @@ void HelpStruct::print_help() const
 	std::cerr << description << std::endl;
 
 	if(input||output) {
-			std::cerr << std::endl;
-			if(input) std::cerr << "Input (stdin): " << input << std::endl;
-			if(output) std::cerr << "Output (stdout): " << output << std::endl;
-		}
+		std::cerr << std::endl;
+		if(input) std::cerr << "Input (stdin): " << input << std::endl;
+		if(output) std::cerr << "Output (stdout): " << output << std::endl;
+	}
 
 	std::cerr << std::endl;
 	print_usage();
@@ -115,8 +115,8 @@ void HelpStruct::print_help() const
 
 	if(return_value) std::cerr << "Return value: " << return_value << std::endl;
 	std::cerr << std::endl <<
-		     "Syntax rules are explained"
-		     "in the file DOCUMENTATION." << std::endl;
+		"Syntax rules are explained"
+		"in the file DOCUMENTATION." << std::endl;
 }
 
 void HelpStruct::add_param(const char *name, const char *descr) {

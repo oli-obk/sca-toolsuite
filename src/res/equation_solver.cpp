@@ -19,7 +19,7 @@
 /*************************************************************************/
 
 #include <string>
-#include "equation_solver.h"
+#include "eqs_internal.h"
 
 namespace eqsolver
 {
@@ -108,7 +108,7 @@ void build_tree(const char* equation, eqsolver::expression_ast* ast)
 
 	typedef std::string::const_iterator iterator_type;
 	typedef eqsolver::calculator<iterator_type> calculator;
-	calculator calc; // our grammar
+	const calculator calc; // our grammar
 
 	std::string str = equation;
 	//if (str.empty()) // not needed?

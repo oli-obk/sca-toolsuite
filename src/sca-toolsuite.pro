@@ -23,7 +23,8 @@ HEADERS += res/io.h res/stack_algorithm.h \
 	res/ca_basics.h \
 	res/ca.h \
 	res/graph_io.h \
-	res/geometry.h
+	res/geometry.h \
+    res/eqs_internal.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \
