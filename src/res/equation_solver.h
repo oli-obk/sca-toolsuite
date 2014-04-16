@@ -23,19 +23,16 @@
 
 #include <cmath>
 
-#include <boost/config/warning_disable.hpp>
-#include <boost/spirit/include/qi.hpp>
-/*#include <boost/spirit/include/qi_operator.hpp>
-#include <boost/spirit/include/qi_action.hpp>
-#include <boost/spirit/include/qi_grammar.hpp>
-#include <boost/spirit/include/qi_uint.hpp>
-#include <boost/spirit/include/qi_char.hpp>*/
+//#include <boost/config/warning_disable.hpp>
+//#include <boost/spirit/include/qi_grammar.hpp>
+#include <boost/spirit/include/support_info.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_function.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>
 
 #include <boost/variant/recursive_variant.hpp>
 #include <boost/variant/apply_visitor.hpp>
+#include <boost/variant/get.hpp>
 //#include <boost/phoenix/bind/bind_function.hpp>
 
 #include "random.h"
@@ -118,8 +115,8 @@ using fptr_base = Ret (*)(Args...);
 // using fptr_1i = fptr_base<int, int>;
 // using fptr_2i = fptr_base<int, int, int>;
 
-namespace qi = boost::spirit::qi;
-namespace ascii = boost::spirit::ascii;
+//namespace qi = boost::spirit::qi;
+//namespace ascii = boost::spirit::ascii;
 
 template<class Ret, class ...Args>
 struct ternary_op;
@@ -436,7 +433,7 @@ struct ast_print  : public boost::static_visitor<visit_result_type>
 
 	inline res_type operator()(const eqsolver::nil&) const { return 0; }
 
-	inline res_type operator()(qi::info::nil) const { return 0; }
+	inline res_type operator()(boost::spirit::info::nil) const { return 0; }
 	inline res_type operator()(int n) const { return n; }
 	inline res_type operator()(std::string c) const
 	{
@@ -512,7 +509,7 @@ struct ast_area  : public boost::static_visitor<unsigned int>
 
 	inline result_type operator()(const eqsolver::nil&) const { return 0; }
 
-	inline result_type operator()(qi::info::nil) const { return 0; }
+	inline result_type operator()(boost::spirit::info::nil) const { return 0; }
 	inline result_type operator()(int n) const { return 0;  }
 	inline result_type operator()(std::string c) const
 	{

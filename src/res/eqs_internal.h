@@ -21,7 +21,11 @@
 #ifndef EQS_INTERNAL_H
 #define EQS_INTERNAL_H
 
+#include <boost/spirit/include/qi.hpp>
 #include "equation_solver.h"
+
+namespace ascii = boost::spirit::ascii;
+namespace qi = boost::spirit::qi;
 
 namespace eqsolver {
 
