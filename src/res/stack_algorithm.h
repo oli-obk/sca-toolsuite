@@ -34,21 +34,25 @@ namespace sandpile
 	This is the faster way for simulation, but avalanches can not be logged detailled.
 	@invariant stack_ptr points to top element
 */
-class array_stack
+template<class T = int*>
+class _array_stack
 {
-	int* const array; //! first element will never be read: "sentinel"
-	int* stack_ptr;
+	T* const array; //! first element will never be read: "sentinel"
+	T* stack_ptr;
 public:
-	inline array_stack(int human_grid_size) :
-		array(new int[human_grid_size+1]), stack_ptr(array) {}
-	inline ~array_stack() { delete[] array; }
-	inline unsigned int pop() { return *(stack_ptr--); }
-	inline void push(unsigned int i) { *(++stack_ptr) = i; }
+	using value_type = T;
+	inline _array_stack(unsigned human_grid_size) :
+		array(new T[human_grid_size+1]), stack_ptr(array) {}
+	inline ~_array_stack() { delete[] array; }
+	inline T pop() { return *(stack_ptr--); }
+	inline void push(const T& i) { *(++stack_ptr) = i; }
 	inline bool empty() const { return stack_ptr == array; }
 	inline void flush() const {}
 	inline void write_to_file(FILE* fp) const { (void)fp; } // array stack can not do this
 	inline void write_separator(FILE* fp) const { (void)fp; }
 };
+
+typedef _array_stack<int*> array_stack;
 
 /**
 	@brief  Class for stack algorithm using a queue for the avalanches
@@ -58,26 +62,30 @@ public:
 	avalanches in a file, look for array_queue instead.
 	@invariant write_ptr always points to the element last written
 */
-class array_queue_no_file
+template<class T = int*>
+class _array_queue_no_file
 {
 protected:
-	int* const array; //! first element will never be read
-	int* read_ptr;
-	int* write_ptr;
+	T* const array; //! first element will never be read
+	T* read_ptr;
+	T* write_ptr;
 public:
-	inline array_queue_no_file(int human_grid_size) :
-		array(new int[human_grid_size+1]),
+	using value_type = T;
+	inline _array_queue_no_file(unsigned human_grid_size) :
+		array(new T[human_grid_size+1]),
 		read_ptr(array), write_ptr(array) {}
-	inline ~array_queue_no_file() { delete[] array; }
-	inline unsigned int pop() { return *(++read_ptr); assert(read_ptr <= write_ptr); }
-	inline void push(unsigned int i) { *(++write_ptr) = i; }
+	inline ~_array_queue_no_file() { delete[] array; }
+	inline T pop() { return *(++read_ptr); assert(read_ptr <= write_ptr); }
+	inline void push(const T& i) { *(++write_ptr) = i; }
 	inline bool empty() const { return read_ptr == write_ptr; }
 	inline void flush() { read_ptr = write_ptr = array; }
 	inline void write_to_file(FILE* fp) const { (void)fp;  }
 	inline void write_separator(FILE* fp) const { (void)fp; }
 	inline unsigned int size() { return (unsigned int)(write_ptr-array); }
-	inline const int* data() const { return array+1; }
+	inline const T* data() const { return array+1; }
 };
+
+typedef _array_queue_no_file<int*> array_queue_no_file;
 
 /**
 	@brief Class for stack algorithm (and IO) using a queue for the avalanches.
@@ -86,63 +94,83 @@ public:
 	If this is not wanted, array_stack is faster.
 	@invariant write_ptr always points to the element last written
 */
-class array_queue : public array_queue_no_file
+template<class T>
+class _array_queue : public _array_queue_no_file<T>
 {
+	// TODO: this class works incorrect with pointers!
+	typedef _array_queue_no_file<T> base;
 public:
-	inline array_queue(int human_grid_size) : array_queue_no_file(human_grid_size) {}
-	inline void write_to_file(FILE* fp) const { fwrite(array+1, 4, write_ptr-array, fp); }
+	inline _array_queue(unsigned human_grid_size) : base(human_grid_size) {}
+	inline void write_to_file(FILE* fp) const {
+		fwrite(base::array+1, sizeof(T), base::write_ptr - base::array, fp);
+	}
 	inline void write_separator(FILE* fp) const {
-		const int minus1 = -1; fwrite(&minus1,4,1, fp);
+		const int minus1 = -1; fwrite(&minus1, sizeof(T), 1, fp);
 	}
 };
 
-inline void increase_neighbours_without_self(std::vector<int>* grid, const dimension* dim, int center)
+typedef _array_queue<int*> array_queue;
+
+/*inline void increase_neighbours_without_self(std::vector<int>& grid, const unsigned grid_width, const int center)
 {
-	(*grid)[center+1]++;
-	(*grid)[center-1]++;
-	(*grid)[center+dim->width]++;
-	(*grid)[center-dim->width]++;
-}
+	grid[center+1]++;
+	grid[center-1]++;
+	grid[center+grid_width]++;
+	grid[center-grid_width]++;
+}*/
 
 /**
 	Develops an 1D avalanche. The helping avalanche container is not flushed, so it contains the whole avalanche afterwards.
 	Important: The cell at hint must be decreased by 1.
 */
-template<class AvalancheContainer>
-inline void avalanche_1d_hint_noflush(std::vector<int>* grid, const dimension* dim, int hint, AvalancheContainer* array, FILE* avalanche_fp)
+template<class T, class AvalancheContainer>
+inline void avalanche_1d_hint_noflush(std::vector<T>& grid, const signed grid_width, const std::size_t hint, AvalancheContainer& array, FILE* const avalanche_fp)
 {
-	(*grid)[hint]-=4; // keep up invariant: elements in array are already decreased
-	array->push(hint);
-	do {
-		const int cur_element = array->pop();
-		increase_neighbours_without_self(grid, dim, cur_element);
+	grid[hint]-=4; // keep up invariant: elements in array are already decreased
+	array.push(&grid[hint]);
+	do
+	{
+		using vt = typename AvalancheContainer::value_type;
+		vt const ptr = array.pop();
 
-		if((*grid)[cur_element+1] > 3) {
-			(*grid)[cur_element+1]&=3;
-			array->push(cur_element+1);
+		vt const ptr1 = ptr + 1;
+		if(++*ptr1 > 3) {
+			*ptr1&=3;
+			array.push(ptr1);
 		}
-		if((*grid)[cur_element-1] > 3) {
-			(*grid)[cur_element-1]&=3;
-			array->push(cur_element-1);
+		vt const ptr_1 = ptr - 1;
+		if(++*ptr_1 > 3) {
+			*ptr_1&=3;
+			array.push(ptr_1);
 		}
-		if((*grid)[cur_element+dim->width] > 3) {
-			(*grid)[cur_element+dim->width]&=3;
-			array->push(cur_element+dim->width);
+		vt const ptr_2 = ptr + grid_width;
+		if(++*ptr_2 > 3) {
+			*ptr_2&=3; // TODO: template variant with ==4 => = 0 ?
+			array.push(ptr_2);
 		}
-		if((*grid)[cur_element-dim->width] > 3) {
-			(*grid)[cur_element-dim->width]&=3;
-			array->push(cur_element-dim->width);
+
+		vt const ptr_3 = ptr - grid_width;
+		if(++*ptr_3 > 3) {
+			*ptr_3&=3;
+			array.push(ptr_3);
 		}
-	} while( ! array->empty() );
-	array->write_to_file(avalanche_fp);
+
+	} while( ! array.empty() );
+	array.write_to_file(avalanche_fp);
+}
+
+template<class T, class AvalancheContainer>
+inline void avalanche_1d_hint_noflush(std::vector<T>* grid, const dimension* dim, const std::size_t hint, AvalancheContainer* array, FILE* avalanche_fp)
+{
+	avalanche_1d_hint_noflush(*grid, dim->width, hint, *array, avalanche_fp);
 }
 
 /**
 	Develops an 1D avalanche. The helping avalanche container is flushed.
 	Important: The cell at hint must be decreased by 1.
 */
-template<class AvalancheContainer>
-inline void avalanche_1d_hint(std::vector<int>* grid, const dimension* dim, int hint, AvalancheContainer* array, FILE* avalanche_fp)
+template<class T, class AvalancheContainer>
+inline void avalanche_1d_hint(std::vector<T>* grid, const dimension* dim, const std::size_t hint, AvalancheContainer* array, FILE* avalanche_fp)
 {
 	avalanche_1d_hint_noflush(grid, dim, hint, array, avalanche_fp);
 	array->flush(); // note: empty does not always imply being flushed!
@@ -152,8 +180,8 @@ inline void avalanche_1d_hint(std::vector<int>* grid, const dimension* dim, int 
 	Develops an xD avalanche for an x>=0. Writes avalanche seperator afterwards.
 	@param times Number of times that the cell at hint may fire. for times=INT_MAX, lx_hint = l_hint
 */
-template<class AvalancheContainer>
-inline void lx_hint(std::vector<int>* grid, const dimension* dim, int hint, AvalancheContainer* array, FILE* avalanche_fp, int times)
+template<class T, class AvalancheContainer>
+inline void lx_hint(std::vector<T>* grid, const dimension* dim, const std::size_t hint, AvalancheContainer* array, FILE* avalanche_fp, int times)
 {
 	(*grid)[hint]--;
 	for(;(*grid)[hint]>2 && times > 0; times--)
@@ -169,13 +197,16 @@ inline void lx_hint(std::vector<int>* grid, const dimension* dim, int hint, Aval
 	@param array container of type array_stack or array_queue.
 		array_stack is faster (1-2 times), but array_queue can handle IO (instantly!).
 */
-template<class AvalancheContainer>
-inline void l_hint(std::vector<int>* grid, const dimension* dim, int hint, AvalancheContainer* array, FILE* avalanche_fp)
+template<class T, class AvalancheContainer>
+inline void l_hint(std::vector<T>* grid, const dimension* dim, const std::size_t hint, AvalancheContainer* array, FILE* avalanche_fp)
 {
+//	std::cout << hint << std::endl;
 	(*grid)[hint]--;
+//	std::cout << "???" << std::endl;
 	while((*grid)[hint]>2)
-	{
+	{ // TODO: fit this for char types: all 128 rounds (lx_hint?)
 		avalanche_1d_hint(grid, dim, hint, array, avalanche_fp);
+	//	avalanche_1d_hint_noflush_2<int>(grid, dim, hint/*, array, avalanche_fp*/);
 	}
 	array->write_separator(avalanche_fp);
 	(*grid)[hint]++;
@@ -204,7 +235,7 @@ public:
 	inline void write_avalanche_counter() {}
 	inline void write_int_to_file(const int* int_ptr, const unsigned int* ntimes) {
 		for(unsigned int i = 0; i < *ntimes; i++)
-		 fwrite(int_ptr, 4, 1, avalanche_fp);
+		 fwrite(&int_ptr, 4, 1, avalanche_fp);
 	}
 	inline void write_separator() const {
 		const int minus1 = -1; fwrite(&minus1,4,1, avalanche_fp);
@@ -243,7 +274,7 @@ public:
 };
 
 template<class AvalancheContainer, class ResultType>
-inline void do_fix(std::vector<int>* grid, const dimension* dim, AvalancheContainer* array, ResultType* result_logger)
+inline void do_fix(/*std::vector<int>* grid,*/ const dimension* dim, AvalancheContainer* array, ResultType* result_logger)
 {
 	unsigned int fire_times;
 	const int INVERT_BIT = (1 << 31);
@@ -251,32 +282,39 @@ inline void do_fix(std::vector<int>* grid, const dimension* dim, AvalancheContai
 
 	result_logger->write_avalanche_counter();
 
-	do {
-		const int cur_element = array->pop();
+	do
+	{
+		using vt = typename AvalancheContainer::value_type;
+		vt const cur_element = array->pop(); // TODO!!
 		//printf("cur: %d\n",cur_element);
 
-		(*grid)[cur_element] &= GRAIN_BITS;
-		fire_times = (*grid)[cur_element] >>2; // keep up invariant: elements in array are already decreased
-		(*grid)[cur_element] -= (fire_times<<2);
+		*cur_element &= GRAIN_BITS;
+		fire_times = *cur_element >>2; // keep up invariant: elements in array are already decreased
+		*cur_element -= (fire_times<<2);
 
-		result_logger->write_int_to_file(&cur_element, &fire_times);
+		result_logger->write_int_to_file(cur_element, &fire_times);
 
-		if(((*grid)[cur_element+1]+=fire_times) > 3) {
-			(*grid)[cur_element+1] |= INVERT_BIT;
-			array->push(cur_element+1);
+		vt const e = cur_element + 1;
+		if((*e+=fire_times) > 3) {
+			*e |= INVERT_BIT;
+			array->push(e);
 		}
-		if(((*grid)[cur_element-1]+=fire_times) > 3) {
-			(*grid)[cur_element-1] |= INVERT_BIT;
-			array->push(cur_element-1);
+		vt const w = cur_element-1;
+		if((*w+=fire_times) > 3) {
+			*w |= INVERT_BIT;
+			array->push(w);
 		}
-		if(((*grid)[cur_element+dim->width]+=fire_times) > 3) {
-			(*grid)[cur_element+dim->width] |= INVERT_BIT;
-			array->push(cur_element+dim->width);
+		vt const s = cur_element + dim->width;
+		if((*s+=fire_times) > 3) {
+			*s |= INVERT_BIT;
+			array->push(s);
 		}
-		if(((*grid)[cur_element-dim->width]+=fire_times) > 3) {
-			(*grid)[cur_element-dim->width] |= INVERT_BIT;
-			array->push(cur_element-dim->width);
+		vt const n = cur_element - dim->width;
+		if((*n+=fire_times) > 3) {
+			*n |= INVERT_BIT;
+			array->push(n);
 		}
+
 	} while( ! array->empty() );
 }
 
@@ -291,8 +329,8 @@ inline void fix(std::vector<int>* grid, const dimension* dim, int hint, Avalanch
 	//printf("hint: %d\n",hint);
 	if((*grid)[hint]>3)
 	{
-		array->push(hint);
-		do_fix(grid, dim, array, result_logger);
+		array->push(&((*grid)[hint]));
+		do_fix(dim, array, result_logger);
 	}
 	result_logger->write_separator();
 	array->flush(); // note: empty does not always imply being flushed!
@@ -306,13 +344,14 @@ inline void fix(std::vector<int>* grid, const dimension* dim, AvalancheContainer
 	for(unsigned int count = 0; count < dim->area(); ++count)
 	{
 		if(! is_border(dim, count)) {
-			array->push(count); // panic: every cell is assumed to be higher than 3
+			// TODO: improve this!
+			array->push(&((*grid)[count])); // panic: every cell is assumed to be higher than 3
 			(*grid)[count] |= INVERT_BIT; // don't push this one twice
 		}
 	}
 
 	// note: hint does not matter for correctness
-	do_fix(grid, dim, array, result_logger);
+	do_fix(dim, array, result_logger);
 }
 
 }

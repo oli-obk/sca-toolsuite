@@ -256,8 +256,8 @@ public:
 		}
 	}
 	// TODO: for those 3 cases: cover lr > ul
-	coord_t y_size() const { return _lr.y - _ul.y + 1; }
-	coord_t x_size() const { return _lr.x - _ul.x + 1; }
+	u_coord_t y_size() const { return _lr.y - _ul.y + 1; }
+	u_coord_t x_size() const { return _lr.x - _ul.x + 1; }
 	point ul() const { return _ul; }
 	point lr() const { return _lr; }
 	dimension dim() const {
@@ -313,7 +313,7 @@ public:
 	cell_t& operator*() { return *ptr; }
 };
 
-struct grid_t // TODO: class
+class grid_t // TODO: class
 {
 	std::vector<cell_t> data;
 	dimension _dim; //! dimension of data, including borders
@@ -340,7 +340,7 @@ public:
 	//! returns *internal* dimension
 	const dimension& dim() const { return _dim; } // TODO: remove this?
 
-	const area_t size() const { return
+	area_t size() const { return
 		_dim.area_without_border(border_width); }
 
 /*	grid(std::vector<int>& data, const dimension& dim, int border_width) :
@@ -359,12 +359,23 @@ public:
 
 	//! simple constructor: fill grid
 	//! dimension is human
-	grid_t(u_coord_t border_width,
-		const dimension& dim, cell_t fill = 0) :
+	//! @param dim internal dimension, border not inclusive # ????
+	// TODO: use climit's INT MIN
+	grid_t(const dimension& dim, u_coord_t border_width, cell_t fill = 0, cell_t border_fill = INT_MIN) :
 		data(internal_area(dim, border_width), fill),
 		_dim(dim),
 		border_width(border_width)
-	{}
+	{
+		u_coord_t bw2 = border_width << 1;
+		u_coord_t linewidth = dim.width;
+		area_t top = border_width * (linewidth - 1);
+
+		std::fill_n(data.begin(), top, border_fill);
+		for(std::size_t i = top; i < data.size() - top; i += linewidth)
+			std::fill_n(data.begin() + i, bw2, border_fill);
+		std::fill(data.end() - top, data.end(), border_fill);
+	//	data.assign(data.begin(), data.begin() + top, border_fill);
+	}
 
 	//! constructor which reads a grid immediatelly
 	grid_t(FILE* fp, u_coord_t border_width) :
@@ -433,7 +444,7 @@ public:
 	}
 
 	//! constructor which reads a grid immediatelly
-	grid_t(std::istream& stream = std::cin, u_coord_t border_width = 1) :
+	grid_t(std::istream& stream, u_coord_t border_width) :
 		border_width(border_width)
 	{
 		read_grid(stream, data, _dim, border_width);

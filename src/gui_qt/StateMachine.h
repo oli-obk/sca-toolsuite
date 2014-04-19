@@ -21,7 +21,6 @@
 #ifndef STATEMACHINE_H
 #define STATEMACHINE_H
 
-#include <cstdlib> // TODO: remove
 #include <QObject>
 
 class StateMachine : public QObject

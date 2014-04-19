@@ -28,7 +28,7 @@ class MyProgram : public Program
 {
 	int main()
 	{
-		grid_t grid;
+		grid_t grid(std::cin, 0);
 		int expected = 0;
 
 		if(argc==2)

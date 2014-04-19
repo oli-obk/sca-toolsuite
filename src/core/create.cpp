@@ -38,15 +38,14 @@ class MyProgram : public Program
 		{
 			case 4: predefined_value = atoi(argv[3]);
 			case 3:
-				dim.width = atoi(argv[1])+2;
-				dim.height = atoi(argv[2])+2;
+				dim.width = atoi(argv[1]);
+				dim.height = atoi(argv[2]);
 				break;
 			default:
 				exit_usage();
 		}
 
-		create_empty_grid(&grid, &dim, predefined_value);
-		write_grid(stdout, &grid, &dim);
+		std::cout << grid_t(dim, 0, predefined_value);
 		return 0;
 	}
 };

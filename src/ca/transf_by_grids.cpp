@@ -80,23 +80,14 @@ class MyProgram : public Program
 		bool eof = false;
 		while(!eof)
 		{
-			int out_cell;
-			std::vector<int> cur_grid;
-			{
-				std::vector<int> out_grid;
-				dimension cur_dim;
+			grid_t cur_grid(std::cin, 0);
+			grid_t out_grid(std::cin, 0);
+			assert(out_grid.dim().area() == 1);
 
-				read_grid(stdin, &cur_grid, &cur_dim, 0);
-			//	assert(cur_dim == input_dim);
-
-				read_grid(stdin, &out_grid, &cur_dim, 0);
-				assert(cur_dim.height == 1
-					&& cur_dim.width == 1);
-				out_cell = out_grid[0];
-			}
+			cell_t out_cell = out_grid[point::zero];
 
 			neighbours.add_transition_functions(
-				table, cur_grid, out_cell
+					table, cur_grid, out_cell
 				);
 
 			eof = feof(stdin);

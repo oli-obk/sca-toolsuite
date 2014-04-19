@@ -25,10 +25,15 @@
 #include <QLabel>
 #include <QTimer>
 
+#include "geometry.h"
 #include "StateMachine.h"
-#include "io.h"
 #include "image.h"
-#include "stack_algorithm.h"
+
+namespace sandpile
+{
+	template<class T>
+	class _array_queue_no_file;
+}
 
 class DrawArea : public QLabel
 {
@@ -53,7 +58,7 @@ class DrawArea : public QLabel
 
 	unsigned int next_cell;
 	int current_hint;
-	sandpile::array_queue_no_file* container;
+	sandpile::_array_queue_no_file<int*>* container;
 	QTimer next_fire_timer;
 
 private slots:

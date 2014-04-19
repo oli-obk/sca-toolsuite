@@ -109,6 +109,7 @@ class MyProgram : public Program
 	//static const fmapping function_names[3];
 
 	inline bool valid_function_name(const char* function_name) {
+		(void)function_name;
 /*		const fmapping* fmap;
 		for(fmap = function_names;
 			fmap->name && strcmp(function_name,fmap->name); fmap++) ;
@@ -119,8 +120,8 @@ class MyProgram : public Program
 
 	int main()
 	{
-		bool (*scanfunc)(FILE*, int*);
-		void (*printfunc)(FILE*, int);
+	//	bool (*scanfunc)(FILE*, int*);
+	//	void (*printfunc)(FILE*, int);
 		const char* scanfunc_name = "default";
 		const char* printfunc_name = "default";
 		switch(argc)
@@ -147,7 +148,8 @@ class MyProgram : public Program
 */
 		std::vector<int> _vector;
 		dimension _dim;
-
+		(void)_vector;
+		(void)_dim;
 
 #if 0
 		default_grid grid(_grid(_vector, _dim, 1));

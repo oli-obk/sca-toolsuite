@@ -115,9 +115,9 @@ set(WARN_EXC "-Wno-unused-local-typedefs -Wno-maybe-uninitialized")
 # FLAGS
 # the order of -Wall -Wno-unknown-pragmas is important
 # TODO: -Werror
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ${WARN_EXC} -std=c++11 -pipe")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -Werror ${WARN_EXC} -std=c++11 -pipe")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -flto")
 
 add_subdirectory(src)
 add_subdirectory(doc)
@@ -126,8 +126,8 @@ add_subdirectory(doc)
 
 # testing
 enable_testing ()
-#add_test (calc calc "7+3")
-#TODO
+add_test (test sh ${CMAKE_CURRENT_BINARY_DIR}/src/test.sh)
+#TODO: use cmake instead of sh script?
 
 #
 # CPack Stuff

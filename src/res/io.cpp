@@ -133,7 +133,7 @@ void read_grid(const base_grid* grid_class, std::istream& is, std::vector<int>& 
 
 
 		is.getline(buffer, buffer_size);
-		if(!is.good())
+		if(!is.good() || !*buffer)
 		 break; // eof or empty line (both means abort) or overflow
 		const char* ptr = buffer;
 
@@ -213,8 +213,9 @@ void write_grid(const base_grid* grid_class, std::ostream& os, const std::vector
 		//	PRINTFUNC(fp, (*grid)[x + (dim->width)*y]); // TODO: two [] operators
 		//	fputc((x == last_symbol) ? '\n':' ', fp);
 			grid_class->write(ptr, grid[x + (dim.width)*y]);
-			*(ptr++) = (x == last_symbol) ? '\n':' ';
+			*(ptr++) = (x == last_symbol) ? '\n' : ' ';
 		}
+		*ptr = 0;
 		os << buffer;
 	}
 }

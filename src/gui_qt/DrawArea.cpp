@@ -86,7 +86,7 @@ void DrawArea::slot_timeout()
 			return;
 		}
 	}
-	fire_cell(container->data()[next_cell]);
+	fire_cell(container->data()[next_cell] - calc_grid.data());
 	next_cell++;
 
 	if(state_machine.get() == StateMachine::STATE_STEP)

@@ -257,8 +257,8 @@ struct variable_print : public boost::static_visitor<visit_result_type>
 struct variable_area_grid : public boost::static_visitor<visit_result_type>
 {
 	inline unsigned int operator()(nil) const { return 0; }
-	inline unsigned int operator()(vaddr::var_x _x) const { return 0; }
-	inline unsigned int operator()(vaddr::var_y _y) const { return 0; }
+	inline unsigned int operator()(vaddr::var_x) const { return 0; }
+	inline unsigned int operator()(vaddr::var_y) const { return 0; }
 	inline result_type operator()(vaddr::var_array _a) const {
 		return std::max(std::abs(_a.x), std::abs(_a.y));
 	}
@@ -270,8 +270,8 @@ struct variable_area_grid : public boost::static_visitor<visit_result_type>
 struct variable_area_helpers : public boost::static_visitor<visit_result_type>
 {
 	inline int operator()(nil) const { return -1; }
-	inline result_type operator()(vaddr::var_x _x) const { return -1; }
-	inline result_type operator()(vaddr::var_y _y) const { return -1; }
+	inline result_type operator()(vaddr::var_x) const { return -1; }
+	inline result_type operator()(vaddr::var_y) const { return -1; }
 	inline result_type operator()(vaddr::var_array _a) const { (void)_a; return -1; }
 
 	inline result_type operator()(vaddr::var_helper<true> _h) const { return _h.i; } // todo: correct?
@@ -435,7 +435,7 @@ struct ast_print  : public boost::static_visitor<visit_result_type>
 
 	inline res_type operator()(boost::spirit::info::nil) const { return 0; }
 	inline res_type operator()(int n) const { return n; }
-	inline res_type operator()(std::string c) const
+	inline res_type operator()(std::string) const
 	{
 		exit(99);
 	}
@@ -510,8 +510,8 @@ struct ast_area  : public boost::static_visitor<unsigned int>
 	inline result_type operator()(const eqsolver::nil&) const { return 0; }
 
 	inline result_type operator()(boost::spirit::info::nil) const { return 0; }
-	inline result_type operator()(int n) const { return 0;  }
-	inline result_type operator()(std::string c) const
+	inline result_type operator()(int) const { return 0;  }
+	inline result_type operator()(std::string) const
 	{
 		exit(99);
 	}

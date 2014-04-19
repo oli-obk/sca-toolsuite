@@ -33,8 +33,8 @@ class MyProgram : public Program
 {
 	// Note: don't put the parameters into this class. It misses the const otherwise,
 	// and thus makes the algorithm a lot slower (tested)
-	template<class AvalancheContainer>
-	void start(std::vector<int>& grid,
+	template<class AvalancheContainer, class T>
+	void start(std::vector<T>& grid,
 		const dimension& dim,
 		const std::vector<int>& random_seq)
 	{
@@ -43,7 +43,11 @@ class MyProgram : public Program
 		for(unsigned int round = 0; round < random_seq.size(); round++)
 		{
 			grid[random_seq[round]]++;
-			sandpile::l_hint(&grid, &dim, random_seq[round],
+	/*		for(int i = 0; i < grid.size(); ++i) {
+				if(grid[i]==-1)
+					assert(false);
+			}*/
+			sandpile::l_hint<T>(&grid, &dim, random_seq[round],
 				&avalanche_container, out_fp);
 		}
 	}
@@ -97,10 +101,18 @@ class MyProgram : public Program
 			else exit_usage();
 		}
 
+		std::vector<int> char_grid(grid.size()); // (TODO)
+		char_grid.resize(grid.size());
+		for(std::size_t i = 0; i < grid.size(); ++i) {
+			char_grid[i] = (grid[i] < CHAR_MIN) ? CHAR_MIN : grid[i];
+		}
 		if(log_avalanches) {
-			start<sandpile::array_queue>(grid, dim, random_seq);
+			start<sandpile::_array_queue<int*>>(char_grid, dim, random_seq);
 		} else {
-			start<sandpile::array_stack>(grid, dim, random_seq);
+			start<sandpile::_array_stack<int*>>(char_grid, dim, random_seq);
+			for(std::size_t i = 0; i < grid.size(); ++i) {
+				grid[i] = char_grid[i];
+			}
 			write_grid(stdout, &grid, &dim);
 		}
 

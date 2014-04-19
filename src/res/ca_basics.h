@@ -66,7 +66,6 @@ public:
 
 	trans_t(
 		int _neighbour_size,
-		const std::vector<int>& input_grid,
 		int output_val
 		) : // TODO: 2ctors + reuse
 		neighbour_size(_neighbour_size),
@@ -233,13 +232,15 @@ class n_t
 
 	void add_single_tf(
 		trans_t* tfs,
-		const std::vector<int>& input_grid,
+		const grid_t& input_grid,
 		int output_val,
 		int symm)
 	{
-		trans_t tf(size(), input_grid, output_val);
+		trans_t tf(size(), output_val);
 		for(unsigned i = 0; i < size(); ++i) {
-			tf.set_neighbour(i, input_grid[bb.coords_to_id(idx(i, symm)/*+center_cell*/)]);
+
+			//tf.set_neighbour(i, input_grid[bb.coords_to_id(idx(i, symm)/*+center_cell*/)]);
+			tf.set_neighbour(i, input_grid[idx(i, symm) - bb.ul()/*+center_cell*/]);
 		}
 		*tfs = tf; // TODO: redundant
 	}
@@ -248,14 +249,18 @@ public:
 	point operator[](unsigned i) const { return neighbours[i]; }
 	unsigned size() const { return neighbours.size(); }
 
+
 	void add_transition_functions(
 		std::vector<trans_t>& tf_vector,
-		const std::vector<int>& input_grid,
+		const grid_t& input_grid,
 		int output_val)
 	{
+		// family of 8 trans functions, subgroup of D4
 		static trans_t tfs[8]
 		 = {size(), size(), size(), size(),
 			size(), size(), size(), size()};
+		assert(bb.x_size() == input_grid.dim().width);
+		assert(bb.y_size() == input_grid.dim().height);
 
 		// TODO: unroll?
 		for(int i = 0; i < 8; ++i)
@@ -290,7 +295,7 @@ public:
 	{
 		std::vector<int> in_grid;
 		dimension tmp_dim;
-		read_grid(stdin, &in_grid, &tmp_dim, 0);
+		read_grid(fp, &in_grid, &tmp_dim, 0);
 		init(in_grid, tmp_dim);
 	}
 

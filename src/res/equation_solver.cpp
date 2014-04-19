@@ -135,6 +135,12 @@ int solve(const char* equation, int height, int width, int x, int y, int* v)
 	//eqsolver::ast_print solver(height, width, x,y,v);
 
 	return solver(ast);*/
+	(void)equation;
+	(void)height;
+	(void)width;
+	(void)x;
+	(void)y;
+	(void)v;
 	exit(99); // TODO!
 }
 
