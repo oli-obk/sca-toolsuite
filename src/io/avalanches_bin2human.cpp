@@ -18,6 +18,7 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
+#include <cstdint>
 #include <cstdlib>
 #include <cstdio>
 
@@ -46,15 +47,34 @@ class MyProgram : public Program
 
 		FILE* const in_fp = stdin;
 		FILE* const out_fp = stdout;
-		signed int buffer[BUF_SIZE];
+		char buffer[BUF_SIZE]; // TODO: was signed... important?
 
 		int last_num_read;
 		int avalanche_number = 1;
 		bool do_newline = true;
 		bool first_line = true;
-		while(!feof(in_fp)) {
+
+		struct hdr_info_t
+		{
+			std::size_t size_each;
+			uint64_t grid_offset;
+		} hdr_info;
+
+		// parse header
+		{
+			char hdr_buf[7];
+			fread(hdr_buf, 1, 7, in_fp);
+			for(int i = 0; i < 7; ++i)
+			 if(hdr_buf[i] != 0)
+				 exit("Input file does not look like an avalanche file.");
+			fread(&hdr_info.size_each, 1, 1, in_fp);
+			fread(&hdr_info.grid_offset, 8, 1, in_fp);
+		}
+
+		while(!feof(in_fp))
+		{
 			last_num_read = fread(buffer, 4, BUF_SIZE, in_fp);
-			for(int i = 0; i < last_num_read; i++)
+			for(int i = 0; i < last_num_read; i += hdr_info.size_each)
 			{
 				const signed int cur = buffer[i];
 				if(cur == -1) {

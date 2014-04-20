@@ -54,7 +54,7 @@ inline void inc_push_neighbour(std::vector<int>* chips, int position, AvalancheC
 
 template<class AvalancheContainer, class ResultType>
 inline void do_rotor_fix(std::vector<int>* grid, std::vector<int>* chips,
-	const dimension* dim, AvalancheContainer* array, ResultType* result_logger)
+	const dimension* dim, AvalancheContainer* array, ResultType* /*result_logger*/)
 {
 	const int INVERT_BIT = (1 << 31);
 	const int GRAIN_BITS = (-1) ^ INVERT_BIT;
@@ -63,8 +63,8 @@ inline void do_rotor_fix(std::vector<int>* grid, std::vector<int>* chips,
 		-((coord_t)dim->width), 1,
 		(coord_t)dim->width };
 
-	result_logger->write_avalanche_counter();
-
+//	result_logger->write_avalanche_counter();
+// TODO: write header?
 	do {
 		const int cur_element = (int)array->pop();
 		//result_logger->write_int_to_file(&cur_element); // TODO

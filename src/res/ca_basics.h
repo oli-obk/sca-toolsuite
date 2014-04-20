@@ -477,16 +477,16 @@ void for_each_selection(const C1& cont1, const C2& cont2, const Selector& sel)
 	{
 		if(*itr1 < *itr2)
 		{
-			sel.first(*itr1);
+			sel.first(itr1);
 			++itr1;
 		}
 		else if(*itr2 < *itr1)
 		{
-			sel.second(*itr2);
+			sel.second(itr2);
 			++itr2;
 		}
 		else {
-			sel.both(*itr1);
+			sel.both(itr1);
 			++itr1;
 			++itr2;
 		}
@@ -497,12 +497,12 @@ void for_each_selection(const C1& cont1, const C2& cont2, const Selector& sel)
 		if(itr1 == cont1.cend())
 		{
 			for(; itr2 != cont2.cend(); ++itr2)
-			 sel.second(*itr2);
+			 sel.second(itr2);
 		}
 		else // i.e. itr2 at end
 		{
 			for(; itr1 != cont1.cend(); ++itr1)
-			 sel.first(*itr1);
+			 sel.first(itr1);
 		}
 	}
 
@@ -547,11 +547,64 @@ struct selector_union : base_selector<Functor, T>
 	void second(const T& t) const { base::f(t); }
 };
 
-// TODO: all to geometry
-template<template<class, class> class Type, class C1, class C2, class Functor> // TODO: make union a template
-void for_each_points(const C1& cont1, const C2& cont2, const Functor& func)
+template<class Functor1, class Functor2, class T>
+class selector_zip_base
+	// (TODO): reuse selector base class with ellipsis?
 {
-	for_each_selection(cont1, cont2, Type<Functor, decltype(*cont1.begin())>(func));
+	const Functor1& f1;
+	const Functor2& f2;
+public:
+	void both(const T& t) const { assert(false); }
+	void first(const T& t) const { f1(t); }
+	void second(const T& t) const { f2(t); }
+	selector_zip_base(const Functor1& f1, const Functor2& f2) :
+		f1(f1), f2(f2) {}
+};
+/*
+template<class C1, class C2>
+void zip_to_vector(C1 cont1, C2 cont2)
+{
+
+}*/
+
+template<class T>
+class idx_iter
+{
+	typename T::const_iterator itr;
+	std::size_t idx;
+public:
+	idx_iter& operator++() { ++itr; ++idx; return *this; }
+	const typename T::value_type& operator*() const { return *itr; }
+	std::size_t pos() const { return idx; }
+};
+
+template<class T>
+class idx_container
+{
+	const T& cont;
+public:
+	idx_container(const T& cont) : cont(cont) {}
+	idx_iter<T> cbegin() { return idx_iter<T>{ cont.cbegin(), 0 }; }
+	idx_iter<T> cend() { return idx_iter<T>{ cont.cend(), cont.size() }; }
+};
+
+// TODO: all to geometry
+template<template<class...> class Type, class C1, class C2, class ...Functor> // TODO: make union a template
+void for_each_points(const C1& cont1, const C2& cont2, const Functor&... func)
+{
+	for_each_selection(cont1, cont2, Type<Functor..., decltype(*cont1.begin())>(func...));
+}
+
+template<class C1, class C2, class As1, class As2> // TODO: make union a template
+auto zip_set(const C1& cont1, const C2& cont2, const As1& assoc1, const As2& assoc2)
+-> std::set<std::size_t>
+{
+	using T = decltype(cont1.begin());
+	std::set<T> result;
+	const auto func1 = [&](const T& itr1) { result.push_back( assoc1[itr1 - cont1.begin()] ); };
+	const auto func2 = [&](const T& itr2) { result.push_back( assoc2[itr2 - cont2.begin()] ); };
+	for_each_selection<selector_zip_base>(cont1, cont2, func1, func2);
+	return result;
 }
 
 /* // TODO
@@ -573,7 +626,7 @@ template<class C1, class C2>
 bool is_subset_of(const C1& cont1, const C2& cont2)
 {
 	bool is_subset = true;
-	using T = decltype(*cont1.begin());
+	using T = decltype(cont1.begin());
 	std::cout << "subset?" << std::endl;
 	dump_container(cont1);
 	dump_container(cont2);

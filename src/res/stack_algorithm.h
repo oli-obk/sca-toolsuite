@@ -22,6 +22,7 @@
 #define STACK_ALGORITHM_H
 
 #include <cassert>
+#include <cstdint>
 #include <vector>
 #include "geometry.h"
 
@@ -48,8 +49,9 @@ public:
 	inline void push(const T& i) { *(++stack_ptr) = i; }
 	inline bool empty() const { return stack_ptr == array; }
 	inline void flush() const {}
-	inline void write_to_file(FILE* fp) const { (void)fp; } // array stack can not do this
-	inline void write_separator(FILE* fp) const { (void)fp; }
+	inline void write_to_file(FILE* ) const {} // array stack can not do this
+	inline void write_separator(FILE* ) const {}
+	inline void write_header(FILE* , uint64_t ) const {}
 };
 
 typedef _array_stack<int*> array_stack;
@@ -79,8 +81,9 @@ public:
 	inline void push(const T& i) { *(++write_ptr) = i; }
 	inline bool empty() const { return read_ptr == write_ptr; }
 	inline void flush() { read_ptr = write_ptr = array; }
-	inline void write_to_file(FILE* fp) const { (void)fp;  }
-	inline void write_separator(FILE* fp) const { (void)fp; }
+	inline void write_to_file(FILE* ) const {}
+	inline void write_separator(FILE* ) const {}
+	inline void write_header(FILE* , uint64_t ) const {}
 	inline unsigned int size() { return (unsigned int)(write_ptr-array); }
 	inline const T* data() const { return array+1; }
 };
@@ -106,6 +109,14 @@ public:
 	}
 	inline void write_separator(FILE* fp) const {
 		const int minus1 = -1; fwrite(&minus1, sizeof(T), 1, fp);
+	}
+	inline void write_header(FILE* fp, uint64_t grid_offset) const
+	{
+		constexpr static const char sizeof_t = sizeof(T);
+		constexpr static const char hdr[7] = { 0, 0, 0, 0, 0, 0, 0 };
+		fwrite(&hdr, 7, 1, fp);
+		fwrite(&sizeof_t, 1, 1, fp);
+		fwrite(&grid_offset, sizeof(uint64_t), 1, fp);
 	}
 };
 
@@ -183,6 +194,7 @@ inline void avalanche_1d_hint(std::vector<T>* grid, const dimension* dim, const 
 template<class T, class AvalancheContainer>
 inline void lx_hint(std::vector<T>* grid, const dimension* dim, const std::size_t hint, AvalancheContainer* array, FILE* avalanche_fp, int times)
 {
+	array->write_header(avalanche_fp, (uint64_t)grid->data());
 	(*grid)[hint]--;
 	for(;(*grid)[hint]>2 && times > 0; times--)
 	{
@@ -200,9 +212,8 @@ inline void lx_hint(std::vector<T>* grid, const dimension* dim, const std::size_
 template<class T, class AvalancheContainer>
 inline void l_hint(std::vector<T>* grid, const dimension* dim, const std::size_t hint, AvalancheContainer* array, FILE* avalanche_fp)
 {
-//	std::cout << hint << std::endl;
+	array->write_header(avalanche_fp, (uint64_t)grid->data());
 	(*grid)[hint]--;
-//	std::cout << "???" << std::endl;
 	while((*grid)[hint]>2)
 	{ // TODO: fit this for char types: all 128 rounds (lx_hint?)
 		avalanche_1d_hint(grid, dim, hint, array, avalanche_fp);
@@ -229,10 +240,11 @@ inline void l2_hint(std::vector<int>* grid, const dimension* dim, int hint, Aval
 //! Class for fix algorithm in order to log avalanches binary
 class fix_log_l
 {
+	using T = int*;
 	FILE* avalanche_fp;
 public:
 	inline fix_log_l(FILE* _avalanche_fp) : avalanche_fp(_avalanche_fp) {}
-	inline void write_avalanche_counter() {}
+//	inline void write_avalanche_counter() {}
 	inline void write_int_to_file(const int* int_ptr, const unsigned int* ntimes) {
 		for(unsigned int i = 0; i < *ntimes; i++)
 		 fwrite(&int_ptr, 4, 1, avalanche_fp);
@@ -240,6 +252,16 @@ public:
 	inline void write_separator() const {
 		const int minus1 = -1; fwrite(&minus1,4,1, avalanche_fp);
 	}
+
+	inline void write_header(uint64_t grid_offset) const
+	{
+		constexpr static const char sizeof_t = sizeof(T);
+		constexpr static const char hdr[7] = { 0, 0, 0, 0, 0, 0, 0 };
+		fwrite(&hdr, 7, 1, avalanche_fp);
+		fwrite(&sizeof_t, 1, 1, avalanche_fp);
+		fwrite(&grid_offset, sizeof(uint64_t), 1, avalanche_fp);
+	}
+
 };
 
 /*//! Class for fix algorithm in order to log avalanches in human readable format (ASCII text)
@@ -265,12 +287,13 @@ class fix_log_s
 {
 public:
 	inline fix_log_s(FILE* fp) { (void) fp; }
-	inline void write_avalanche_counter() {}
+//	inline void write_avalanche_counter() {}
 	inline void write_int_to_file(const int* int_ptr,  const unsigned int* ntimes) {
 		(void) int_ptr;
 		(void) ntimes;
 	}
 	inline void write_separator() const {}
+	inline void write_header(uint64_t ) const {}
 };
 
 template<class AvalancheContainer, class ResultType>
@@ -280,7 +303,7 @@ inline void do_fix(/*std::vector<int>* grid,*/ const dimension* dim, AvalancheCo
 	const int INVERT_BIT = (1 << 31);
 	const int GRAIN_BITS = (-1) ^ INVERT_BIT;
 
-	result_logger->write_avalanche_counter();
+//	result_logger->write_avalanche_counter();
 
 	do
 	{
@@ -327,6 +350,7 @@ template<class AvalancheContainer, class ResultType>
 inline void fix(std::vector<int>* grid, const dimension* dim, int hint, AvalancheContainer* array, ResultType* result_logger)
 {
 	//printf("hint: %d\n",hint);
+	result_logger->write_header((uint64_t)grid->data());
 	if((*grid)[hint]>3)
 	{
 		array->push(&((*grid)[hint]));
@@ -336,11 +360,13 @@ inline void fix(std::vector<int>* grid, const dimension* dim, int hint, Avalanch
 	array->flush(); // note: empty does not always imply being flushed!
 }
 
+//! version without a hint
 template<class AvalancheContainer, class ResultType>
 inline void fix(std::vector<int>* grid, const dimension* dim, AvalancheContainer* array, ResultType* result_logger)
 {
 	const int INVERT_BIT = (1 << 31);
 
+	result_logger->write_header((uint64_t)grid->data());
 	for(unsigned int count = 0; count < dim->area(); ++count)
 	{
 		if(! is_border(dim, count)) {
