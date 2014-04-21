@@ -58,6 +58,11 @@ struct point
 	inline point operator+(const point& rhs) const {
 		return point(x+rhs.x, y+rhs.y);
 	}
+	inline point operator+=(const point& rhs) {
+		x += rhs.x;
+		y += rhs.y;
+		return *this;
+	}
 	inline point& operator-=(const point& rhs) {
 		x -= rhs.x;
 		y -= rhs.y;

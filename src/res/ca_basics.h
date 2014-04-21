@@ -332,6 +332,9 @@ public:
 	typedef std::vector<point>::const_iterator const_iterator;
 	const_iterator begin() const { return neighbours.begin(); }
 	const_iterator end() const { return neighbours.end(); }
+	const_iterator cbegin() const { return begin(); }
+	const_iterator cend() const { return end(); }
+
 
 public:
 	// TODO: operator*
@@ -368,6 +371,20 @@ public:
 		neighbours.assign(n_set.begin(), n_set.end());
 
 		return *this;
+	}
+
+	n_t& operator+=(const point& rhs)
+	{
+		for(point& p : neighbours)
+		 p += rhs;
+		return *this;
+	}
+
+	n_t& operator+(const point& rhs)
+	{
+		//return n_t(*this) += rhs;
+		n_t tmp(*this);
+		return tmp += rhs;
 	}
 
 	friend std::ostream& operator<< (std::ostream& stream,
@@ -469,25 +486,28 @@ public:
 };
 
 template<class C1, class C2, class Selector>
-void for_each_selection(const C1& cont1, const C2& cont2, const Selector& sel)
+bool for_each_selection(const C1& cont1, const C2& cont2, const Selector& sel)
 {
-	auto itr1 = cont1.cbegin();
-	auto itr2 = cont2.cbegin();
-	for(; itr1 != cont1.cend() && itr2 != cont2.cend();)
+	using itr1_t = typename C1::const_iterator;
+	using itr2_t = typename C2::const_iterator;
+	itr1_t itr1 = cont1.cbegin(), itr1_cp;
+	itr2_t itr2 = cont2.cbegin(), itr2_cp;
+	bool cont = true;
+	for(; itr1 != cont1.cend() && itr2 != cont2.cend() && cont;)
 	{
 		if(*itr1 < *itr2)
 		{
-			sel.first(itr1);
-			++itr1;
+			itr1_cp = itr1++;
+			cont = sel.first(itr1_cp);
 		}
 		else if(*itr2 < *itr1)
 		{
-			sel.second(itr2);
-			++itr2;
+			itr2_cp = itr2++;
+			cont = sel.second(itr2_cp);
 		}
 		else {
-			sel.both(itr1);
-			++itr1;
+			itr1_cp = itr1++;
+			cont = sel.both(itr1_cp);
 			++itr2;
 		}
 	}
@@ -496,67 +516,74 @@ void for_each_selection(const C1& cont1, const C2& cont2, const Selector& sel)
 	{
 		if(itr1 == cont1.cend())
 		{
-			for(; itr2 != cont2.cend(); ++itr2)
-			 sel.second(itr2);
+			// TODO: use while everywhere?
+			for(; itr2 != cont2.cend() && cont; )
+			{
+				itr2_cp = itr2++;
+				cont = sel.second(itr2_cp);
+			}
 		}
 		else // i.e. itr2 at end
 		{
-			for(; itr1 != cont1.cend(); ++itr1)
-			 sel.first(itr1);
+			for(; itr1 != cont1.cend() && cont; )
+			{
+				itr1_cp = itr1++;
+				cont = sel.first(itr1_cp);
+			}
 		}
 	}
-
+	return cont;
 }
 
-template<class Functor, class T>
+template<class Functor, class T1, class T2>
 class base_selector
 {
 protected:
 	const Functor& f;
 public:
-	void both(const T& t) const { }
-	void first(const T& t) const { }
-	void second(const T& t) const { }
+	bool both(const T1& ) const { return true; }
+	bool first(const T1& ) const { return true; }
+	bool second(const T2& ) const { return true; }
 	base_selector(const Functor& f) : f(f) {}
 };
 
-template<class Functor, class T>
-struct selector_intersection : base_selector<Functor, T>
+template<class Functor, class T1, class T2>
+struct selector_intersection : base_selector<Functor, T1, T2>
 {
-	typedef base_selector<Functor, T> base;
+	typedef base_selector<Functor, T1, T2> base;
 	using base::base_selector;
-	void both(const T& t) const { base::f(t); }
+	bool both(const T1& t) const { return base::f(t); }
 };
 
-template<class Functor, class T>
-struct selector_first_only : base_selector<Functor, T>
+template<class Functor, class T1, class T2>
+struct selector_first_only : base_selector<Functor, T1, T2>
 {
-	typedef base_selector<Functor, T> base;
+	typedef base_selector<Functor, T1, T2> base;
 	using base::base_selector;
-	void first(const T& t) const { base::f(t); }
+	bool first(const T1& t) const { return base::f(t); }
 };
 
-template<class Functor, class T>
-struct selector_union : base_selector<Functor, T>
+template<class Functor, class T1, class T2>
+struct selector_union : base_selector<Functor, T1, T2>
 {
-	typedef base_selector<Functor, T> base;
+	typedef base_selector<Functor, T1, T2> base;
 	using base::base_selector;
 	// TODO: sfinae to call argument-less
-	void both(const T& t) const { base::f(t); }
-	void first(const T& t) const { base::f(t); }
-	void second(const T& t) const { base::f(t); }
+	bool both(const T1& t) const { return base::f(t); }
+	bool first(const T1& t) const { return base::f(t); }
+	bool second(const T2& t) const { return base::f(t); }
 };
 
-template<class Functor1, class Functor2, class T>
+template<class Functor1, class Functor2, class T1, class T2>
 class selector_zip_base
 	// (TODO): reuse selector base class with ellipsis?
 {
 	const Functor1& f1;
 	const Functor2& f2;
 public:
-	void both(const T& t) const { assert(false); }
-	void first(const T& t) const { f1(t); }
-	void second(const T& t) const { f2(t); }
+	bool both(const T1& ) const { assert(false); }
+	bool first(const T1& t) const { return f1(t); }
+	bool second(const T2& t) const { return f2(t); }
 	selector_zip_base(const Functor1& f1, const Functor2& f2) :
 		f1(f1), f2(f2) {}
 };
@@ -590,9 +617,15 @@ public:
 
 // TODO: all to geometry
 template<template<class...> class Type, class C1, class C2, class ...Functor> // TODO: make union a template
-void for_each_points(const C1& cont1, const C2& cont2, const Functor&... func)
+bool for_each_points(const C1& cont1, const C2& cont2, const Functor&... func)
 {
-	for_each_selection(cont1, cont2, Type<Functor..., decltype(*cont1.begin())>(func...));
+	return for_each_selection(cont1, cont2, Type<Functor..., decltype(cont1.begin()), decltype(cont2.begin())>(func...));
+}
+
+template<class C1, class C2, class Functor> // TODO: make union a template
+bool for_ints_points(const C1& cont1, const C2& cont2, const Functor& func)
+{
+	return for_each_points<selector_intersection>(cont1, cont2, func);
 }
 
 template<class C1, class C2, class As1, class As2> // TODO: make union a template
@@ -601,9 +634,9 @@ auto zip_set(const C1& cont1, const C2& cont2, const As1& assoc1, const As2& ass
 {
 	using T = decltype(cont1.begin());
 	std::set<T> result;
-	const auto func1 = [&](const T& itr1) { result.push_back( assoc1[itr1 - cont1.begin()] ); };
+/*	const auto func1 = [&](const T& itr1) { result.push_back( assoc1[itr1 - cont1.begin()] ); };
 	const auto func2 = [&](const T& itr2) { result.push_back( assoc2[itr2 - cont2.begin()] ); };
-	for_each_selection<selector_zip_base>(cont1, cont2, func1, func2);
+	for_each_selection<selector_zip_base>(cont1, cont2, func1, func2);*/
 	return result;
 }
 
@@ -625,12 +658,11 @@ template<class C> void dump_container(const C& cont, std::ostream& stream = std:
 template<class C1, class C2>
 bool is_subset_of(const C1& cont1, const C2& cont2)
 {
-	bool is_subset = true;
 	using T = decltype(cont1.begin());
 	std::cout << "subset?" << std::endl;
 	dump_container(cont1);
 	dump_container(cont2);
-	for_each_points<selector_first_only>(cont1, cont2, [&](const T& ){ is_subset = false; });
+	bool is_subset = for_each_points<selector_first_only>(cont1, cont2, [&](const T& ){ return false; });
 	std::cout << is_subset << std::endl;
 	return is_subset;
 }
