@@ -37,7 +37,7 @@ inline void inc_push_neighbour(std::vector<int>* chips, int position, AvalancheC
 	if((*chips)[position]>=0)
 	{
 		(*chips)[position] |= INVERT_BIT;
-		array->push((int*)position);
+		array->push(position);
 	}
 }
 
@@ -48,7 +48,7 @@ inline void inc_push_neighbour(std::vector<int>* chips, int position, AvalancheC
 	if((*chips)[position]>=0)
 	{
 		(*chips)[position] |= INVERT_BIT;
-		array->push((int*)position);
+		array->push(position);
 	}
 }
 
@@ -110,7 +110,7 @@ inline void rotor_fix(std::vector<int>* grid, std::vector<int>* chips,
 {
 	if((*chips)[hint]>0) // otherwise, we would need an additional "case 0" label
 	{
-		array->push((int*)hint);
+		array->push(hint);
 		helpers::do_rotor_fix(grid, chips, dim, array, result_logger);
 	}
 	result_logger->write_separator();

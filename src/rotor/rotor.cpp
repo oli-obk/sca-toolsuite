@@ -85,9 +85,10 @@ class MyProgram : public Program
 		 exit("Different dimensions in both grids are not allowed.");
 
 		switch(output_type) {
-			case 'l': ::run<sandpile::array_stack, sandpile::fix_log_l>(grid, chips, dim, hint); break;
+			// TODO: int or int*?
+			case 'l': ::run<sandpile::_array_stack<int>, sandpile::fix_log_l>(grid, chips, dim, hint); break;
 			case 's':
-				::run<sandpile::array_stack, sandpile::fix_log_s>(grid, chips, dim, hint);
+				::run<sandpile::_array_stack<int>, sandpile::fix_log_s>(grid, chips, dim, hint);
 				write_grid(stdout, &grid, &dim);
 				break;
 		}
