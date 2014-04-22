@@ -322,7 +322,7 @@ public:
 		}
 	}
 
-	bool contains(const point& p) {
+	bool contains(const point& p) const {
 		for( const point& np : neighbours )
 		 if( p == np ) // :)
 		  return true;
