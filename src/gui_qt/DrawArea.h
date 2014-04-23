@@ -65,8 +65,8 @@ private slots:
 	void slot_timeout();
 	inline void update_pixmap() {
 		setPixmap(QPixmap::fromImage(*grid_image).scaled(
-			dim.width*pixel_factor,
-			dim.height*pixel_factor));
+			dim.width()*pixel_factor,
+			dim.height()*pixel_factor));
 	}
 	void state_updated(StateMachine::STATE new_state);
 

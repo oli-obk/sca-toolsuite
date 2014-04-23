@@ -22,4 +22,5 @@
 
 const point point::zero = point(0, 0);
 const matrix matrix::id = matrix(1, 0, 0, 1);
+constexpr point rect_storage_origin::ul;
 

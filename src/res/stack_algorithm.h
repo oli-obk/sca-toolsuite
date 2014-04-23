@@ -173,7 +173,7 @@ inline void avalanche_1d_hint_noflush(std::vector<T>& grid, const signed grid_wi
 template<class T, class AvalancheContainer>
 inline void avalanche_1d_hint_noflush(std::vector<T>* grid, const dimension* dim, const std::size_t hint, AvalancheContainer* array, FILE* avalanche_fp)
 {
-	avalanche_1d_hint_noflush(*grid, dim->width, hint, *array, avalanche_fp);
+	avalanche_1d_hint_noflush(*grid, dim->width(), hint, *array, avalanche_fp);
 }
 
 /**
@@ -327,12 +327,12 @@ inline void do_fix(/*std::vector<int>* grid,*/ const dimension* dim, AvalancheCo
 			*w |= INVERT_BIT;
 			array->push(w);
 		}
-		vt const s = cur_element + dim->width;
+		vt const s = cur_element + dim->width();
 		if((*s+=fire_times) > 3) {
 			*s |= INVERT_BIT;
 			array->push(s);
 		}
-		vt const n = cur_element - dim->width;
+		vt const n = cur_element - dim->width();
 		if((*n+=fire_times) > 3) {
 			*n |= INVERT_BIT;
 			array->push(n);

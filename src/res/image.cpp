@@ -67,9 +67,9 @@ void tga::print_header(FILE* fp, const dimension& dim, const ColorTable& ct)
 	// 2-3: y-origin (=0)
 	fwrite("\x00\x00\x00\x00", 1, 4, fp);
 
-	const short width = dim.width - 2;
+	const short width = dim.width() - 2;
 	fwrite(&width, 2, 1,  fp);
-	const short height = dim.height - 2;
+	const short height = dim.height() - 2;
 	fwrite(&height, 2, 1, fp);
 
 	// 0: pixel depth (=BPP)

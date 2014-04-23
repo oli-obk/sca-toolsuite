@@ -44,7 +44,7 @@ void run(std::vector<int>& grid, std::vector<int>& chips, const dimension& dim, 
 		rotor::rotor_fix_naive(&grid, &chips, &dim, &container, &logger); // TODO: is naive wanted??
 	}
 	else
-	 rotor::rotor_fix(&grid, &chips, &dim, human2internal(hint, dim.width), &container, &logger);
+	 rotor::rotor_fix(&grid, &chips, &dim, human2internal(hint, dim.width()), &container, &logger);
 }
 
 class MyProgram : public Program

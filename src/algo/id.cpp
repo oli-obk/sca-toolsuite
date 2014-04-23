@@ -33,9 +33,7 @@ class MyProgram : public Program
 		assert_usage(argc == 3);
 
 		std::vector<int> grid;
-		dimension dim;
-		dim.width = atoi(argv[1]) + 2;
-		dim.height = atoi(argv[2]) + 2;
+		dimension dim(atoi(argv[1]) + 2, atoi(argv[2]) + 2);
 
 		sandpile::get_identity(&grid, &dim);
 		write_grid(stdout, &grid, &dim);

@@ -48,6 +48,9 @@ struct HelpStruct
 	HelpStruct();
 };
 
+//! Exit program if @a assertion is false, printing msg
+void assert_always(bool assertion, const char* msg);
+
 //! Helper struct for all programs for help displaying and error handling.
 class Program
 {

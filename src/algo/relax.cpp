@@ -65,7 +65,7 @@ class MyProgram : public Program
 			bool min4_found = false;
 			for(unsigned int i=0; i<dim.area_without_border(); i++)
 			{
-				int cellId = human2internal(i, dim.width);
+				int cellId = human2internal(i, dim.width());
 				if(grid[cellId] > 3)
 				{
 					if(grid[cellId] > 4)
@@ -75,7 +75,7 @@ class MyProgram : public Program
 						if(min4_found)
 						 exit("For grids with 2 cells having value >= 4, use the program `L'");
 						else {
-							hint = internal2human(cellId, dim.width);
+							hint = internal2human(cellId, dim.width());
 							min4_found = true;
 							// continue in order to check for wrong input
 						}
@@ -86,9 +86,9 @@ class MyProgram : public Program
 		}
 
 		if(avalanches) {
-			start<sandpile::array_queue>(grid, dim, human2internal(hint, dim.width), times);
+			start<sandpile::array_queue>(grid, dim, human2internal(hint, dim.width()), times);
 		} else {
-			start<sandpile::array_stack>(grid, dim, human2internal(hint, dim.width), times);
+			start<sandpile::array_stack>(grid, dim, human2internal(hint, dim.width()), times);
 			write_grid(stdout, &grid, &dim);
 		}
 		return 0;

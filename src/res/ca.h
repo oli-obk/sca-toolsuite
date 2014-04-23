@@ -80,7 +80,7 @@ public:
 	{
 		// TODO: replace &((*old_grid)[internal]) by old_value
 		// and make old_value a ptr/ref?
-		eqsolver::variable_print vprinter(dim.height, dim.width,
+		eqsolver::variable_print vprinter(dim.height(), dim.width(),
 			p.x, p.y,
 			cell_ptr, helper_vars);
 		eqsolver::ast_print<eqsolver::variable_print> solver(&vprinter);

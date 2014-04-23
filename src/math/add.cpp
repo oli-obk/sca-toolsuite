@@ -38,7 +38,7 @@ class MyProgram : public Program
 			idx = atoi(argv[i]);
 			if(! human_idx_on_grid(grid_size, idx))
 			 exit("You must assert for each index i: 0 <= i < area.");
-			grid[human2internal(atoi(argv[i]),dim.width)]++;
+			grid[human2internal(atoi(argv[i]),dim.width())]++;
 		}
 
 		write_grid(stdout, &grid, &dim);

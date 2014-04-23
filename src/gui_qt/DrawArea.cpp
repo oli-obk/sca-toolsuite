@@ -42,7 +42,7 @@ DrawArea::DrawArea(StateMachine& _state_machine, QWidget *parent) :
 
 void DrawArea::increase_cell(int x, int y, int steps)
 {
-	unsigned int coord = (y*dim.width)+x;
+	unsigned int coord = (y*dim.width())+x;
 
 	std::cout << coord << std::endl;
 	const int new_value = sim_grid[coord] + steps;
@@ -56,8 +56,8 @@ void DrawArea::increase_cell(int x, int y, int steps)
 
 void DrawArea::fire_cell(int coords)
 {
-	const int x = coords % dim.width;
-	const int y = coords / dim.width;
+	const int x = coords % dim.width();
+	const int y = coords / dim.width();
 
 	increase_cell(x, y, -4);
 	increase_cell(x, y-1, 1);
@@ -121,7 +121,7 @@ void DrawArea::mousePressEvent(QMouseEvent *event)
 	{	
 		int x = event->pos().x() / pixel_factor;
 		int y = event->pos().y() / pixel_factor;
-		int coords = y * dim.width + x;
+		int coords = y * dim.width() + x;
 
 		increase_cell(x, y, 1);
 		calc_grid[coords]++;
@@ -160,16 +160,16 @@ void DrawArea::fill_grid(FILE* fp)
 	 itr->to_32bit((int*)(color_table + entry));
 
 	delete grid_image;
-	grid_image = new QImage(dim.width, dim.height, QImage::Format_ARGB32);
+	grid_image = new QImage(dim.width(), dim.height(), QImage::Format_ARGB32);
 
-	for(unsigned int y = 0; y<dim.height; y++)
-	for(unsigned int x = 0; x<dim.width; x++)
+	for(unsigned int y = 0; y<dim.height(); y++)
+	for(unsigned int x = 0; x<dim.width(); x++)
 	{
-		if(x==0||x==dim.width-1||y==0||y==dim.height-1)
+		if(x==0||x==dim.width()-1||y==0||y==dim.height()-1)
 		 grid_image->setPixel(x,y, 9);
 		else
 		{
-			unsigned int coord = (y*dim.width)+x;
+			unsigned int coord = (y*dim.width())+x;
 			grid_image->setPixel(x, y, color_of(sim_grid[coord]));
 		}
 	}

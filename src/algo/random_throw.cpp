@@ -71,13 +71,12 @@ class MyProgram : public Program
 
 			for(std::vector<int>::iterator itr = random_seq.begin();
 				itr != random_seq.end(); itr++) {
-				*itr = human2internal(sca_random::get_int(area-1), dim.width);
+				*itr = human2internal(sca_random::get_int(area-1), dim.width());
 			}
 		}
 		else if(!strcmp(argv[1], "input"))
 		{ // user lets us read "random" sequence from stdin, we create an empty board of wxh
-			dim.width = atoi(argv[2]) + 2;
-			dim.height = atoi(argv[3]) + 2;
+			dim = dimension(atoi(argv[2]) + 2, atoi(argv[3]) + 2);
 			create_empty_grid(&grid, &dim);
 
 			bool eof = false;
@@ -87,7 +86,7 @@ class MyProgram : public Program
 				if( fscanf(stdin, "%d", &i) != 1)
 				 eof=true;
 				else
-				 random_seq.push_back(human2internal(i, dim.width));
+				 random_seq.push_back(human2internal(i, dim.width()));
 			} while(!eof);
 		}
 		else

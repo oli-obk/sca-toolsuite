@@ -47,7 +47,7 @@ class MyProgram : public Program
 
 		for(unsigned int i=0; i<grid.size(); i++)
 		{
-			const int human = internal2human(i,dim.width);
+			const int human = internal2human(i,dim.width());
 			while(grid[i] != INT_MIN && grid[i]--)
 			 fprintf(stdout, "%d%c", human, separator);
 		}

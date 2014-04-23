@@ -58,10 +58,10 @@ inline void do_rotor_fix(std::vector<int>* grid, std::vector<int>* chips,
 {
 	const int INVERT_BIT = (1 << 31);
 	const int GRAIN_BITS = (-1) ^ INVERT_BIT;
-	const coord_t PALETTE[7] = { -((coord_t)dim->width), 1,
-		(coord_t)dim->width, -1,
-		-((coord_t)dim->width), 1,
-		(coord_t)dim->width };
+	const coord_t PALETTE[7] = { -((coord_t)dim->width()), 1,
+		(coord_t)dim->width(), -1,
+		-((coord_t)dim->width()), 1,
+		(coord_t)dim->width() };
 
 //	result_logger->write_avalanche_counter();
 // TODO: write header?
@@ -77,10 +77,10 @@ inline void do_rotor_fix(std::vector<int>* grid, std::vector<int>* chips,
 
 		if(chips_to_dec_4)
 		{
-			inc_push_neighbour(chips, cur_element-dim->width, array, chips_to_dec_4);
+			inc_push_neighbour(chips, cur_element-dim->width(), array, chips_to_dec_4);
 			inc_push_neighbour(chips, cur_element-1, array, chips_to_dec_4);
 			inc_push_neighbour(chips, cur_element+1, array, chips_to_dec_4);
-			inc_push_neighbour(chips, cur_element+dim->width, array, chips_to_dec_4);
+			inc_push_neighbour(chips, cur_element+dim->width(), array, chips_to_dec_4);
 		}
 
 		chips_to_dec &= 3;
@@ -139,15 +139,15 @@ inline void rotor_fix_naive(std::vector<int>* grid, std::vector<int>* chips,
 	const dimension* dim, AvalancheContainer*, ResultType* result_logger)
 {
 	const coord_t PALETTE[4]
-		= { -((coord_t)dim->width), 1, (coord_t)dim->width, -1 };
+		= { -((coord_t)dim->width()), 1, (coord_t)dim->width(), -1 };
 	const unsigned int ONCE = 1;
 	//unsigned int area = dim->area();
 	int cur_field;
-	for(unsigned int y = 1; y<(dim->height-1); y++)
-	for(unsigned int x = 1; x<(dim->width-1); x++)
+	for(unsigned int y = 1; y<(dim->height()-1); y++)
+	for(unsigned int x = 1; x<(dim->width()-1); x++)
 	{
-		unsigned int coord = (y*dim->width)+x;
-		//if(is_border(dim, (y*dim->width)+x))
+		unsigned int coord = (y*dim->width())+x;
+		//if(is_border(dim, (y*dim->width())+x))
 		//	exit(99);
 		for(int nchips = (*chips)[coord]; nchips; --nchips)
 		{

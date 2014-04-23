@@ -110,8 +110,11 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 
 	insert_horizontal_border(grid, grid->end(), line_width, border);
 
-	dim->height = line_count + (((int)(border))<<1);
-	dim->width = line_width + (((int)(border))<<1);
+	/*dim->height() = line_count + (((int)(border))<<1);
+	dim->width() = line_width + (((int)(border))<<1);*/
+
+	*dim = dimension(line_width + (((int)(border))<<1),
+		line_count + (((int)(border))<<1));
 
 	assert(dim->area() == grid->size());
 }
@@ -177,8 +180,8 @@ void read_grid(const base_grid* grid_class, std::istream& is, std::vector<int>& 
 
 	insert_horizontal_border(&grid, grid.end(), line_width, border);
 
-	dim.height = line_count + (((int)(border))<<1);
-	dim.width = line_width + (((int)(border))<<1);
+	dim = dimension(line_width + (((int)(border))<<1),
+		line_count + (((int)(border))<<1));
 
 	assert(dim.area() == grid.size());
 }
@@ -187,12 +190,12 @@ void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
 	void (*PRINTFUNC)(FILE*, int), int border)
 {
 	assert(PRINTFUNC);
-	unsigned int last_symbol = dim->width - 1 - border;
+	unsigned int last_symbol = dim->width() - 1 - border;
 
-	for(unsigned int y = border; y < dim->height - border; y++)
+	for(unsigned int y = border; y < dim->height() - border; y++)
 	{
-		for(unsigned int x = border; x < dim->width - border; x++) {
-			PRINTFUNC(fp, (*grid)[x + (dim->width)*y]); // TODO: two [] operators
+		for(unsigned int x = border; x < dim->width() - border; x++) {
+			PRINTFUNC(fp, (*grid)[x + (dim->width())*y]); // TODO: two [] operators
 			fputc((x == last_symbol) ? '\n':' ', fp);
 		}
 
@@ -203,16 +206,16 @@ void write_grid(const base_grid* grid_class, std::ostream& os, const std::vector
 	int border)
 {
 	assert(grid_class);
-	unsigned int last_symbol = dim.width - 1 - border;
+	unsigned int last_symbol = dim.width() - 1 - border;
 
 
-	for(unsigned int y = border; y < dim.height - border; y++)
+	for(unsigned int y = border; y < dim.height() - border; y++)
 	{
 		char* ptr = buffer;
-		for(unsigned int x = border; x < dim.width - border; x++) {
-		//	PRINTFUNC(fp, (*grid)[x + (dim->width)*y]); // TODO: two [] operators
+		for(unsigned int x = border; x < dim.width() - border; x++) {
+		//	PRINTFUNC(fp, (*grid)[x + (dim->width())*y]); // TODO: two [] operators
 		//	fputc((x == last_symbol) ? '\n':' ', fp);
-			grid_class->write(ptr, grid[x + (dim.width)*y]);
+			grid_class->write(ptr, grid[x + (dim.width())*y]);
 			*(ptr++) = (x == last_symbol) ? '\n' : ' ';
 		}
 		*ptr = 0;

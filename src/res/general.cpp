@@ -126,3 +126,13 @@ void HelpStruct::add_param(const char *name, const char *descr) {
 HelpStruct::HelpStruct()
 	: description(NULL), syntax(NULL), // non-NULL params
 	  input(NULL), output(NULL), return_value(NULL) {}
+
+
+void assert_always(bool assertion, const char *msg)
+{
+	if(!assertion)
+	{
+		std::cerr << "Error: " << msg << std::endl;
+		::exit(EXIT_FAILURE);
+	}
+}

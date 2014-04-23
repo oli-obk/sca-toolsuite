@@ -23,9 +23,8 @@
 
 #include <cassert>
 #include <climits>
-#include <cstdio> // TODO: remove soon
 #include <vector>
-//#include <iostream>
+#include <set>
 #include <fstream>
 
 #include "io.h"
@@ -45,7 +44,7 @@ enum class storage_t
 struct point
 {
 	coord_t x, y;
-	point(coord_t _x, coord_t _y) : x(_x), y(_y) {}
+	constexpr point(coord_t _x, coord_t _y) : x(_x), y(_y) {}
 	point() {}
 	void set(int _x, int _y) { x = _x; y = _y; }
 	//! one way to compare points: linewise
@@ -91,7 +90,6 @@ public:
 	}
 
 	point_itr(point max, point min = {0, 0}) :
-	//	min(min), max(max), position(min)
 		point_itr(max, min, min)
 	{
 	}
@@ -149,6 +147,7 @@ public:
 	const static matrix id;
 };
 
+//! a container which starts counting from zero, and which has a border width
 struct dimension_container
 {
 	// TODO: dimenion as member?
@@ -170,6 +169,7 @@ struct dimension_container
 	}
 };
 
+#if 0
 //! Generic structure for a 2D rectangle dimension.
 struct dimension
 {
@@ -181,8 +181,32 @@ struct dimension
 		assert(height >= bs_2); assert(width >= bs_2);
 		return (height-bs_2)*(width-bs_2);
 	}
+
+	bool point_is_contained(const point& p) const {
+		return p.x >= 0 && p.x < (coord_t)width
+			&& p.y >= 0 && p.y < (coord_t)height;
+	}
+
+	inline bool fits_points(const std::set<point>& points) const
+	{
+		if(points.size() == area())
+		{
+			const point& offset = *points.begin();
+			(void)offset;
+			for(const point& p : points)
+			{
+				std::cout << p << std::endl;
+				if(!point_is_contained(p))
+				 return false;
+			}
+		}
+		else
+		 return false;
+		return true;
+	}
+
 	inline bool operator==(const dimension& other) const {
-		return height == other.height && width == other.width;
+		return height == other.height && width == other.width();
 	}
 	inline bool operator!=(const dimension& other) const {
 		return !(operator ==(other));
@@ -211,7 +235,118 @@ struct dimension
 	dimension_container points(unsigned border_width) const {
 		return dimension_container(height, width, border_width); }
 };
+#endif
 
+// TODO: protected members
+
+class rect_storage_default
+{
+protected:
+	point ul, lr;
+	rect_storage_default(const point& ul, const point& lr) : ul(ul), lr(lr) {}
+};
+
+class rect_storage_origin
+{
+protected:
+	static constexpr point ul = {0, 0};
+	point lr;
+	rect_storage_origin(const point& , const point& lr) : lr(lr) {}
+	rect_storage_origin(){} // TODO...
+	// TODO: remove first param?
+};
+
+template<class storage>
+struct _rect : public storage
+{
+protected:
+	_rect() {} // TODO... this should never be allowed
+	//point ul, lr;
+	using s = storage;
+public:
+	_rect(const point& ul, const point& lr) : storage(ul, lr) {}
+	//! constructs the rect from the inner part of a dim,
+	//! i.e. dim - border
+	_rect(const _rect<rect_storage_origin>& d, const coord_t border_size = 0) :
+		storage({0, 0}, // TODO: use {}
+			{(coord_t)d.width() - (border_size << 1),
+			(coord_t)d.height() - (border_size << 1)}) {}
+
+	inline area_t area() const { return (s::lr.x - s::ul.x) * (s::lr.y - s::ul.y); }
+	bool is_inside(const point& p) const {
+		return p.x < s::lr.x && p.y < s::lr.y && s::ul.x <= p.x && s::ul.y <= p.y; }
+
+	point_itr begin() const { return point_itr(s::lr, s::ul); }
+	point_itr end() const { return point_itr::from_end(s::lr, s::ul); }
+	dimension_container points(u_coord_t border_width) const {
+		return dimension_container(height(), width(), border_width); }
+
+	friend std::ostream& operator<< (std::ostream& stream,
+		const _rect& r) {
+		stream << "rect (" << r.s::ul << ", " << r.s::lr << ")";
+		return stream;
+	}
+
+	inline area_t area_without_border(u_coord_t border_size = 1) const {
+		const u_coord_t bs_2 = border_size << 1;
+		assert(height() >= bs_2); assert(width() >= bs_2);
+		return (height()-bs_2)*(width()-bs_2);
+	}
+
+	bool point_is_on_border(const point& p,
+		const u_coord_t border_size) const {
+		return p.x < s::ul.x + (coord_t) border_size
+		|| p.x >= s::lr.x - (coord_t) border_size
+		|| p.y < s::ul.y + (coord_t) border_size
+		|| p.y >= s::lr.y - (coord_t) border_size;
+	}
+
+	inline u_coord_t width() const { return s::lr.x - s::ul.x; }
+	inline u_coord_t height() const { return s::lr.y - s::ul.y; }
+
+	inline bool operator==(const _rect& other) const {
+		return s::lr == other.s::lr && s::ul == other.s::ul;
+	}
+	inline bool operator!=(const _rect& other) const {
+		return !(operator ==(other));
+	}
+
+	bool point_is_contained(const point& p) const {
+		return p.x >= s::ul.x && p.x < s::lr.x
+			&& p.y >= s::ul.y && p.y < s::lr.y;
+	}
+	inline bool fits_points(const std::set<point>& points) const
+	{
+		if(points.size() == area())
+		{
+			const point& offset = *points.begin();
+			(void)offset;
+			for(const point& p : points)
+			{
+				std::cout << p << std::endl;
+				if(!point_is_contained(p))
+				 return false;
+			}
+		}
+		else
+		 return false;
+		return true;
+	}
+};
+
+using rect = _rect<rect_storage_default>;
+
+struct dimension : public _rect<rect_storage_origin>
+{
+	dimension(u_coord_t width, u_coord_t height) :
+		_rect({0,0}, {(coord_t)width, (coord_t)height}) {}
+	dimension() {}
+	// TODO: -> rect class
+//	dimension_container points(u_coord_t border_width) const {
+//		return dimension_container(height(), width(), border_width); }
+};
+
+/*
 // TODO: protected members
 struct rect
 {
@@ -236,7 +371,7 @@ struct rect
 		stream << "rect (" << r.ul << ", " << r.lr << ")";
 		return stream;
 	}
-};
+};*/
 
 // TODO: inherit from bounding box
 class bounding_box
@@ -284,7 +419,7 @@ protected:
 public:
 	const_cell_itr(cell_t* top_left, dimension dim, coord_t bw,
 		bool pos_is_begin = true) :
-		linewidth(dim.width),
+		linewidth(dim.width()),
 		ptr(top_left +
 			((pos_is_begin) ? bw * (linewidth+1)
 			: dim.area() - bw * (linewidth-1)) ),
@@ -326,20 +461,20 @@ class grid_t // TODO: class
 
 	//! returns array index for a human point @a p
 	int index(const point& p) const {
-		const int& w = _dim.width;
+		const int& w = _dim.width();
 		const int& bw = border_width;
 		return ((p.y + bw) * w) + bw + p.x;
 	}
 
 	dimension human_dim() const {
 		u_coord_t bw_2 = border_width << 1;
-		return dimension { _dim.height - bw_2, _dim.width - bw_2 };
+		return dimension { _dim.height() - bw_2, _dim.width() - bw_2 };
 	}
 
 	static area_t internal_area(const dimension& human_dim,
 		u_coord_t border_width) {
 		u_coord_t bw_2 = border_width << 1;
-		return (human_dim.width + bw_2) * (human_dim.height + bw_2);
+		return (human_dim.width() + bw_2) * (human_dim.height() + bw_2);
 	}
 public:
 	//! returns *internal* dimension
@@ -372,7 +507,7 @@ public:
 		border_width(border_width)
 	{
 		u_coord_t bw2 = border_width << 1;
-		u_coord_t linewidth = dim.width;
+		u_coord_t linewidth = dim.width();
 		area_t top = border_width * (linewidth - 1);
 
 		std::fill_n(data.begin(), top, border_fill);
@@ -410,12 +545,12 @@ public:
 	#if 0
 	cell_t direct_access(point p)
 	{
-		return data[p.y * dim.width + p.x];
+		return data[p.y * dim.width() + p.x];
 	}
 
 	cell_t operator[](point p)
 	{
-	/*	const int& w = _dim.width;
+	/*	const int& w = _dim.width();
 		const int& bw = border_width;
 		printf("index: %d, ds: %d\n",((p.y + bw) * w) + bw + p.x,(int)data.size());
 		return data[((p.y + bw) * w) + bw + p.x];*/
@@ -464,7 +599,7 @@ public:
 		if(filename) {
 			ifs.open(filename);
 			if(!ifs.good())
-			 puts("Error opening infile");
+			 std::cerr << "Error opening infile" << std::endl;
 			is_ptr = &ifs;
 		}
 		else
@@ -475,9 +610,9 @@ public:
 
 //! Returns true iff @a idx is on the border for given dimension @a dim
 inline bool is_border(const dimension* dim, unsigned int idx) {
-	const unsigned int idx_mod_width = idx % dim->width;
-	return (idx<dim->width || idx>= dim->area()-dim->width
-	|| idx_mod_width == 0 || idx_mod_width==dim->width-1);
+	const unsigned int idx_mod_width = idx % dim->width();
+	return (idx<dim->width() || idx>= dim->area()-dim->width()
+	|| idx_mod_width == 0 || idx_mod_width==dim->width()-1);
 }
 
 //! Given an empty vector @a grid, creates grid of dimension @a dim

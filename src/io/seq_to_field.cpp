@@ -34,8 +34,9 @@ class MyProgram : public Program
 
 		switch(argc)
 		{
-			case 3: dim.width = atoi(argv[1]) + 2;
-				dim.height =  atoi(argv[2]) + 2;
+			case 3:
+				dim = dimension(atoi(argv[1]) + 2,
+					atoi(argv[2]) + 2);
 				break;
 			default: exit_usage();
 		}
@@ -51,7 +52,7 @@ class MyProgram : public Program
 			if(symbols_read > 0) {
 				if(!human_idx_on_grid(grid_size, index))
 				 exit("You must assert for each index i: 0 <= i < area.");
-				grid[human2internal(index, dim.width)]++;
+				grid[human2internal(index, dim.width())]++;
 			}
 		} while(symbols_read > 0);
 

@@ -58,7 +58,7 @@ class MyProgram : public Program
 		register unsigned int idx;
 		for(unsigned int i=0; i<dim.area_without_border(); i++)
 		{
-			idx = human2internal(i,dim.width);
+			idx = human2internal(i,dim.width());
 			grid0[idx] = op_fptr(grid1[idx], grid2[idx]);
 		}
 

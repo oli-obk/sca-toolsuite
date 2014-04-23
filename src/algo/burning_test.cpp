@@ -33,12 +33,12 @@ class MyProgram : public Program
 		assert_usage(argc==1);
 
 		read_grid(read_fp, &grid, &dim);
-		const unsigned int width_without_border = dim.width - 2;
+		const unsigned int width_without_border = dim.width() - 2;
 
 		// add border grains
 		for(unsigned int human = 0; human<dim.area_without_border(); human++)
 		{
-			const int as_internal = human2internal(human, dim.width);
+			const int as_internal = human2internal(human, dim.width());
 			if(human%width_without_border == 0 || (human+1)%width_without_border == 0)
 			 grid[as_internal]++; // left or right border
 			if(human<width_without_border ||
@@ -51,7 +51,7 @@ class MyProgram : public Program
 		sandpile::array_queue array(dim.area());
 		for(unsigned int human = 0; human<dim.area_without_border(); human++)
 		{
-			const int as_internal = human2internal(human, dim.width);
+			const int as_internal = human2internal(human, dim.width());
 			if(grid[as_internal]>3)
 			 sandpile::avalanche_1d_hint_noflush(
 				&grid, &dim, as_internal, &array, stdout);

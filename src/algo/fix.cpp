@@ -36,7 +36,7 @@ void run(std::vector<int>& grid, const dimension& dim, int hint=-1)
 		fix(&grid, &dim, &container, &logger);
 	}
 	else
-	 fix(&grid, &dim, human2internal(hint, dim.width), &container, &logger);
+	 fix(&grid, &dim, human2internal(hint, dim.width()), &container, &logger);
 }
 
 class MyProgram : public Program

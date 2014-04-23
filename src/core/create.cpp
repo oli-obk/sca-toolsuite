@@ -38,8 +38,8 @@ class MyProgram : public Program
 		{
 			case 4: predefined_value = atoi(argv[3]);
 			case 3:
-				dim.width = atoi(argv[1]);
-				dim.height = atoi(argv[2]);
+				dim = dimension(atoi(argv[1]),
+					atoi(argv[2]));
 				break;
 			default:
 				exit_usage();

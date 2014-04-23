@@ -181,8 +181,8 @@ class n_t
 		const dimension& in_dim)
 	{
 		point center_cell(-1, -1);
-		for(unsigned y=0, id=0; y<in_dim.height; ++y)
-		for(unsigned x=0; x<in_dim.width; ++x, ++id) // TODO: remove id
+		for(unsigned y=0, id=0; y<in_dim.height(); ++y)
+		for(unsigned x=0; x<in_dim.width(); ++x, ++id) // TODO: remove id
 		{
 			int elem = in_grid[id];
 			switch(elem)
@@ -259,8 +259,8 @@ public:
 		static trans_t tfs[8]
 		 = {size(), size(), size(), size(),
 			size(), size(), size(), size()};
-		assert(bb.x_size() == input_grid.dim().width);
-		assert(bb.y_size() == input_grid.dim().height);
+		assert(bb.x_size() == input_grid.dim().width());
+		assert(bb.y_size() == input_grid.dim().height());
 
 		// TODO: unroll?
 		for(int i = 0; i < 8; ++i)
@@ -314,7 +314,7 @@ public:
 		//dim(_dim)
 	{
 		neighbours.reserve(_dim.area());
-		dimension_container cont(_dim.height, _dim.width, 0);
+		dimension_container cont(_dim.height(), _dim.width(), 0);
 		for( const point& p : cont )
 		{
 			neighbours.push_back(p - _center_cell);
@@ -472,6 +472,8 @@ public:
 		stream << ")";
 		return stream;
 	}
+
+	std::size_t size() const { return data.size(); }
 	cell_t operator[](unsigned id) const { return data[id]; }
 
 	//! @param pos position *before* which we should insert
