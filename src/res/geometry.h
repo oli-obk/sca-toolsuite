@@ -357,11 +357,11 @@ public:
 	cell_t& operator*() { return *ptr; }
 };
 
-class grid_t // TODO: class
+class grid_t
 {
 	std::vector<cell_t> data;
 	dimension _dim; //! dimension of data, including borders
-	const u_coord_t border_width;
+	u_coord_t border_width;
 
 	//! returns array index for a human point @a p
 	int index(const point& p) const {
@@ -375,7 +375,7 @@ class grid_t // TODO: class
 		return dimension { _dim.height() - bw_2, _dim.width() - bw_2 };
 	}
 
-	static area_t internal_area(const dimension& human_dim,
+	static area_t storage_area(const dimension& human_dim,
 		u_coord_t border_width) {
 		u_coord_t bw_2 = border_width << 1;
 		return (human_dim.width() + bw_2) * (human_dim.height() + bw_2);
@@ -396,6 +396,9 @@ public:
 
 	dimension_container points() const { return _dim.points(border_width); }
 
+	//! very slow (but faster than allocating a new array)
+	void resize_borders(u_coord_t new_border_width);
+
 	//! simple constructor: empty grid
 	grid_t(u_coord_t border_width) :
 		border_width(border_width)
@@ -403,19 +406,20 @@ public:
 
 	//! simple constructor: fill grid
 	//! dimension is human
-	//! @param dim internal dimension, border not inclusive # ????
+	//! @param dim internal dimension, border not inclusive
 	// TODO: use climit's INT MIN
 	grid_t(const dimension& dim, u_coord_t border_width, cell_t fill = 0, cell_t border_fill = INT_MIN) :
-		data(internal_area(dim, border_width), fill),
-		_dim(dim),
+		data(storage_area(dim, border_width), fill),
+		_dim(dim.height() + (border_width << 1),
+			dim.width() + (border_width << 1)),
 		border_width(border_width)
 	{
 		u_coord_t bw2 = border_width << 1;
-		u_coord_t linewidth = dim.width();
-		area_t top = border_width * (linewidth - 1);
-
+		u_coord_t linewidth = dim.width(),
+			storage_lw = linewidth + bw2;
+		area_t top = border_width * (storage_lw - 1);
 		std::fill_n(data.begin(), top, border_fill);
-		for(std::size_t i = top; i < data.size() - top; i += linewidth)
+		for(std::size_t i = top; i < data.size() - top; i += storage_lw)
 			std::fill_n(data.begin() + i, bw2, border_fill);
 		std::fill(data.end() - top, data.end(), border_fill);
 	//	data.assign(data.begin(), data.begin() + top, border_fill);
