@@ -24,10 +24,73 @@
 #include <cassert>
 #include <cstdint>
 #include <vector>
+#include <type_traits>
 #include "geometry.h"
 
 namespace sandpile
 {
+
+/*
+ * io logging classes
+ */
+template<class T>
+class log_base
+{
+	//! difference of two grid indices for non pointers
+	template<class >
+	class div_size_t
+	{
+		const uint8_t _size = 1;
+	public:
+		const uint8_t& size() const { return _size; }
+	};
+
+	//! difference of two grid indices for pointers
+	template<class T2>
+	class div_size_t<T2*>
+	{
+		using rpt = typename std::remove_pointer<T2>::type;
+		const uint8_t _size = sizeof(rpt);
+	public:
+		const uint8_t& size() const { return _size; }
+	};
+
+	const div_size_t<T> div_size;
+	FILE* fp;
+public:
+	log_base(FILE* fp) : fp(fp) {}
+	inline void write_separator() const {
+		const uint64_t minus1 = -1; fwrite(&minus1, sizeof(T), 1, fp);
+	}
+	inline void write_header(uint64_t grid_offset) const
+	{
+		constexpr static const char sizeof_t = sizeof(T);
+		constexpr static const char hdr[14] = {}; // initialized to 0
+		fwrite(&hdr, sizeof(hdr), 1, fp);
+		fwrite(&sizeof_t, 1, 1, fp); // size of each index
+		fwrite(&div_size.size(), 1, 1, fp); // diff between two index numbers
+		fwrite(&grid_offset, sizeof(uint64_t), 1, fp);
+	}
+	inline void write_elem_to_file(const T elem, const uint32_t* const ntimes) {
+		for(uint32_t i = 0; i < *ntimes; i++)
+		 fwrite(&elem, sizeof(T), 1, fp);
+	}
+	inline void write_array_to_file(T* const ptr, const int num) const {
+		fwrite(ptr, sizeof(T), num, fp);
+	}
+};
+
+template<class T>
+class log_nothing_base
+{
+//	inline void write_to_file(FILE* ) const {} // array stack can not do this
+public:
+	log_nothing_base() {}
+	log_nothing_base(FILE* ) {}
+	inline void write_separator() const {}
+	inline void write_header(uint64_t ) const {}
+	inline void write_elem_to_file(const T, const uint32_t*) const {}
+};
 
 /**
 	@brief Class for stack algorithm using a stack for the avalanches.
@@ -36,22 +99,22 @@ namespace sandpile
 	@invariant stack_ptr points to top element
 */
 template<class T = int*>
-class _array_stack
+class _array_stack : public log_nothing_base<T>
 {
 	T* const array; //! first element will never be read: "sentinel"
 	T* stack_ptr;
 public:
 	using value_type = T;
-	inline _array_stack(unsigned human_grid_size) :
+	inline _array_stack(unsigned human_grid_size, FILE* = nullptr) :
 		array(new T[human_grid_size+1]), stack_ptr(array) {}
 	inline ~_array_stack() { delete[] array; }
 	inline T pop() { return *(stack_ptr--); }
 	inline void push(const T& i) { *(++stack_ptr) = i; }
 	inline bool empty() const { return stack_ptr == array; }
 	inline void flush() const {}
-	inline void write_to_file(FILE* ) const {} // array stack can not do this
-	inline void write_separator(FILE* ) const {}
-	inline void write_header(FILE* , uint64_t ) const {}
+
+	// logging:
+	inline void write_to_file() const {}
 };
 
 typedef _array_stack<int*> array_stack;
@@ -65,7 +128,7 @@ typedef _array_stack<int*> array_stack;
 	@invariant write_ptr always points to the element last written
 */
 template<class T = int*>
-class _array_queue_no_file
+class _array_queue_base
 {
 protected:
 	T* const array; //! first element will never be read
@@ -73,22 +136,23 @@ protected:
 	T* write_ptr;
 public:
 	using value_type = T;
-	inline _array_queue_no_file(unsigned human_grid_size) :
+	inline _array_queue_base(unsigned human_grid_size) :
 		array(new T[human_grid_size+1]),
 		read_ptr(array), write_ptr(array) {}
-	inline ~_array_queue_no_file() { delete[] array; }
+	inline ~_array_queue_base() { delete[] array; }
 	inline T pop() { return *(++read_ptr); assert(read_ptr <= write_ptr); }
 	inline void push(const T& i) { *(++write_ptr) = i; }
 	inline bool empty() const { return read_ptr == write_ptr; }
 	inline void flush() { read_ptr = write_ptr = array; }
-	inline void write_to_file(FILE* ) const {}
-	inline void write_separator(FILE* ) const {}
-	inline void write_header(FILE* , uint64_t ) const {}
 	inline unsigned int size() { return (unsigned int)(write_ptr-array); }
 	inline const T* data() const { return array+1; }
+
+	// logging: // (TODO) hiding members is bad style
+//	inline void write_to_file() const {}
+//	inline void write_header(uint64_t ) const {}
 };
 
-typedef _array_queue_no_file<int*> array_queue_no_file;
+//typedef _array_queue_no_file<int*> array_queue_no_file;
 
 /**
 	@brief Class for stack algorithm (and IO) using a queue for the avalanches.
@@ -98,29 +162,38 @@ typedef _array_queue_no_file<int*> array_queue_no_file;
 	@invariant write_ptr always points to the element last written
 */
 template<class T>
-class _array_queue : public _array_queue_no_file<T>
+class _array_queue : public _array_queue_base<T>, public log_base<T>
 {
-	// TODO: this class works incorrect with pointers!
-	typedef _array_queue_no_file<T> base;
+	// TODO: this class works incorrect with pointers! -> TODO: comment wrong?
+	typedef _array_queue_base<T> base;
 public:
-	inline _array_queue(unsigned human_grid_size) : base(human_grid_size) {}
-	inline void write_to_file(FILE* fp) const {
-		fwrite(base::array+1, sizeof(T), base::write_ptr - base::array, fp);
-	}
-	inline void write_separator(FILE* fp) const {
-		const int minus1 = -1; fwrite(&minus1, sizeof(T), 1, fp);
-	}
-	inline void write_header(FILE* fp, uint64_t grid_offset) const
-	{
-		constexpr static const char sizeof_t = sizeof(T);
-		constexpr static const char hdr[7] = { 0, 0, 0, 0, 0, 0, 0 };
-		fwrite(&hdr, 7, 1, fp);
-		fwrite(&sizeof_t, 1, 1, fp);
-		fwrite(&grid_offset, sizeof(uint64_t), 1, fp);
+	inline _array_queue(unsigned human_grid_size, FILE* fp) :
+		base(human_grid_size),
+		log_base<T>(fp) {}
+
+	// logging:
+	inline void write_to_file() const {
+		log_base<T>::write_array_to_file(
+			base::array+1, base::write_ptr - base::array);
 	}
 };
 
 typedef _array_queue<int*> array_queue;
+
+template<class T>
+class _array_queue_no_file : public _array_queue_base<T>, public log_nothing_base<T>
+{
+	// TODO: this class works incorrect with pointers!
+	typedef _array_queue_base<T> base;
+public:
+	inline _array_queue_no_file(unsigned human_grid_size) :
+		base(human_grid_size) {}
+
+	// logging:
+	inline void write_to_file() const {}
+};
+
+typedef _array_queue_no_file<int*> array_queue_no_file;
 
 /*inline void increase_neighbours_without_self(std::vector<int>& grid, const unsigned grid_width, const int center)
 {
@@ -130,12 +203,17 @@ typedef _array_queue<int*> array_queue;
 	grid[center-grid_width]++;
 }*/
 
+namespace internal
+{
+
 /**
 	Develops an 1D avalanche. The helping avalanche container is not flushed, so it contains the whole avalanche afterwards.
 	Important: The cell at hint must be decreased by 1.
 */
 template<class T, class AvalancheContainer>
-inline void avalanche_1d_hint_noflush(std::vector<T>& grid, const signed grid_width, const std::size_t hint, AvalancheContainer& array, FILE* const avalanche_fp)
+// TODO: make hint ptr -> no grid class
+// TODO: use refs for ints?
+inline void avalanche_1d_hint_noflush(std::vector<T>& grid, const signed grid_width, const uint32_t hint, AvalancheContainer& array)
 {
 	grid[hint]-=4; // keep up invariant: elements in array are already decreased
 	array.push(&grid[hint]);
@@ -167,13 +245,23 @@ inline void avalanche_1d_hint_noflush(std::vector<T>& grid, const signed grid_wi
 		}
 
 	} while( ! array.empty() );
-	array.write_to_file(avalanche_fp);
+	array.write_to_file();
+}
+
+//! variant with @dim parameter instead of giving width as int
+template<class T, class AvalancheContainer>
+inline void avalanche_1d_hint_noflush(std::vector<T>& grid, const dimension& dim, const uint32_t hint, AvalancheContainer& array)
+{
+	internal::avalanche_1d_hint_noflush(grid, dim.width(), hint, array);
+}
+
 }
 
 template<class T, class AvalancheContainer>
-inline void avalanche_1d_hint_noflush(std::vector<T>* grid, const dimension* dim, const std::size_t hint, AvalancheContainer* array, FILE* avalanche_fp)
+inline void avalanche_1d_hint_noflush_single(std::vector<T>& grid, const dimension& dim, const uint32_t hint, AvalancheContainer& array)
 {
-	avalanche_1d_hint_noflush(*grid, dim->width(), hint, *array, avalanche_fp);
+	array.write_header((uint64_t)grid.data());
+	internal::avalanche_1d_hint_noflush(grid, dim.width(), hint, array);
 }
 
 /**
@@ -181,10 +269,10 @@ inline void avalanche_1d_hint_noflush(std::vector<T>* grid, const dimension* dim
 	Important: The cell at hint must be decreased by 1.
 */
 template<class T, class AvalancheContainer>
-inline void avalanche_1d_hint(std::vector<T>* grid, const dimension* dim, const std::size_t hint, AvalancheContainer* array, FILE* avalanche_fp)
+inline void avalanche_1d_hint(std::vector<T>& grid, const dimension& dim, const uint32_t hint, AvalancheContainer& array)
 {
-	avalanche_1d_hint_noflush(grid, dim, hint, array, avalanche_fp);
-	array->flush(); // note: empty does not always imply being flushed!
+	internal::avalanche_1d_hint_noflush(grid, dim, hint, array);
+	array.flush(); // note: empty does not always imply being flushed!
 }
 
 /**
@@ -192,16 +280,16 @@ inline void avalanche_1d_hint(std::vector<T>* grid, const dimension* dim, const 
 	@param times Number of times that the cell at hint may fire. for times=INT_MAX, lx_hint = l_hint
 */
 template<class T, class AvalancheContainer>
-inline void lx_hint(std::vector<T>* grid, const dimension* dim, const std::size_t hint, AvalancheContainer* array, FILE* avalanche_fp, int times)
+inline void lx_hint(std::vector<T>& grid, const dimension& dim, const uint32_t hint, AvalancheContainer& array, int times)
 {
-	array->write_header(avalanche_fp, (uint64_t)grid->data());
-	(*grid)[hint]--;
-	for(;(*grid)[hint]>2 && times > 0; times--)
+	array.write_header((uint64_t)grid.data());
+	grid[hint]--;
+	for(;grid[hint]>2 && times > 0; times--)
 	{
-		avalanche_1d_hint(grid, dim, hint, array, avalanche_fp);
+		avalanche_1d_hint(grid, dim, hint, array);
 	}
-	array->write_separator(avalanche_fp);
-	(*grid)[hint]++;
+	array.write_separator();
+	grid[hint]++;
 }
 
 /**
@@ -210,58 +298,73 @@ inline void lx_hint(std::vector<T>* grid, const dimension* dim, const std::size_
 		array_stack is faster (1-2 times), but array_queue can handle IO (instantly!).
 */
 template<class T, class AvalancheContainer>
-inline void l_hint(std::vector<T>* grid, const dimension* dim, const std::size_t hint, AvalancheContainer* array, FILE* avalanche_fp)
+inline void l_hint(std::vector<T>& grid, const dimension& dim, const uint32_t hint, AvalancheContainer& array)
 {
-	array->write_header(avalanche_fp, (uint64_t)grid->data());
-	(*grid)[hint]--;
-	while((*grid)[hint]>2)
+	array.write_header((uint64_t)grid.data());
+	grid[hint]--;
+	while(grid[hint]>2)
 	{ // TODO: fit this for char types: all 128 rounds (lx_hint?)
-		avalanche_1d_hint(grid, dim, hint, array, avalanche_fp);
+		avalanche_1d_hint(grid, dim, hint, array);
 	//	avalanche_1d_hint_noflush_2<int>(grid, dim, hint/*, array, avalanche_fp*/);
 	}
-	array->write_separator(avalanche_fp);
-	(*grid)[hint]++;
+	array.write_separator();
+	grid[hint]++;
 }
 
 #if 0
 template<class AvalancheContainer>
 inline void l2_hint(std::vector<int>* grid, const dimension* dim, int hint, AvalancheContainer* array, FILE* avalanche_fp)
 {
-	(*grid)[hint]--;
-	while((*grid)[hint]>2)
+	grid[hint]--;
+	while(grid[hint]>2)
 	{
 		avalanche_1d_hint2(grid, dim, hint, array, avalanche_fp);
 	}
-	array->write_separator(avalanche_fp);
-	(*grid)[hint]++;
+	array.write_separator(avalanche_fp);
+	grid[hint]++;
 }
 #endif
 
 //! Class for fix algorithm in order to log avalanches binary
-class fix_log_l
+#if 0
+template<class T>
+class fix_log_l : public log_base<T> // TODO: make typedef/using instead of inherit?
 {
-	using T = int*;
-	FILE* avalanche_fp;
+	//using T = int*;
+	//FILE* avalanche_fp;
 public:
-	inline fix_log_l(FILE* _avalanche_fp) : avalanche_fp(_avalanche_fp) {}
+//	inline fix_log_l(FILE* _avalanche_fp) : avalanche_fp(_avalanche_fp) {}
+	using log_base<T>::log_base;
+
+	// logging:
+#if 0
+	inline void write_elem_to_file(const T elem, const uint32_t* ntimes) {
+		for(uint32_t i = 0; i < *ntimes; i++)
+		 fwrite(&elem, sizeof(T), 1, avalanche_fp);
+	}
+
 //	inline void write_avalanche_counter() {}
 	inline void write_int_to_file(const int* int_ptr, const unsigned int* ntimes) {
 		for(unsigned int i = 0; i < *ntimes; i++)
 		 fwrite(&int_ptr, 4, 1, avalanche_fp);
 	}
 	inline void write_separator() const {
-		const int minus1 = -1; fwrite(&minus1,4,1, avalanche_fp);
+		const int u_int64_t = -1; fwrite(&minus1, sizeof(T), 1, fp);
 	}
 
 	inline void write_header(uint64_t grid_offset) const
 	{
+		// TODO: code reuse...
 		constexpr static const char sizeof_t = sizeof(T);
-		constexpr static const char hdr[7] = { 0, 0, 0, 0, 0, 0, 0 };
-		fwrite(&hdr, 7, 1, avalanche_fp);
-		fwrite(&sizeof_t, 1, 1, avalanche_fp);
+		using rpt = typename std::remove_pointer<T>::type;
+		constexpr static const char sizeof_rpt = sizeof(rpt);
+		constexpr static const char hdr[14] = {}; // initialized to 0
+		fwrite(&hdr, sizeof(hdr), 1, avalanche_fp);
+		fwrite(&sizeof_t, 1, 1, avalanche_fp); // size of each index
+		fwrite(&sizeof_rpt, 1, 1, avalanche_fp); // diff between two index numbers
 		fwrite(&grid_offset, sizeof(uint64_t), 1, avalanche_fp);
 	}
-
+#endif
 };
 
 /*//! Class for fix algorithm in order to log avalanches in human readable format (ASCII text)
@@ -283,62 +386,75 @@ public:
 };*/
 
 //! Class for fix algorithm to log nothing. Can be used to output grid afterwards, instead of the avalanche.
-class fix_log_s
+template<class T>
+class fix_log_s : public log_nothing_base<T>
 {
 public:
 	inline fix_log_s(FILE* fp) { (void) fp; }
+
 //	inline void write_avalanche_counter() {}
+// logging:
+#if 0
 	inline void write_int_to_file(const int* int_ptr,  const unsigned int* ntimes) {
 		(void) int_ptr;
 		(void) ntimes;
 	}
 	inline void write_separator() const {}
 	inline void write_header(uint64_t ) const {}
+#endif
 };
+#endif
+
+template<class T>
+using _fix_log_l = log_base<T>;
+template<class T>
+using _fix_log_s = log_nothing_base<T>;
+using fix_log_l = _fix_log_l<int*>;
+using fix_log_s = _fix_log_s<int*>;
 
 template<class AvalancheContainer, class ResultType>
-inline void do_fix(/*std::vector<int>* grid,*/ const dimension* dim, AvalancheContainer* array, ResultType* result_logger)
+inline void do_fix(/*std::vector<int>* grid,*/ const dimension& dim, AvalancheContainer& array, ResultType& result_logger)
 {
-	unsigned int fire_times;
+	uint32_t fire_times;
 	const int INVERT_BIT = (1 << 31);
 	const int GRAIN_BITS = (-1) ^ INVERT_BIT;
 
-//	result_logger->write_avalanche_counter();
+//	result_logger.write_avalanche_counter();
 
 	do
 	{
 		using vt = typename AvalancheContainer::value_type;
-		vt const cur_element = array->pop(); // TODO!!
+		vt const cur_element = array.pop(); // TODO!!
 		//printf("cur: %d\n",cur_element);
 
 		*cur_element &= GRAIN_BITS;
 		fire_times = *cur_element >>2; // keep up invariant: elements in array are already decreased
 		*cur_element -= (fire_times<<2);
 
-		result_logger->write_int_to_file(cur_element, &fire_times);
+		result_logger.write_elem_to_file(cur_element, &fire_times);
 
 		vt const e = cur_element + 1;
 		if((*e+=fire_times) > 3) {
 			*e |= INVERT_BIT;
-			array->push(e);
+			array.push(e);
 		}
 		vt const w = cur_element-1;
 		if((*w+=fire_times) > 3) {
 			*w |= INVERT_BIT;
-			array->push(w);
+			array.push(w);
 		}
-		vt const s = cur_element + dim->width();
+		vt const s = cur_element + dim.width();
 		if((*s+=fire_times) > 3) {
 			*s |= INVERT_BIT;
-			array->push(s);
+			array.push(s);
 		}
-		vt const n = cur_element - dim->width();
+		vt const n = cur_element - dim.width();
 		if((*n+=fire_times) > 3) {
 			*n |= INVERT_BIT;
-			array->push(n);
+			array.push(n);
 		}
 
-	} while( ! array->empty() );
+	} while( ! array.empty() );
 }
 
 /**
@@ -347,32 +463,32 @@ inline void do_fix(/*std::vector<int>* grid,*/ const dimension* dim, AvalancheCo
 	@param result_logger Class of type FixLogL or FixLogS
 */
 template<class AvalancheContainer, class ResultType>
-inline void fix(std::vector<int>* grid, const dimension* dim, int hint, AvalancheContainer* array, ResultType* result_logger)
+inline void fix(std::vector<int>& grid, const dimension& dim, int hint, AvalancheContainer& array, ResultType& result_logger)
 {
 	//printf("hint: %d\n",hint);
-	result_logger->write_header((uint64_t)grid->data());
-	if((*grid)[hint]>3)
+	result_logger.write_header((uint64_t)grid.data());
+	if(grid[hint]>3)
 	{
-		array->push(&((*grid)[hint]));
+		array.push(&(grid[hint]));
 		do_fix(dim, array, result_logger);
 	}
-	result_logger->write_separator();
-	array->flush(); // note: empty does not always imply being flushed!
+	result_logger.write_separator();
+	array.flush(); // note: empty does not always imply being flushed!
 }
 
 //! version without a hint
 template<class AvalancheContainer, class ResultType>
-inline void fix(std::vector<int>* grid, const dimension* dim, AvalancheContainer* array, ResultType* result_logger)
+inline void fix(std::vector<int>& grid, const dimension& dim, AvalancheContainer& array, ResultType& result_logger)
 {
 	const int INVERT_BIT = (1 << 31);
 
-	result_logger->write_header((uint64_t)grid->data());
-	for(unsigned int count = 0; count < dim->area(); ++count)
+	result_logger.write_header((uint64_t)grid.data());
+	for(unsigned int count = 0; count < dim.area(); ++count)
 	{
 		if(! is_border(dim, count)) {
 			// TODO: improve this!
-			array->push(&((*grid)[count])); // panic: every cell is assumed to be higher than 3
-			(*grid)[count] |= INVERT_BIT; // don't push this one twice
+			array.push(&(grid[count])); // panic: every cell is assumed to be higher than 3
+			grid[count] |= INVERT_BIT; // don't push this one twice
 		}
 	}
 

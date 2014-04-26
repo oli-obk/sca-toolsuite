@@ -64,9 +64,9 @@ SOURCES += algo/relax.cpp \
 	res/graph_io.cpp \
     res/geometry.cpp
 OTHER_FILES += ../DOCUMENTATION \
-	../INSTALL \
+	../INSTALL.txt \
 	../README.txt \
-	../FAQ \
+	../FAQ.txt \
 	../CMakeLists.txt \
 	test.sh \
 	CMakeLists.txt \

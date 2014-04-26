@@ -420,7 +420,7 @@ class conf_t
 {
 	std::vector<cell_t> data; // TODO: list?
 public:
-	conf_t(const n_t& n, const grid_t& grid, point p = {0, 0})
+/*	conf_t(const n_t& n, const grid_t& grid, point p = {0, 0})
 	{
 		for(unsigned i = 0; i < n.size(); ++i)
 		 data.push_back(grid[p + n[i]]);
@@ -435,6 +435,12 @@ public:
 	conf_t(const rect& points, const grid_t& grid, point p = {0, 0})
 	{
 		for(const point &p2 : points)
+		 data.push_back(grid[p + p2]);
+	}*/
+	template<class Container>
+	conf_t(const Container& points, const grid_t& grid, point p = {0, 0})
+	{
+		for(const point& p2 : points)
 		 data.push_back(grid[p + p2]);
 	}
 

@@ -40,11 +40,12 @@ void run(std::vector<int>& grid, std::vector<int>& chips, const dimension& dim, 
 			rotor_fix(&grid, &chips, &dim, internal, &container, &logger);
 		}*/
 		//fix(&chips, &dim, &container, &logger);
-		sandpile::superstabilize(&chips, &dim);
-		rotor::rotor_fix_naive(&grid, &chips, &dim, &container, &logger); // TODO: is naive wanted??
+		sandpile::superstabilize(chips, dim); // TODO: should this not be in rotor algo . h?
+		// -> TODO: does this not need to write logs, too?
+		rotor::rotor_fix_naive(grid, chips, dim, container, logger); // TODO: is naive wanted??
 	}
 	else
-	 rotor::rotor_fix(&grid, &chips, &dim, human2internal(hint, dim.width()), &container, &logger);
+	 rotor::rotor_fix(grid, chips, dim, human2internal(hint, dim.width()), container, logger);
 }
 
 class MyProgram : public Program
@@ -73,7 +74,7 @@ class MyProgram : public Program
 
 		read_grid(read_fp, &grid, &dim);
 		for(unsigned int i=0;i<dim.area();i++)
-		 if(!is_border(&dim, i))
+		 if(!is_border(dim, i))
 		  grid[i]&=3;
 
 		std::vector<int> chips;
@@ -86,9 +87,9 @@ class MyProgram : public Program
 
 		switch(output_type) {
 			// TODO: int or int*?
-			case 'l': ::run<sandpile::_array_stack<int>, sandpile::fix_log_l>(grid, chips, dim, hint); break;
+			case 'l': ::run<sandpile::_array_stack<int>, sandpile::_fix_log_l<int>>(grid, chips, dim, hint); break;
 			case 's':
-				::run<sandpile::_array_stack<int>, sandpile::fix_log_s>(grid, chips, dim, hint);
+				::run<sandpile::_array_stack<int>, sandpile::_fix_log_s<int>>(grid, chips, dim, hint);
 				write_grid(stdout, &grid, &dim);
 				break;
 		}

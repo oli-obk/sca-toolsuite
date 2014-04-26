@@ -38,8 +38,8 @@ class MyProgram : public Program
 		const dimension& dim,
 		const std::vector<int>& random_seq)
 	{
-		AvalancheContainer avalanche_container(dim.area_without_border());
 		FILE* const out_fp = stdout;
+		AvalancheContainer avalanche_container(dim.area_without_border(), out_fp);
 		for(unsigned int round = 0; round < random_seq.size(); round++)
 		{
 			grid[random_seq[round]]++;
@@ -47,8 +47,8 @@ class MyProgram : public Program
 				if(grid[i]==-1)
 					assert(false);
 			}*/
-			sandpile::l_hint<T>(&grid, &dim, random_seq[round],
-				&avalanche_container, out_fp);
+			sandpile::l_hint<T>(grid, dim, random_seq[round],
+				avalanche_container);
 		}
 	}
 
@@ -77,7 +77,7 @@ class MyProgram : public Program
 		else if(!strcmp(argv[1], "input"))
 		{ // user lets us read "random" sequence from stdin, we create an empty board of wxh
 			dim = dimension(atoi(argv[2]) + 2, atoi(argv[3]) + 2);
-			create_empty_grid(&grid, &dim);
+			create_empty_grid(grid, dim);
 
 			bool eof = false;
 			do

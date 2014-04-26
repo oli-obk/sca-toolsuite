@@ -35,7 +35,7 @@ class MyProgram : public Program
 		std::vector<int> grid;
 		dimension dim(atoi(argv[1]) + 2, atoi(argv[2]) + 2);
 
-		sandpile::get_identity(&grid, &dim);
+		sandpile::get_identity(grid, dim);
 		write_grid(stdout, &grid, &dim);
 
 		return 0;

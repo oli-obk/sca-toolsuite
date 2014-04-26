@@ -48,7 +48,7 @@ void DrawArea::increase_cell(int x, int y, int steps)
 	const int new_value = sim_grid[coord] + steps;
 	sim_grid[coord] = new_value;
 
-	if(!is_border(&dim, coord))
+	if(!is_border(dim, coord))
 	 grid_image->setPixel(x, y, color_of(new_value));
 
 	update_pixmap();
@@ -74,8 +74,8 @@ void DrawArea::slot_timeout()
 		container->flush();
 		if(calc_grid[current_hint]>2)
 		{
-			sandpile::avalanche_1d_hint_noflush(&calc_grid, &dim,
-				current_hint, container, NULL);
+			sandpile::avalanche_1d_hint_noflush_single(calc_grid, dim,
+				current_hint, *container);
 		}
 		else {
 			calc_grid[current_hint]++;
@@ -150,7 +150,7 @@ void DrawArea::fill_grid(FILE* fp)
 {
 	read_grid(fp, &calc_grid, &dim);
 	// TODO: progress dialog here?
-	sandpile::stabilize(&calc_grid, &dim); // to keep invariant
+	sandpile::stabilize(calc_grid, dim); // to keep invariant
 	sim_grid = calc_grid;
 
 	ColorTable tmp_ct(min_color, max_color, 0, 7);

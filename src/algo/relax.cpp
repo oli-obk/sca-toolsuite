@@ -31,11 +31,11 @@ class MyProgram : public Program
 	template<class AvalancheContainer>
 	void start(std::vector<int>& grid, const dimension& dim, int hint, int times)
 	{
-		AvalancheContainer container(dim.area());
+		AvalancheContainer container(dim.area(), stdout);
 		if(times < 0)
-		 sandpile::l_hint(&grid, &dim, hint, &container, stdout);
+		 sandpile::l_hint(grid, dim, hint, container);
 		else
-		 sandpile::lx_hint(&grid, &dim, hint, &container, stdout, times);
+		 sandpile::lx_hint(grid, dim, hint, container, times);
 	}
 
 	int main()

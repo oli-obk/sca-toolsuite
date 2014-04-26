@@ -52,8 +52,8 @@ call_test "Testing math/equation for valmax (2)" 1 "core/create 4 4 1 | math/equ
 call_test "Testing math/equation for valeq (1)" 1 "core/create 4 4 1 | math/equation 'v==1' | core/all_equals 1"
 call_test "Testing math/equation for valeq (2)" 1 "core/create 4 4 1 | math/equation 'v==0' | core/all_equals 0"
 
-call_test "Testing io/avalanches_bin2human" 1 "printf \"\x05\x00\x00\x00\x06\x00\x00\x00\x09\x00\x00\x00\x0a\x00\x00\x00\"  | io/avalanches_bin2human 2 | io/seq_to_field 2 2 | core/all_equals 1"
-call_test "Testing io/avalanches_bin2human with ids" 1 "printf \"\x05\x00\x00\x00\x09\x00\x00\x00\x0a\x00\x00\x00\"  | io/avalanches_bin2human 2 ids | io/seq_to_field 2 2 | core/all_equals 1"
+call_test "Testing io/avalanches_bin2human" 1 "printf \"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x01\x00\x00\x00\x00\x00\x00\x00\x00\x05\x00\x00\x00\x06\x00\x00\x00\x09\x00\x00\x00\x0a\x00\x00\x00\"  | io/avalanches_bin2human 2 | io/seq_to_field 2 2 | core/all_equals 1"
+call_test "Testing io/avalanches_bin2human with ids" 1 "printf \"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x01\x00\x00\x00\x00\x00\x00\x00\x00\x05\x00\x00\x00\x09\x00\x00\x00\x0a\x00\x00\x00\"  | io/avalanches_bin2human 2 ids | io/seq_to_field 2 2 | core/all_equals 1"
 
 call_test "Testing algo/fix s" 1 "core/create 4 4 8 | algo/fix s | core/all_equals 2"
 call_test "Testing algo/fix s hint" 1 "core/create 4 4 8 | algo/fix s 0 | core/all_equals 2"

@@ -169,76 +169,7 @@ struct dimension_container
 	}
 };
 
-#if 0
-//! Generic structure for a 2D rectangle dimension.
-struct dimension
-{
-	u_coord_t height;
-	u_coord_t width;
-	inline unsigned int area() const { return height*width; }
-	inline area_t area_without_border(u_coord_t border_size = 1) const {
-		const u_coord_t bs_2 = border_size << 1;
-		assert(height >= bs_2); assert(width >= bs_2);
-		return (height-bs_2)*(width-bs_2);
-	}
-
-	bool point_is_contained(const point& p) const {
-		return p.x >= 0 && p.x < (coord_t)width
-			&& p.y >= 0 && p.y < (coord_t)height;
-	}
-
-	inline bool fits_points(const std::set<point>& points) const
-	{
-		if(points.size() == area())
-		{
-			const point& offset = *points.begin();
-			(void)offset;
-			for(const point& p : points)
-			{
-				std::cout << p << std::endl;
-				if(!point_is_contained(p))
-				 return false;
-			}
-		}
-		else
-		 return false;
-		return true;
-	}
-
-	inline bool operator==(const dimension& other) const {
-		return height == other.height && width == other.width();
-	}
-	inline bool operator!=(const dimension& other) const {
-		return !(operator ==(other));
-	}
-	int coords_to_id(int x, int y) const { return y * width + x; }
-	int coords_to_id(const point& p) const {
-		return coords_to_id(p.x, p.y);
-	}
-	void id_to_coords(int id, int* x, int* y) const {
-		*y = id / width;
-		*x = id - (*y) * width;
-	}
-	point id_to_coords(int id) const {
-		const int y = id / width;
-		return point(id - y * width, y);
-	}
-
-	bool point_is_on_border(const point& p,
-		const u_coord_t border_size) const {
-		return p.x < (coord_t) border_size
-		|| p.x >= (coord_t) width - (coord_t) border_size
-		|| p.y < (coord_t) border_size
-		|| p.y >= (coord_t) height - (coord_t) border_size;
-	}
-
-	dimension_container points(unsigned border_width) const {
-		return dimension_container(height, width, border_width); }
-};
-#endif
-
 // TODO: protected members
-
 class rect_storage_default
 {
 protected:
@@ -261,14 +192,13 @@ struct _rect : public storage
 {
 protected:
 	_rect() {} // TODO... this should never be allowed
-	//point ul, lr;
 	using s = storage;
 public:
 	_rect(const point& ul, const point& lr) : storage(ul, lr) {}
 	//! constructs the rect from the inner part of a dim,
 	//! i.e. dim - border
 	_rect(const _rect<rect_storage_origin>& d, const coord_t border_size = 0) :
-		storage({0, 0}, // TODO: use {}
+		storage({0, 0},
 			{(coord_t)d.width() - (border_size << 1),
 			(coord_t)d.height() - (border_size << 1)}) {}
 
@@ -291,6 +221,10 @@ public:
 		const u_coord_t bs_2 = border_size << 1;
 		assert(height() >= bs_2); assert(width() >= bs_2);
 		return (height()-bs_2)*(width()-bs_2);
+	}
+
+	_rect<rect_storage_default> operator+(const point& rhs) const {
+		return _rect<rect_storage_default>(s::ul + rhs, s::lr + rhs);
 	}
 
 	bool point_is_on_border(const point& p,
@@ -341,37 +275,7 @@ struct dimension : public _rect<rect_storage_origin>
 	dimension(u_coord_t width, u_coord_t height) :
 		_rect({0,0}, {(coord_t)width, (coord_t)height}) {}
 	dimension() {}
-	// TODO: -> rect class
-//	dimension_container points(u_coord_t border_width) const {
-//		return dimension_container(height(), width(), border_width); }
 };
-
-/*
-// TODO: protected members
-struct rect
-{
-	point ul, lr;
-	rect(const point& ul, const point& lr) : ul(ul), lr(lr) {}
-	//! constructs the rect from the inner part of a dim,
-	//! i.e. dim - border
-	rect(const dimension& d, const coord_t border_size = 0) :
-		ul(0, 0),
-		lr(d.width - (border_size << 1),
-			d.height - (border_size << 1)) {}
-
-	inline area_t area() const { return (lr.x - ul.x) * (lr.y - ul.y); }
-	bool is_inside(const point& p) const {
-		return p.x < lr.x && p.y < lr.y && ul.x <= p.x && ul.y <= p.y; }
-
-	point_itr begin() const { return point_itr(lr, ul); }
-	point_itr end() const { return point_itr::from_end(lr, ul); }
-
-	friend std::ostream& operator<< (std::ostream& stream,
-		const rect& r) {
-		stream << "rect (" << r.ul << ", " << r.lr << ")";
-		return stream;
-	}
-};*/
 
 // TODO: inherit from bounding box
 class bounding_box
@@ -609,23 +513,24 @@ public:
 };
 
 //! Returns true iff @a idx is on the border for given dimension @a dim
-inline bool is_border(const dimension* dim, unsigned int idx) {
-	const unsigned int idx_mod_width = idx % dim->width();
-	return (idx<dim->width() || idx>= dim->area()-dim->width()
-	|| idx_mod_width == 0 || idx_mod_width==dim->width()-1);
+inline bool is_border(const dimension& dim, unsigned int idx) {
+	const unsigned int idx_mod_width = idx % dim.width();
+	return (idx<dim.width() || idx>= dim.area()-dim.width()
+	|| idx_mod_width == 0 || idx_mod_width==dim.width()-1);
 }
 
 //! Given an empty vector @a grid, creates grid of dimension @a dim
 //! with all cells being @a predefined_value
 //! @todo This is highly inefficient. Now in O(n^2), can be done easily in O(n)
-inline void create_empty_grid(std::vector<int>* grid, const dimension* dim,
+//! @todo: remove when grid_t is used everywhere
+inline void create_empty_grid(std::vector<int>& grid, const dimension& dim,
 	int predefined_value = 0)
 {
-	grid->resize(dim->area(), predefined_value);
-	for(unsigned int i=0; i<dim->area(); i++)
+	grid.resize(dim.area(), predefined_value);
+	for(unsigned int i=0; i<dim.area(); i++)
 	{
 		if(is_border(dim, i))
-		 (*grid)[i] = INT_MIN;
+		 grid[i] = INT_MIN;
 	}
 }
 

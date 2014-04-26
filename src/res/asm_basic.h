@@ -28,53 +28,54 @@
 namespace sandpile
 {
 
-inline void stabilize(std::vector<int>* grid, const dimension* dim)
+inline void stabilize(std::vector<int>& grid, const dimension& dim)
 {
 	// +1 is an ugly, necessary trick
-	array_stack container(dim->area_without_border() /*+ 1*/);
+	array_stack container(dim.area_without_border() /*+ 1*/);
 	fix_log_s logger(nullptr);
-	fix(grid, dim, &container, &logger);
+	fix(grid, dim, container, logger);
 }
 
 //! Given an empty vector @a grid, creates grid of dimension @a dim
 //! with all cells being @a predefined_value
-inline void get_identity(std::vector<int>* grid, const dimension* dim)
+inline void get_identity(std::vector<int>& grid, const dimension& dim)
 {
 	create_empty_grid(grid, dim, 6);
 	stabilize(grid, dim);
-	for(std::vector<int>::iterator itr = grid->begin();
-		itr != grid->end(); itr++)
+	// TODO: use range based for everywhere
+	for(std::vector<int>::iterator itr = grid.begin();
+		itr != grid.end(); itr++)
 		if(*itr>=0)
 		*itr = 6 - (*itr) ;
 	stabilize(grid, dim);
 }
 
 //! calculates superstabilization of @a grid
-inline void superstabilize(std::vector<int>* grid, const dimension* dim,
-	const std::vector<int>* identity)
+inline void superstabilize(std::vector<int>& grid, const dimension& dim,
+	const std::vector<int>& identity)
 {
-	assert(identity->size() == grid->size());
+	assert(identity.size() == grid.size());
 
 	stabilize(grid, dim);
 
-	unsigned int area = dim->area();
+	unsigned int area = dim.area();
 	for(unsigned int i = 0; i < area; i++)
-	 if((*grid)[i]>=0)
-	  (*grid)[i] = 3 - (*grid)[i] + (*identity)[i];
+	 if(grid[i]>=0)
+	  grid[i] = 3 - grid[i] + identity[i];
 
 	stabilize(grid, dim);
 
 	for(unsigned int i = 0; i < area; i++)
-	 if((*grid)[i]>=0)
-	  (*grid)[i] = 3 - (*grid)[i];
+	 if(grid[i]>=0)
+	  grid[i] = 3 - grid[i];
 }
 
 //! calculates superstabilization of @a grid
-inline void superstabilize(std::vector<int>* grid, const dimension* dim)
+inline void superstabilize(std::vector<int>& grid, const dimension& dim)
 {
 	std::vector<int> identity;
-	get_identity(&identity, dim);
-	superstabilize(grid, dim, &identity);
+	get_identity(identity, dim);
+	superstabilize(grid, dim, identity);
 }
 
 }
