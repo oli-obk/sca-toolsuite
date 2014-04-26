@@ -92,6 +92,9 @@ public:
 	inline void write_elem_to_file(const T, const uint32_t*) const {}
 };
 
+/*
+ * array storage classes
+ */
 /**
 	@brief Class for stack algorithm using a stack for the avalanches.
 
@@ -146,13 +149,7 @@ public:
 	inline void flush() { read_ptr = write_ptr = array; }
 	inline unsigned int size() { return (unsigned int)(write_ptr-array); }
 	inline const T* data() const { return array+1; }
-
-	// logging: // (TODO) hiding members is bad style
-//	inline void write_to_file() const {}
-//	inline void write_header(uint64_t ) const {}
 };
-
-//typedef _array_queue_no_file<int*> array_queue_no_file;
 
 /**
 	@brief Class for stack algorithm (and IO) using a queue for the avalanches.
@@ -164,7 +161,6 @@ public:
 template<class T>
 class _array_queue : public _array_queue_base<T>, public log_base<T>
 {
-	// TODO: this class works incorrect with pointers! -> TODO: comment wrong?
 	typedef _array_queue_base<T> base;
 public:
 	inline _array_queue(unsigned human_grid_size, FILE* fp) :
@@ -183,7 +179,6 @@ typedef _array_queue<int*> array_queue;
 template<class T>
 class _array_queue_no_file : public _array_queue_base<T>, public log_nothing_base<T>
 {
-	// TODO: this class works incorrect with pointers!
 	typedef _array_queue_base<T> base;
 public:
 	inline _array_queue_no_file(unsigned human_grid_size) :
@@ -195,28 +190,51 @@ public:
 
 typedef _array_queue_no_file<int*> array_queue_no_file;
 
-/*inline void increase_neighbours_without_self(std::vector<int>& grid, const unsigned grid_width, const int center)
-{
-	grid[center+1]++;
-	grid[center-1]++;
-	grid[center+grid_width]++;
-	grid[center-grid_width]++;
-}*/
-
+/*
+ * algorithms
+ */
 namespace internal
 {
+
+/* This recursive function is slower, so unused
+template<class T>
+void rec(const signed& grid_width, T const ptr)
+{
+	T const ptr1 = ptr + 1;
+	if(++*ptr1 > 3) {
+		*ptr1&=3;
+		rec(grid_width, ptr1);
+	}
+	T const ptr_1 = ptr - 1;
+	if(++*ptr_1 > 3) {
+		*ptr_1&=3;
+		rec(grid_width, ptr_1);
+	}
+	T const ptr_2 = ptr + grid_width;
+	if(++*ptr_2 > 3) {
+		*ptr_2&=3; // TODO: template variant with ==4 => = 0 ?
+		rec(grid_width, ptr_2);
+	}
+
+	T const ptr_3 = ptr - grid_width;
+	if(++*ptr_3 > 3) {
+		*ptr_3&=3;
+		rec(grid_width, ptr_3);
+	}
+}*/
 
 /**
 	Develops an 1D avalanche. The helping avalanche container is not flushed, so it contains the whole avalanche afterwards.
 	Important: The cell at hint must be decreased by 1.
 */
-template<class T, class AvalancheContainer>
+template<class AvalancheContainer>
 // TODO: make hint ptr -> no grid class
 // TODO: use refs for ints?
-inline void avalanche_1d_hint_noflush(std::vector<T>& grid, const signed grid_width, const uint32_t hint, AvalancheContainer& array)
+inline void avalanche_1d_hint_noflush(const signed& grid_width, AvalancheContainer& array,
+	typename AvalancheContainer::value_type hint)
 {
-	grid[hint]-=4; // keep up invariant: elements in array are already decreased
-	array.push(&grid[hint]);
+	*hint -= 4; // can be <0, so "*hint & 3" is not correct here
+	array.push(hint);
 	do
 	{
 		using vt = typename AvalancheContainer::value_type;
@@ -252,16 +270,16 @@ inline void avalanche_1d_hint_noflush(std::vector<T>& grid, const signed grid_wi
 template<class T, class AvalancheContainer>
 inline void avalanche_1d_hint_noflush(std::vector<T>& grid, const dimension& dim, const uint32_t hint, AvalancheContainer& array)
 {
-	internal::avalanche_1d_hint_noflush(grid, dim.width(), hint, array);
+	internal::avalanche_1d_hint_noflush(dim.width(), array, &grid[hint]);
 }
 
-}
+} // namespace internal
 
 template<class T, class AvalancheContainer>
 inline void avalanche_1d_hint_noflush_single(std::vector<T>& grid, const dimension& dim, const uint32_t hint, AvalancheContainer& array)
 {
 	array.write_header((uint64_t)grid.data());
-	internal::avalanche_1d_hint_noflush(grid, dim.width(), hint, array);
+	internal::avalanche_1d_hint_noflush(dim.width(), array, &grid[hint]);
 }
 
 /**
@@ -325,86 +343,6 @@ inline void l2_hint(std::vector<int>* grid, const dimension* dim, int hint, Aval
 }
 #endif
 
-//! Class for fix algorithm in order to log avalanches binary
-#if 0
-template<class T>
-class fix_log_l : public log_base<T> // TODO: make typedef/using instead of inherit?
-{
-	//using T = int*;
-	//FILE* avalanche_fp;
-public:
-//	inline fix_log_l(FILE* _avalanche_fp) : avalanche_fp(_avalanche_fp) {}
-	using log_base<T>::log_base;
-
-	// logging:
-#if 0
-	inline void write_elem_to_file(const T elem, const uint32_t* ntimes) {
-		for(uint32_t i = 0; i < *ntimes; i++)
-		 fwrite(&elem, sizeof(T), 1, avalanche_fp);
-	}
-
-//	inline void write_avalanche_counter() {}
-	inline void write_int_to_file(const int* int_ptr, const unsigned int* ntimes) {
-		for(unsigned int i = 0; i < *ntimes; i++)
-		 fwrite(&int_ptr, 4, 1, avalanche_fp);
-	}
-	inline void write_separator() const {
-		const int u_int64_t = -1; fwrite(&minus1, sizeof(T), 1, fp);
-	}
-
-	inline void write_header(uint64_t grid_offset) const
-	{
-		// TODO: code reuse...
-		constexpr static const char sizeof_t = sizeof(T);
-		using rpt = typename std::remove_pointer<T>::type;
-		constexpr static const char sizeof_rpt = sizeof(rpt);
-		constexpr static const char hdr[14] = {}; // initialized to 0
-		fwrite(&hdr, sizeof(hdr), 1, avalanche_fp);
-		fwrite(&sizeof_t, 1, 1, avalanche_fp); // size of each index
-		fwrite(&sizeof_rpt, 1, 1, avalanche_fp); // diff between two index numbers
-		fwrite(&grid_offset, sizeof(uint64_t), 1, avalanche_fp);
-	}
-#endif
-};
-
-/*//! Class for fix algorithm in order to log avalanches in human readable format (ASCII text)
-class FixLogLHuman {
-	FILE* avalanche_fp;
-	mutable unsigned int avalanche_counter;
-public:
-	inline FixLogLHuman(FILE* _avalanche_fp) :
-		avalanche_fp(_avalanche_fp),
-		avalanche_counter(1) {}
-	inline void write_avalanche_counter() {
-		fprintf(avalanche_fp, "%u", avalanche_counter);
-	}
-
-	inline void write_int_to_file(const int* int_ptr) {
-		fprintf(avalanche_fp, " %d", *int_ptr);
-	}
-	inline void write_separator() const { fputs("\n", avalanche_fp); avalanche_counter++; }
-};*/
-
-//! Class for fix algorithm to log nothing. Can be used to output grid afterwards, instead of the avalanche.
-template<class T>
-class fix_log_s : public log_nothing_base<T>
-{
-public:
-	inline fix_log_s(FILE* fp) { (void) fp; }
-
-//	inline void write_avalanche_counter() {}
-// logging:
-#if 0
-	inline void write_int_to_file(const int* int_ptr,  const unsigned int* ntimes) {
-		(void) int_ptr;
-		(void) ntimes;
-	}
-	inline void write_separator() const {}
-	inline void write_header(uint64_t ) const {}
-#endif
-};
-#endif
-
 template<class T>
 using _fix_log_l = log_base<T>;
 template<class T>
@@ -412,6 +350,9 @@ using _fix_log_s = log_nothing_base<T>;
 using fix_log_l = _fix_log_l<int*>;
 using fix_log_s = _fix_log_s<int*>;
 
+/*
+ * fix algorithms
+ */
 template<class AvalancheContainer, class ResultType>
 inline void do_fix(/*std::vector<int>* grid,*/ const dimension& dim, AvalancheContainer& array, ResultType& result_logger)
 {

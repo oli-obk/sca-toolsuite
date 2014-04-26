@@ -95,12 +95,6 @@ class MyProgram : public Program
 
 		FILE* const in_fp = stdin;
 		FILE* const out_fp = stdout;
-	/*	char buffer[BUF_SIZE]; // TODO: was signed... important?
-
-		int last_num_read;
-		int avalanche_number = 1;
-		bool do_newline = true;
-		bool first_line = true;*/
 
 		struct hdr_info_t
 		{
@@ -159,34 +153,6 @@ class MyProgram : public Program
 					"must be out of {1,2,4,8}.");
 		}
 
-/*		while(!feof(in_fp))
-		{
-			last_num_read = fread(buffer, 4, BUF_SIZE, in_fp);
-			for(int i = 0; i < last_num_read; i += hdr_info.size_each)
-			{
-				const signed int cur = buffer[i];
-				if(cur == -1) {
-					do_newline = true;
-					avalanche_number++;
-				}
-				else
-				{
-					if(do_newline)
-					{
-						if(first_line)
-						 first_line = false;
-						else
-						 fputs("\n", out_fp);
-						if(ids)
-						 fprintf(out_fp, "%d", avalanche_number);
-						do_newline = false;
-					}
-					fprintf(out_fp, " %d", internal2human(cur, width));
-				}
-			}
-		}
-		if(!first_line)
-		 fputs("\n",out_fp);*/
 		return (feof(in_fp)!=0)?0:1; // feof==0 <=> stop, but no eof <=> error
 	}
 };
