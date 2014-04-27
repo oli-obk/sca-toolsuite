@@ -23,59 +23,14 @@
 
 #include <cmath>
 
-//#include <boost/config/warning_disable.hpp>
-//#include <boost/spirit/include/qi_grammar.hpp>
-#include <boost/spirit/include/support_info.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
-#include <boost/spirit/include/phoenix_function.hpp>
-#include <boost/spirit/include/phoenix_bind.hpp>
+#include <boost/spirit/include/support_info.hpp> // qi::info::nil
 
-#include <boost/variant/recursive_variant.hpp>
+//#include <boost/variant/recursive_variant.hpp>
 #include <boost/variant/apply_visitor.hpp>
 #include <boost/variant/get.hpp>
 //#include <boost/phoenix/bind/bind_function.hpp>
 
 #include "random.h"
-
-/*
-	Again, I think these macros are okay here.
-*/
-#define MAKE_UNARY_FUNC(OP) struct OP \
-{ \
-	template <typename T> \
-	struct result { typedef T type; }; \
-	expression_ast operator()(expression_ast const& expr) const; \
-}; \
-const boost::phoenix::function<OP> OP;
-
-#define MAKE_BINARY_FUNC(OP) struct OP \
-{ \
-	template <typename T1, typename T2> \
-	struct result { typedef T2 type; }; \
-	expression_ast operator()(expression_ast const& expr1, expression_ast const& expr2) const; \
-}; \
-const boost::phoenix::function<OP> OP;
-
-#define MAKE_BINARY_FUNC_ADDR(OP) struct OP \
-{ \
-	template <typename T1, typename T2> \
-	struct result { typedef T2 type; }; \
-	expression_ast operator()(expression_ast const& expr1, expression_ast const& expr2) const; \
-}; \
-const boost::phoenix::function<OP> OP;
-
-#define MAKE_TERNARY_FUNC(OP) struct OP \
-{ \
-	template <typename T1, typename T2, typename T3> \
-	struct result { typedef T3 type; }; \
-	expression_ast operator()(expression_ast const& expr1, expression_ast const& expr2, \
-		expression_ast const& expr3) const; \
-}; \
-const boost::phoenix::function<OP> OP;
-
-/*
-* ^^ TODO: try to use functions instead of macros
-*/
 
 // typedef expression_ast result_type; // TODO: must work with phoenix 3!
 
@@ -174,46 +129,6 @@ struct vaddr
 	vaddr& operator=(const type& _expr) { expr = _expr; return *this; }
 	vaddr() : expr(nil()) {}
 };
-
-template<typename _result_type>
-struct _make_0
-{
-	typedef _result_type result_type;
-	inline result_type operator()() const {
-		return result_type();
-	}
-};
-template<typename _result_type>
-struct _make_1
-{
-	template <typename>
-	struct result { typedef _result_type type; };
-
-	template <typename T>
-	inline typename result<T>::type operator()(T const& c1) const {
-		return _result_type(c1);
-	}
-};
-
-template<typename _result_type>
-struct _make_2
-{
-	template <typename, typename>
-	struct result { typedef _result_type type; };
-
-	template <typename T1, typename T2>
-	inline typename result<T1, T2>::type operator()
-		(T1 const& c1, T2 const& c2) const {
-		return _result_type(c1, c2);
-	}
-};
-
-const boost::phoenix::function< _make_2<vaddr::var_array> > make_array_indexes;
-const boost::phoenix::function< _make_1<vaddr::var_helper<true>> > make_helper_index;
-const boost::phoenix::function< _make_1<vaddr::var_helper<false>> > make_helper_index_var;
-//const boost::phoenix::function< _make_1<vaddr::var_helper> > make_helper_index;
-const boost::phoenix::function< _make_0<vaddr::var_x> > make_x;
-const boost::phoenix::function< _make_0<vaddr::var_y> > make_y;
 
 struct variable_print : public boost::static_visitor<visit_result_type>
 {
@@ -335,22 +250,6 @@ struct expression_ast
 
 	type expr;
 };
-
-// We should be using expression_ast::operator-. There's a bug
-// in phoenix type deduction mechanism that prevents us from
-// doing so. Phoenix will be switching to BOOST_TYPEOF. In the
-// meantime, we will use a phoenix::function below:
-MAKE_UNARY_FUNC(neg);
-MAKE_UNARY_FUNC(not_func);
-MAKE_UNARY_FUNC(abs_func);
-MAKE_UNARY_FUNC(sqrt_func);
-MAKE_UNARY_FUNC(rand_func);
-MAKE_BINARY_FUNC(min_func);
-MAKE_BINARY_FUNC(max_func);
-MAKE_BINARY_FUNC_ADDR(ass_func);
-MAKE_BINARY_FUNC(com_func);
-MAKE_TERNARY_FUNC(tern_func);
-
 
 // TODO: we might want to introduce "nary_op"
 //! expression tree node extension for ternary operators

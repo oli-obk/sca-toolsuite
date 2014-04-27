@@ -24,7 +24,8 @@ HEADERS += res/io.h res/stack_algorithm.h \
 	res/ca.h \
 	res/graph_io.h \
 	res/geometry.h \
-    res/eqs_internal.h
+    res/eqs_internal.h \
+    res/eqs_functions.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \
@@ -62,7 +63,8 @@ SOURCES += algo/relax.cpp \
 	ca/transf_by_grids.cpp \
 	res/general.cpp \
 	res/graph_io.cpp \
-    res/geometry.cpp
+    res/geometry.cpp \
+    res/eqs_functions.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL.txt \
 	../README.txt \

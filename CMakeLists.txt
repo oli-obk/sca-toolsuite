@@ -51,7 +51,7 @@ SET(res_dir "${src_base}res/")
 
 SET(general "${res_dir}/io.cpp" "${res_dir}/io.h" "${res_dir}/general.h" "${res_dir}/general.cpp" "${res_dir}/random.h")
 SET(geometry "${res_dir}/geometry.h" "${res_dir}/geometry.cpp")
-SET(eq_solver "${res_dir}/equation_solver.cpp" "${res_dir}/equation_solver.h" "${res_dir}/eqs_internal.h")
+SET(eq_solver "${res_dir}/equation_solver.cpp" "${res_dir}/equation_solver.h" "${res_dir}/eqs_internal.h" "${res_dir}/eqs_functions.cpp" "${res_dir}/eqs_functions.h")
 SET(ca "${res_dir}/ca.h")
 SET(ca_basics "${res_dir}/ca_basics.h")
 SET(image "${res_dir}/image.h" "${res_dir}/image.cpp")

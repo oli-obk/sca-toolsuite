@@ -23,11 +23,19 @@
 
 #include <boost/spirit/include/qi.hpp>
 #include "equation_solver.h"
+#include "eqs_functions.h"
 
 namespace ascii = boost::spirit::ascii;
 namespace qi = boost::spirit::qi;
 
 namespace eqsolver {
+
+const boost::phoenix::function< _make_2<vaddr::var_array> > make_array_indexes;
+const boost::phoenix::function< _make_1<vaddr::var_helper<true>> > make_helper_index;
+const boost::phoenix::function< _make_1<vaddr::var_helper<false>> > make_helper_index_var;
+//const boost::phoenix::function< _make_1<vaddr::var_helper> > make_helper_index;
+const boost::phoenix::function< _make_0<vaddr::var_x> > make_x;
+const boost::phoenix::function< _make_0<vaddr::var_y> > make_y;
 
 //! calculator grammar to build expression trees
 template <typename Iterator>
