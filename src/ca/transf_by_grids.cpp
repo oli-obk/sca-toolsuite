@@ -73,6 +73,7 @@ class MyProgram : public Program
 
 		// read neighbour grid
 		ca::n_t neighbours(stdin);
+		const point& center_cell = neighbours.get_center_cell();
 
 		std::vector<ca::trans_t> table;
 
@@ -87,7 +88,7 @@ class MyProgram : public Program
 			cell_t out_cell = out_grid[point::zero];
 
 			neighbours.add_transition_functions(
-					table, cur_grid, out_cell
+					table, center_cell, cur_grid, out_cell
 				);
 
 			eof = feof(stdin);

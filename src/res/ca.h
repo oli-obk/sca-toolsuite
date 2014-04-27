@@ -72,7 +72,7 @@ public:
 		if(helpers_size > 0)
 		 helper_vars = new int[helpers_size];
 	}
-	int get_border_width() { return border_width; }
+	int get_border_width() const { return border_width; }
 
 	//! calculates next state at (human) position (x,y)
 	//! @param dim the grids internal dimension
@@ -117,6 +117,84 @@ public:
 		dimension moore = { moore_width, moore_width };
 		return n_t(moore, point(border_width, border_width));
 	}
+};
+
+class asm_synch_calculator_t
+{
+	int border_width;
+	static constexpr const std::array<point, 5> neighbour_points = {{{0,-1},{-1,0}, {0,0}, {1, 0}, {0,1}}};
+	static constexpr const ca::n_t_constexpr<5> neighbours = ca::n_t_constexpr<5>(neighbour_points);
+public:
+	~asm_synch_calculator_t() { }
+
+	asm_synch_calculator_t()
+	{
+	}
+
+	static constexpr int get_border_width() { return 1; }
+
+	//! calculates next state at (human) position (x,y)
+	//! @param dim the grids internal dimension
+	int next_state(const int *cell_ptr, const point& , const dimension& dim) const
+	{
+	/*	// TODO: replace &((*old_grid)[internal]) by old_value
+		// and make old_value a ptr/ref?
+		eqsolver::variable_print vprinter(dim.height(), dim.width(),
+			p.x, p.y,
+			cell_ptr, helper_vars);
+		eqsolver::ast_print<eqsolver::variable_print> solver(&vprinter);
+		return (int)solver(ast);*/
+		// TODO: move to asm_basics?
+
+		return (((*cell_ptr) & 3)
+			+ (cell_ptr[1			]>>2)
+			+ (cell_ptr[-1			]>>2)
+			+ (cell_ptr[-dim.width()	]>>2)
+			+ (cell_ptr[dim.width()	]>>2));
+
+	//	return ((*cell_ptr) & 3) || ((cell_ptr[1]|cell_ptr[-1]|cell_ptr[-dim.width()]|cell_ptr[dim.width()])&3);
+	}
+
+	//! overload, with x and y in internal format. equally slow.
+	int next_state_realxy(const int *cell_ptr, const point& p, const dimension& dim) const
+	{
+		return next_state(cell_ptr, p, dim);
+	}
+
+	//! overload with human coordinates and reference to grid. slower.
+	int next_state_gridptr(const grid_t &grid, const point& p) const
+	{
+		return next_state(&grid[p], p, grid.dim());
+	}
+
+	//! returns whether cell at point @a p is active.
+	//! @a result is set to the result in all cases, if it is not nullptr
+	// TODO: overloads
+	bool is_cell_active(const grid_t& grid, const point& p, cell_t* result = nullptr) const
+	{
+		const int* cell_ptr = &grid[p];
+		/*cell_t next = next_state(cell_ptr, p, grid.dim());
+		if(result)
+		 *result = next;
+		return next != *cell_ptr;*/
+		// TODO: should a cell only be active if it changes its value?
+
+		if(*cell_ptr & 4)
+		{
+			*result = next_state(cell_ptr, p, grid.dim());
+			return true;
+		}
+		return false;
+
+		//return *cell_ptr & 4;
+	}
+
+	n_t_constexpr<5> get_neighbourhood() const
+	{
+		return neighbours;
+	}
+
+	// TODO: get states function
 };
 
 class ca_simulator_t : private ca_calculator_t

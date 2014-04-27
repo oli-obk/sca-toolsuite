@@ -200,26 +200,26 @@ namespace internal
 template<class T>
 void rec(const signed& grid_width, T const ptr)
 {
-	T const ptr1 = ptr + 1;
-	if(++*ptr1 > 3) {
-		*ptr1&=3;
-		rec(grid_width, ptr1);
+	T const ptr_e = ptr + 1;
+	if(++*ptr_e > 3) {
+		*ptr_e&=3;
+		rec(grid_width, ptr_e);
 	}
-	T const ptr_1 = ptr - 1;
-	if(++*ptr_1 > 3) {
-		*ptr_1&=3;
-		rec(grid_width, ptr_1);
+	T const ptr_w = ptr - 1;
+	if(++*ptr_w > 3) {
+		*ptr_w&=3;
+		rec(grid_width, ptr_w);
 	}
-	T const ptr_2 = ptr + grid_width;
-	if(++*ptr_2 > 3) {
-		*ptr_2&=3; // TODO: template variant with ==4 => = 0 ?
-		rec(grid_width, ptr_2);
+	T const ptr_s = ptr + grid_width;
+	if(++*ptr_s > 3) {
+		*ptr_s&=3; // TODO: template variant with ==4 => = 0 ?
+		rec(grid_width, ptr_s);
 	}
 
-	T const ptr_3 = ptr - grid_width;
-	if(++*ptr_3 > 3) {
-		*ptr_3&=3;
-		rec(grid_width, ptr_3);
+	T const ptr_n = ptr - grid_width;
+	if(++*ptr_n > 3) {
+		*ptr_n&=3;
+		rec(grid_width, ptr_n);
 	}
 }*/
 
@@ -240,26 +240,26 @@ inline void avalanche_1d_hint_noflush(const signed& grid_width, AvalancheContain
 		using vt = typename AvalancheContainer::value_type;
 		vt const ptr = array.pop();
 
-		vt const ptr1 = ptr + 1;
-		if(++*ptr1 > 3) {
-			*ptr1&=3;
-			array.push(ptr1);
+		vt const ptr_e = ptr + 1;
+		if(++*ptr_e > 3) {
+			*ptr_e&=3;
+			array.push(ptr_e);
 		}
-		vt const ptr_1 = ptr - 1;
-		if(++*ptr_1 > 3) {
-			*ptr_1&=3;
-			array.push(ptr_1);
+		vt const ptr_w = ptr - 1;
+		if(++*ptr_w > 3) {
+			*ptr_w&=3;
+			array.push(ptr_w);
 		}
-		vt const ptr_2 = ptr + grid_width;
-		if(++*ptr_2 > 3) {
-			*ptr_2&=3; // TODO: template variant with ==4 => = 0 ?
-			array.push(ptr_2);
+		vt const ptr_s = ptr + grid_width;
+		if(++*ptr_s > 3) {
+			*ptr_s&=3; // TODO: template variant with ==4 => = 0 ?
+			array.push(ptr_s);
 		}
 
-		vt const ptr_3 = ptr - grid_width;
-		if(++*ptr_3 > 3) {
-			*ptr_3&=3;
-			array.push(ptr_3);
+		vt const ptr_n = ptr - grid_width;
+		if(++*ptr_n > 3) {
+			*ptr_n&=3;
+			array.push(ptr_n);
 		}
 
 	} while( ! array.empty() );

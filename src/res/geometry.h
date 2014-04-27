@@ -282,7 +282,8 @@ class bounding_box
 {
 	point _ul, _lr;
 public:
-	bounding_box() : _ul(1,1), _lr(0,0) {}
+	constexpr bounding_box() : _ul(1,1), _lr(0,0) {}
+
 	void add_point(const point& p)
 	{
 		if(_lr.x < _ul.x) // no point...

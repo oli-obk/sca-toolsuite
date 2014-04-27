@@ -23,6 +23,7 @@
 
 #include <set>
 #include <algorithm>
+#include <array>
 #include "geometry.h"
 
 namespace sca { namespace ca {
@@ -166,51 +167,24 @@ inline bool compare_by_input(const trans_t& lhs,
 	return _compare_by_input(lhs, rhs);
 }
 
-class n_t
+template<class Container>
+class _n_t
 {
+protected:
+	_n_t() {} // TODO: bad coding style
+	constexpr _n_t(const Container& neighbours/*, const bounding_box& bb*/) :
+		neighbours(neighbours)
+	//	bb(bb)
+	{}
+
 	//! neighbour positions, relative to center cell
 	//! @invariant The points are always sorted (linewise)
-	std::vector<point> neighbours;
+	Container neighbours;
 	//! positive offset of center cell
 	//! this cell is obviously needed
 //	point center_cell = point(-1, -1);
 //	dimension dim; 	//! < dimension of neighbours
-	bounding_box bb;
-
-	void init(const std::vector<int>& in_grid,
-		const dimension& in_dim)
-	{
-		point center_cell(-1, -1);
-		for(unsigned y=0, id=0; y<in_dim.height(); ++y)
-		for(unsigned x=0; x<in_dim.width(); ++x, ++id) // TODO: remove id
-		{
-			int elem = in_grid[id];
-			switch(elem)
-			{
-			case 0:
-				//printf("%d\n",center_cell.x);
-				assert(center_cell.x < 0);
-				center_cell.set(x, y);
-				break;
-			case 1:
-			//	printf("%d\n",center_cell.x);
-				assert(center_cell.x < 0);
-				center_cell.set(x, y);
-			case 2:
-				neighbours.push_back(point(x,y));
-				break;
-			default: break;
-			}
-		}
-
-		// make it all relative to center_cell
-		for(point& p : neighbours)
-		{
-			// TODO: can be computed from dim?
-			// TODO: but do not remove p-=...
-			bb.add_point( p -= center_cell );
-		}
-	}
+//	bounding_box bb;
 
 	point idx(int idx, int symm)
 	{
@@ -232,6 +206,7 @@ class n_t
 
 	void add_single_tf(
 		trans_t* tfs,
+		const point& center_cell,
 		const grid_t& input_grid,
 		int output_val,
 		int symm)
@@ -240,18 +215,29 @@ class n_t
 		for(unsigned i = 0; i < size(); ++i) {
 
 			//tf.set_neighbour(i, input_grid[bb.coords_to_id(idx(i, symm)/*+center_cell*/)]);
-			tf.set_neighbour(i, input_grid[idx(i, symm) - bb.ul()/*+center_cell*/]);
+			tf.set_neighbour(i, input_grid[idx(i, symm) +center_cell/*- bb.ul()+center_cell*/]);
 		}
 		*tfs = tf; // TODO: redundant
 	}
 
 public:
+	point get_center_cell()
+	{
+		bounding_box _bb;
+		for(point& p : neighbours)
+		{
+			_bb.add_point( p );
+		}
+		return point(-_bb.ul().x, -_bb.ul().y);
+	}
+
 	point operator[](unsigned i) const { return neighbours[i]; }
 	unsigned size() const { return neighbours.size(); }
 
 
 	void add_transition_functions(
 		std::vector<trans_t>& tf_vector,
+		const point& center_cell,
 		const grid_t& input_grid,
 		int output_val)
 	{
@@ -259,44 +245,17 @@ public:
 		static trans_t tfs[8]
 		 = {size(), size(), size(), size(),
 			size(), size(), size(), size()};
-		assert(bb.x_size() == input_grid.dim().width());
-		assert(bb.y_size() == input_grid.dim().height());
+	//	assert(bb.x_size() == input_grid.dim().width());
+	//	assert(bb.y_size() == input_grid.dim().height());
 
 		// TODO: unroll?
 		for(int i = 0; i < 8; ++i)
-		 add_single_tf(tfs+i, input_grid, output_val, i);
+		 add_single_tf(tfs+i, center_cell, input_grid, output_val, i);
 
 		std::sort(tfs, tfs+8);
 		for(int i = 0; i < 8; ++i)
 		 if((i==0) || (tfs[i-1] != tfs[i]))
 		  tf_vector.push_back(tfs[i]);
-	}
-
-	/**
-	 * @brief Reads neighborhood from grid.
-	 *
-	 * Cell values:
-	 *  - 0 center cell which is *no* part of the nh.
-	 *  - 1 center cell which *is* part of the nh.
-	 *  - 2 nh cell
-	 *  - 3 other cell (TODO: change: 2 grids of 0,1)
-	 *
-	 * @param in_grid
-	 * @param in_dim
-	 */
-	n_t(const std::vector<int>& in_grid,
-		const dimension& in_dim)
-	{
-		// TODO: parameter in_dim is useless?
-		init(in_grid, in_dim);
-	}
-
-	n_t(FILE* fp)
-	{
-		std::vector<int> in_grid;
-		dimension tmp_dim;
-		read_grid(fp, &in_grid, &tmp_dim, 0);
-		init(in_grid, tmp_dim);
 	}
 
 	/*neighbourhood(const dimension_container& _dim, point _center_cell = {0,0})
@@ -308,19 +267,20 @@ public:
 		 neighbours.push_back(p);
 	}*/
 
+#if 0
 	//! assumes that no borders exist
-	n_t(const dimension& _dim, point _center_cell = {0,0})
+	_n_t(std::size_t point_no, const point* points, point _center_cell = {0,0})
 		//: //center_cell(_center_cell),
 		//dim(_dim)
 	{
-		neighbours.reserve(_dim.area());
-		dimension_container cont(_dim.height(), _dim.width(), 0);
-		for( const point& p : cont )
+		/*neighbours.reserve(point_no);
+		for( std::size_t i = 0; i < point_no; ++i )
 		{
-			neighbours.push_back(p - _center_cell);
+			neighbours.push_back(points[i] - _center_cell);
 			bb.add_point(neighbours.back());
-		}
+		}*/
 	}
+#endif
 
 	bool contains(const point& p) const {
 		for( const point& np : neighbours )
@@ -338,7 +298,7 @@ public:
 
 public:
 	// TODO: operator*
-	n_t& operator*=(const n_t& rhs)
+	_n_t& operator*=(const _n_t& rhs)
 	{
 		std::set<point> neighbour_set;
 
@@ -361,7 +321,7 @@ public:
 		return *this;
 	}
 
-	n_t& operator-=(const n_t& rhs)
+	_n_t& operator-=(const _n_t& rhs)
 	{
 		// we use a new set because erasing from a vector
 		// causes reallocations
@@ -373,22 +333,22 @@ public:
 		return *this;
 	}
 
-	n_t& operator+=(const point& rhs)
+	_n_t& operator+=(const point& rhs)
 	{
 		for(point& p : neighbours)
 		 p += rhs;
 		return *this;
 	}
 
-	n_t& operator+(const point& rhs)
+	_n_t& operator+(const point& rhs)
 	{
-		//return n_t(*this) += rhs;
-		n_t tmp(*this);
+		//return _n_t(*this) += rhs;
+		_n_t tmp(*this);
 		return tmp += rhs;
 	}
 
 	friend std::ostream& operator<< (std::ostream& stream,
-		const n_t& n) {
+		const _n_t& n) {
 		stream << "Neighbourhood: (";
 		for( const point& p : n.neighbours) { stream << p << ", "; }
 		stream << ")";
@@ -414,6 +374,111 @@ public:
 		}
 		dim = bb.dim();
 	}*/
+};
+
+//using n_t = _n_t<std::vector<point>>;
+
+class n_t : public _n_t<std::vector<point>>
+{
+	using base = _n_t<std::vector<point>>;
+	void init(const std::vector<int>& in_grid,
+		const dimension& in_dim)
+	{
+		point center_cell(-1, -1);
+		for(unsigned y=0, id=0; y<in_dim.height(); ++y)
+		for(unsigned x=0; x<in_dim.width(); ++x, ++id) // TODO: remove id
+		{
+			int elem = in_grid[id];
+			switch(elem)
+			{
+			case 0:
+				//printf("%d\n",center_cell.x);
+				assert(center_cell.x < 0);
+				center_cell.set(x, y);
+				break;
+			case 1:
+			//	printf("%d\n",center_cell.x);
+				assert(center_cell.x < 0);
+				center_cell.set(x, y);
+			case 2:
+				base::neighbours.push_back(point(x,y));
+				break;
+			default: break;
+			}
+		}
+
+		// make it all relative to center_cell
+		for(point& p : neighbours)
+		{
+			// TODO: can be computed from dim?
+			// TODO: but do not remove p-=...
+			//base::bb.add_point( p -= center_cell );
+			p -= center_cell;
+		}
+	}
+public:
+	/**
+	 * @brief Reads neighborhood from grid.
+	 *
+	 * Cell values:
+	 *  - 0 center cell which is *no* part of the nh.
+	 *  - 1 center cell which *is* part of the nh.
+	 *  - 2 nh cell
+	 *  - 3 other cell (TODO: change: 2 grids of 0,1)
+	 *
+	 * @param in_grid
+	 * @param in_dim
+	 */
+	n_t(const std::vector<int>& in_grid,
+		const dimension& in_dim)
+	{
+		// TODO: parameter in_dim is useless?
+		init(in_grid, in_dim);
+	}
+
+	// TODO: deprecated
+	n_t(FILE* fp)
+	{
+		std::vector<int> in_grid;
+		dimension tmp_dim;
+		read_grid(fp, &in_grid, &tmp_dim, 0);
+		init(in_grid, tmp_dim);
+	}
+
+	// TODO: make constexpr version, too
+	//! assumes that no borders exist
+	n_t(const dimension& _dim, point _center_cell = {0,0})
+		//: //center_cell(_center_cell),
+		//dim(_dim)
+	{
+		neighbours.reserve(_dim.area());
+		dimension_container cont(_dim.height(), _dim.width(), 0);
+		for( const point& p : cont )
+		{
+			neighbours.push_back(p - _center_cell);
+			//bb.add_point(neighbours.back());
+		}
+	}
+};
+
+template<std::size_t N>
+class n_t_constexpr : public _n_t<std::array<point, N>>
+{
+	using base = _n_t<std::array<point, N>>;
+public:
+	//! assumes that no borders exist
+	constexpr n_t_constexpr(std::array<point, N> arr)
+		: base(arr)
+		//: //center_cell(_center_cell),
+		//dim(_dim)
+	{
+		/*neighbours.reserve(point_no);
+		for( std::size_t i = 0; i < point_no; ++i )
+		{
+			neighbours.push_back(points[i] - _center_cell);
+			bb.add_point(neighbours.back());
+		}*/
+	}
 };
 
 class conf_t
