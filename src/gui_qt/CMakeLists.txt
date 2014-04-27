@@ -1,9 +1,9 @@
 find_package(Qt4 REQUIRED)
 
 set(gui_sources DrawArea.cpp main.cpp MainWindow.cpp MenuBar.cpp StateMachine.cpp
-	../res/io.cpp ../res/image.cpp ../res/general.cpp)
+	../res/io.cpp ../res/image.cpp ../res/general.cpp ../res/geometry.cpp)
 set(gui_headers DrawArea.h MainWindow.h MenuBar.h StateMachine.h)
-set(other_headers ../res/io.h ../res/image.h ../res/general.h)
+set(other_headers ../res/io.h ../res/image.h ../res/general.h ../res/geometry.h)
 
 QT4_WRAP_CPP(gui_headers_moc ${gui_headers})
 
