@@ -119,6 +119,7 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	assert(dim->area() == grid->size());
 }
 
+// TODO: cell_t
 void read_grid(const base_grid* grid_class, std::istream& is, std::vector<int>& grid, dimension& dim,
 	/*void (*SCANFUNC)(const char *&, int *),*/ int border)
 {

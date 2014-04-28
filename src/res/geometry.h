@@ -411,8 +411,8 @@ public:
 	// TODO: use climit's INT MIN
 	grid_t(const dimension& dim, u_coord_t border_width, cell_t fill = 0, cell_t border_fill = INT_MIN) :
 		data(storage_area(dim, border_width), fill),
-		_dim(dim.height() + (border_width << 1),
-			dim.width() + (border_width << 1)),
+		_dim(dim.width() + (border_width << 1),
+			dim.height() + (border_width << 1)),
 		border_width(border_width)
 	{
 		u_coord_t bw2 = border_width << 1;
@@ -500,6 +500,7 @@ public:
 	}
 
 	//! constructor which reads a grid immediatelly
+	//! @todo bw 1 as def is deprecated, maybe inherit asm_grid_t in asm_basics.h?
 	grid_t(const char* filename, u_coord_t border_width = 1) :
 		border_width(border_width)
 	{
