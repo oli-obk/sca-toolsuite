@@ -36,31 +36,26 @@ namespace sca { namespace ca {
 // TODO:
 #define TABLE_OPTIMIZATION
 
-/**
- * @brief This class holds anything a cellular automaton's function
- * needs to know.
- *
- * Thus it contains no grid.
- */
-class ca_calculator_t
+class ca_eqsolver_t
 {
 	eqsolver::expression_ast ast;
 	int* helper_vars = nullptr; //!< @todo: auto_ptr
 	int helpers_size;
-	int border_width;
-public:
-	~ca_calculator_t() { delete[] helper_vars; }
+	int _border_width;
+
+protected:
+	~ca_eqsolver_t() { delete[] helper_vars; }
 
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
-	ca_calculator_t(const char* equation)
+	ca_eqsolver_t(const char* equation)
 	{
 	//	debug("Building AST from equation...\n");
 		eqsolver::build_tree(equation, &ast);
 
 		eqsolver::ast_area<eqsolver::variable_area_grid>
 			grid_solver;
-		border_width = (int)grid_solver(ast);
+		_border_width = (int)grid_solver(ast);
 	//	printf("Size of Moore Neighbourhood: %d\n",
 	//		border_width);
 
@@ -72,11 +67,9 @@ public:
 		if(helpers_size > 0)
 		 helper_vars = new int[helpers_size];
 	}
-	int get_border_width() const { return border_width; }
 
-	//! calculates next state at (human) position (x,y)
-	//! @param dim the grids internal dimension
-	int next_state(const int *cell_ptr, const point& p, const dimension& dim) const
+	int calculate_next_state(const int *cell_ptr,
+		const point& p, const dimension& dim) const
 	{
 		// TODO: replace &((*old_grid)[internal]) by old_value
 		// and make old_value a ptr/ref?
@@ -86,11 +79,58 @@ public:
 		eqsolver::ast_print<eqsolver::variable_print> solver(&vprinter);
 		return (int)solver(ast);
 	}
+public:
+	int border_width() const { return _border_width; }
+};
+
+namespace calc_methods
+{
+
+/*class eq_t : private ca_eqsolver_t
+{
+	using ca_eqsolver_t::ca_eqsolver_t;
+};
+
+class big_table_t
+{
+	big_table_t(const char* equation)
+	{
+		ca_eqsolver_t solver(equation);
+	}
+};*/
+
+
+}
+
+
+/**
+ * @brief This class holds anything a cellular automaton's function
+ * needs to know.
+ *
+ * Thus it contains no grid.
+ */
+class ca_calculator_t : public ca_eqsolver_t
+{
+public:
+	// TODO: single funcs to initialize and make const?
+	// aka: : ast(private_build_ast), ...
+	ca_calculator_t(const char* equation) :
+		ca_eqsolver_t(equation)
+	{
+	}
+
+	//! calculates next state at (human) position (x,y)
+	//! @param dim the grids internal dimension
+	int next_state(const int *cell_ptr, const point& p, const dimension& dim) const
+	{
+		return calculate_next_state(cell_ptr, p, dim);
+	}
 
 	//! overload, with x and y in internal format. slower.
 	int next_state_realxy(const int *cell_ptr, const point& p, const dimension& dim) const
 	{
-		return next_state(cell_ptr, p - point { border_width, border_width }, dim);
+		int bw = border_width();
+		return next_state(cell_ptr, p - point { bw, bw }, dim);
 	}
 
 	//! overload with human coordinates and reference to grid. slower.
@@ -113,9 +153,10 @@ public:
 
 	n_t get_neighbourhood() const
 	{
-		unsigned moore_width = (border_width<<1) + 1;
+		int bw = border_width();
+		unsigned moore_width = (bw<<1) + 1;
 		dimension moore = { moore_width, moore_width };
-		return n_t(moore, point(border_width, border_width));
+		return n_t(moore, point(bw, bw));
 	}
 };
 
@@ -210,7 +251,7 @@ class ca_simulator_t : private ca_calculator_t
 public:
 	ca_simulator_t(const char* equation, bool async = false) :
 		ca_calculator_t(equation),
-		_grid({get_border_width(), get_border_width()}),
+		_grid({border_width(), border_width()}),
 		neighbours(get_neighbourhood()),
 		async(async)
 	{
@@ -296,7 +337,7 @@ public:
 	template<class Asynchronicity>
 	void run_once(const Asynchronicity& async = synchronous())
 	{
-		run_once(rect(_grid->dim(), get_border_width()), async);
+		run_once(rect(_grid->dim(), border_width()), async);
 	}
 
 	//! returns true iff not all cells are inactive

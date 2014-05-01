@@ -73,16 +73,19 @@ using fptr_base = Ret (*)(Args...);
 //namespace qi = boost::spirit::qi;
 //namespace ascii = boost::spirit::ascii;
 
-template<class Ret, class ...Args>
-struct ternary_op;
-template<class Ret, class ...Args>
-struct binary_op;
-template<class Ret, class ...Args>
-struct unary_op;
+template<std::size_t N, class Ret, class ...Args>
+struct nary_op;
 
-using ternary_op_i = ternary_op<int, int, int, int>;
-using binary_op_i = binary_op<int, int, int>; // TODO: unused?
-using unary_op_i = unary_op<int, int>;
+template<class Ret, class ...Args>
+using ternary_op = nary_op<3, Ret, Args...>;
+template<class Ret, class ...Args>
+using binary_op = nary_op<2, Ret, Args...>;
+template<class Ret, class ...Args>
+using unary_op = nary_op<1, Ret, Args...>;
+
+template<std::size_t... Is> struct seq {};
+template<std::size_t N, std::size_t... Is> struct gen_seq : gen_seq<N-1, N-1, Is...> {};
+template<std::size_t... Is> struct gen_seq<0, Is...> : seq<Is...> {};
 
 struct visit_result_type
 {
@@ -251,56 +254,23 @@ struct expression_ast
 	type expr;
 };
 
-// TODO: we might want to introduce "nary_op"
 //! expression tree node extension for ternary operators
-template<class Ret, class ...Args>
-struct ternary_op
+template<std::size_t N, class Ret, class ...Args>
+struct nary_op
 {
-	// below, (*) is a little fix to allow
+	// below, (*) is a little fix to Sallow
 	// expression_ast(type const& ai) to be explicit
-	ternary_op(
+	template<class ...AstClass>
+	nary_op(
 		char op
 		, fptr_base<Ret, Args...> fptr
 		, expression_ast::type const& left // (*)
-		, expression_ast const& middle
-		, expression_ast const& right)
-	: op(op), fptr(fptr), left(left), middle(middle), right(right) {}
+		, AstClass const& ... more)
+	: op(op), fptr(fptr), subtrees({(expression_ast)left, more...}) {}
 
 	char op;
 	fptr_base<Ret, Args...> fptr;
-	expression_ast left, middle, right;
-};
-
-//! expression tree node extension for binary operators
-template<class Ret, class ...Args>
-struct binary_op
-{
-	// below, (*) is a little fix to allow
-	// expression_ast(type const& ai) to be explicit
-	binary_op(
-		char op
-		, fptr_base<Ret, Args...> fptr
-		, expression_ast::type const& left // (*)
-		, expression_ast const& right)
-	: op(op), fptr(fptr), left(left), right(right) {}
-
-	char op;
-	fptr_base<Ret, Args...> fptr;
-	expression_ast left;
-	expression_ast right;
-};
-
-//! expression tree node extension for unary operators
-template<class Ret, class ...Args>
-struct unary_op
-{
-	unary_op(char op, fptr_base<Ret, Args...> fptr,
-		expression_ast const& subject)
-	: op(op), fptr(fptr), subject(subject) {}
-
-	char op;
-	fptr_base<Ret, Args...> fptr;
-	expression_ast subject;
+	expression_ast subtrees[N];
 };
 
 inline int array_subscript_to_coord(std::string* str, int width) {
@@ -351,52 +321,38 @@ struct ast_print  : public boost::static_visitor<visit_result_type>
 		// TODO: delete int[]
 		return boost::apply_visitor(*this, ast.expr);
 	}
-
-	template<class Ret, class ...Args>
-	inline res_type operator()(ternary_op<Ret, Args...> const& expr) const
+private:
+	template<class NaryOpT, std::size_t ...Idxs>
+	inline res_type apply_fptr(NaryOpT const& expr, seq<Idxs...>) const
 	{
-		auto left = boost::apply_visitor(*this, expr.left.expr);
-		auto middle = boost::apply_visitor(*this, expr.middle.expr);
-		auto right = boost::apply_visitor(*this, expr.right.expr);
-
-		return expr.fptr(left, middle, right);
+		return expr.fptr(
+			boost::apply_visitor(*this, expr.subtrees[Idxs].expr)...
+		);
 	}
 
-	template<class Ret, class ...Args>
-	inline res_type operator()(binary_op<Ret, Args...> const& expr) const
+public:
+	template<std::size_t N, class Ret, class ...Args>
+	inline res_type operator()(nary_op<N, Ret, Args...> const& expr) const
 	{
-		auto left = boost::apply_visitor(*this, expr.left.expr);
-		auto right = boost::apply_visitor(*this, expr.right.expr);
-		/*if(expr.fptr == NULL) { // this is an assignment
-			puts("before");
-			printf("before2:%s\n",boost::get<std::string>(expr.right.expr).c_str());
-			left = atoi(
-				boost::get<std::string>(expr.right.expr).data()+1);
-			printf("after\n");
-			helper_vars[left]=right;
-			return right;
-		}
-		else*/
-		return expr.fptr(left, right);
+		return apply_fptr(expr, gen_seq<N>());
 	}
-
-/*	inline res_type operator()(binary_op<int, int*, int> const& expr) const
-	{
-		int left = boost::apply_visitor(*this, expr.left.expr);
-		int right = boost::apply_visitor(*this, expr.right.expr);
-		return expr.fptr(left, right);
-	}*/
-
-	inline res_type operator()(unary_op<int, int> const& expr) const {
-		return expr.fptr(boost::apply_visitor(*this, expr.subject.expr));
-	}
-
 
 	ast_print(const variable_handler* _var_print) : var_print(_var_print) {}
 
 //	ast_print(int x, int y, int* v) : x(x), y(y), v((result_type*)v) {}
 
 };
+
+//! computes int max of n values
+template<class ...IntT>
+inline int n_max(int first, IntT ...more) {
+	return std::max(first, n_max(more...));
+}
+
+template<>
+inline int n_max(int first) {
+	return first;
+}
 
 //! Class for iterating an expression tree and print the used area in the array.
 //! The result is an int describing the half size of a square.
@@ -424,29 +380,20 @@ struct ast_area  : public boost::static_visitor<unsigned int>
 		return boost::apply_visitor(*this, ast.expr);
 	}
 
-	template<class Ret, class ...Args>
-	inline result_type operator()(binary_op<Ret, Args...> const& expr) const
+private:
+	template<class NaryOpT, std::size_t ...Idxs>
+	inline result_type apply_fptr(NaryOpT const& expr, seq<Idxs...>) const
 	{
-		return std::max( // TODO: fix everything into signed int
-			(int) boost::apply_visitor(*this, expr.left.expr),
-			(int) boost::apply_visitor(*this, expr.right.expr)
+		return n_max(
+			(int)boost::apply_visitor(*this, expr.subtrees[Idxs].expr)...
+			// TODO: this cast is dangerous!
+			// (the result is sometimes a pointer, somehow)
 		);
 	}
-
-	template<class Ret, class ...Args>
-	inline result_type operator()(ternary_op<Ret, Args...> const& expr) const
-	{
-		return
-		std::max(
-		std::max(
-			(int) boost::apply_visitor(*this, expr.left.expr),
-			(int) boost::apply_visitor(*this, expr.right.expr)
-		), (int) boost::apply_visitor(*this, expr.middle.expr));
-	}
-
-	template<class Ret, class ...Args>
-	inline result_type operator()(unary_op<Ret, Args...> const& expr) const {
-		return boost::apply_visitor(*this, expr.subject.expr);
+public:
+	template<std::size_t N, class Ret, class ...Args>
+	inline result_type operator()(nary_op<N, Ret, Args...> const& expr) const {
+		return apply_fptr(expr, gen_seq<N>());
 	}
 
 	//ast_area(variable_area::AREA_TYPE _area_type)

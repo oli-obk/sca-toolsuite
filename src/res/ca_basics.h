@@ -340,6 +340,7 @@ public:
 		return *this;
 	}
 
+	// TODO: shouldn't this return std::set?
 	_n_t& operator+(const point& rhs)
 	{
 		//return _n_t(*this) += rhs;

@@ -52,6 +52,9 @@ MAKE_OP(!=,'!',f2i_neq);
 MAKE_OP(&&,'&',f2i_and);
 MAKE_OP(||,'|',f2i_or);
 
+using ternary_op_i = ternary_op<int, int, int, int>;
+using binary_op_i = binary_op<int, int, int>;
+using unary_op_i = unary_op<int, int>;
 
 #define DEF_UNARY_FUNC(OP, VISUAL, EXECUTE) \
 expression_ast OP::operator()(expression_ast const& expr) const { \

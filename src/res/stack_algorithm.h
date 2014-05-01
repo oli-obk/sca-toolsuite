@@ -353,6 +353,7 @@ using fix_log_s = _fix_log_s<int*>;
 /*
  * fix algorithms
  */
+//! TODO: fix should be able to substract the superstable id
 template<class AvalancheContainer, class ResultType>
 inline void do_fix(/*std::vector<int>* grid,*/ const dimension& dim, AvalancheContainer& array, ResultType& result_logger)
 {
