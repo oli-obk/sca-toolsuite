@@ -29,6 +29,8 @@
 namespace eqsolver
 {
 
+constexpr const ast_minmax::int_pair ast_minmax::arbitrary;
+
 const char* EQUATION_HELP_STR =
 "Manipulates input by formula in x, y and value.\n"
 "Booleans are treated as integer values 0 and 1.\n"

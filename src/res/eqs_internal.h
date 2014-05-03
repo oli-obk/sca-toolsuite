@@ -21,7 +21,9 @@
 #ifndef EQS_INTERNAL_H
 #define EQS_INTERNAL_H
 
+#include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi.hpp>
+
 #include "equation_solver.h"
 #include "eqs_functions.h"
 
@@ -29,6 +31,39 @@ namespace ascii = boost::spirit::ascii;
 namespace qi = boost::spirit::qi;
 
 namespace eqsolver {
+
+template<typename _result_type>
+struct _make_0
+{
+	typedef _result_type result_type;
+	inline result_type operator()() const {
+		return result_type();
+	}
+};
+template<typename _result_type>
+struct _make_1
+{
+	template <typename>
+	struct result { typedef _result_type type; };
+
+	template <typename T>
+	inline typename result<T>::type operator()(T const& c1) const {
+		return _result_type(c1);
+	}
+};
+
+template<typename _result_type>
+struct _make_2
+{
+	template <typename, typename>
+	struct result { typedef _result_type type; };
+
+	template <typename T1, typename T2>
+	inline typename result<T1, T2>::type operator()
+		(T1 const& c1, T2 const& c2) const {
+		return _result_type(c1, c2);
+	}
+};
 
 const boost::phoenix::function< _make_2<vaddr::var_array> > make_array_indexes;
 const boost::phoenix::function< _make_1<vaddr::var_helper<true>> > make_helper_index;

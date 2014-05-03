@@ -58,7 +58,7 @@ class log_base
 	const div_size_t<T> div_size;
 	FILE* fp;
 public:
-	log_base(FILE* fp) : fp(fp) {}
+	log_base(FILE* fp) : div_size(), fp(fp) {}
 	inline void write_separator() const {
 		const uint64_t minus1 = -1; fwrite(&minus1, sizeof(T), 1, fp);
 	}

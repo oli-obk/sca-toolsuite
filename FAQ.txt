@@ -7,7 +7,8 @@ Or questions I think others might ask.
 CONTENTS
 
 1 General
-2 Sandpiles
+2 Compiling
+3 Sandpiles
 
 1 General
 :::::::::
@@ -30,7 +31,19 @@ Q: Is Qt necessary?
 A: No, the .pro file is only for people who use qt creator for coding. The
    Makefile generation is done by autotools.
 
-2 Sandpiles
+2 Compiling
+:::::::::::
+
+Q: My compiler swaps a lot while compiling
+A: T
+
+Q: I get a lot of warnings about unused localc typedefs or maybe uninitialized
+   variables. Why?
+A: If this happens, your boost libraries are too old for your compiler. You'll
+   find a line in our CMakeLists ("WARN_EXC") which you can enable to ignore
+   the errors.
+
+3 Sandpiles
 :::::::::::
 
 Q: How fast is the sandpile algorithm?
@@ -56,7 +69,40 @@ A: There might be no faster currently, thought we don't know. We knew of the
 
      sequential stack, C++ (2011):		1.17 s
      parallel stack, C++ (2011):		0.65 s (8 threads)
-     our (sequential) algorithm (2012):	0.44 s
+     our (sequential) algorithm (2012):		0.44 s
+
+     We use gcc 4.8.1 and clang 3.3. For gcc, we used -O3 -flto, for clang -O3
+     (-flto was not officially supported by our distribution).
+
+   The first two algorithm are the stack algorithm by Sebastian Frehmel...
+   The 3rd is the C++-Version by Johannes Lorenz
+   The 4th one is the sca-toolsuite algorithm from Johannes Lorenz (April 2014),
+   and the 5th one is his improved version from May 2014.
+
+   For all algorithms, we used "Intel(R) Core(TM) i5-3570 CPU @ 3.40GHz" which has
+   4 physical (one logical each) cores and 6 MB cache each. Note that only the first 2 algorithms were multi-core.
+   Our RAM was 2x4 GB DDR3 (?) RAM.
+
+   Setup:
+
+    1)
+
+    Machine: java -server -Xmx1024m -Xss4096k
+    Threads: 4
+    Algorithm: "Asynchronous (parallel) Fourstates, with cache line optimization."
+    time java -server -cp bin/ -Xmx1024m -Xss4096k parallel.asynchronous.fourstates.SandpileCA -h=1000 -w=1000 -nmt=2140000 -nt=4 -uco=true
+
+    2)
+
+    Machines: gcc -O3 -flto, clang -O3
+    Threads:
+
+     From 214.000 to 219.000, time for 10000 grains
+
+     02/2010 11.78 s (java -server)
+     10/2011 8.92 s (gcc)
+     03/2014 4.37 s (gcc) 4.72 s (clang)
+     05/2014 3.15 s (clang), 3.28 s (gcc)
 
 Q: What if we want to log avalanches in random throw?
 A: Then we are even a lot faster, since n^2 avalanches can be thrown at once.

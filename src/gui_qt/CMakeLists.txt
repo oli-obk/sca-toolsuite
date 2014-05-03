@@ -1,4 +1,4 @@
-find_package(Qt4 REQUIRED)
+# CMakeLists.txt for Qt GUI
 
 set(gui_sources DrawArea.cpp main.cpp MainWindow.cpp MenuBar.cpp StateMachine.cpp
 	../res/io.cpp ../res/image.cpp ../res/general.cpp ../res/geometry.cpp)
@@ -12,3 +12,4 @@ add_definitions(${QT_DEFINITIONS})
 
 add_executable(gui ${gui_sources} ${gui_headers_moc} ${other_headers})
 target_link_libraries(gui ${QT_LIBRARIES})
+

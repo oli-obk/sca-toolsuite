@@ -462,6 +462,30 @@ public:
 	}
 };
 
+template<class T>
+class static_arr
+{
+	std::size_t size;
+	const T* arr;
+public:
+	T* begin() { return arr; }
+	T* end() { return arr + size; }
+	static_arr(std::size_t size, const T* arr) :
+		size(size),
+		arr(arr) {}
+};
+
+class n_t_const : public _n_t<static_arr<point>>
+{
+	using base = _n_t<static_arr<point>>;
+public:
+	//! assumes that no borders exist
+	n_t_const(std::size_t size, point* arr) :
+		base(static_arr<point>(size,arr))
+	{
+	}
+};
+
 template<std::size_t N>
 class n_t_constexpr : public _n_t<std::array<point, N>>
 {
@@ -470,15 +494,7 @@ public:
 	//! assumes that no borders exist
 	constexpr n_t_constexpr(std::array<point, N> arr)
 		: base(arr)
-		//: //center_cell(_center_cell),
-		//dim(_dim)
 	{
-		/*neighbours.reserve(point_no);
-		for( std::size_t i = 0; i < point_no; ++i )
-		{
-			neighbours.push_back(points[i] - _center_cell);
-			bb.add_point(neighbours.back());
-		}*/
 	}
 };
 
@@ -702,6 +718,7 @@ bool for_ints_points(const C1& cont1, const C2& cont2, const Functor& func)
 	return for_each_points<selector_intersection>(cont1, cont2, func);
 }
 
+#if 0
 template<class C1, class C2, class As1, class As2> // TODO: make union a template
 auto zip_set(const C1& cont1, const C2& cont2, const As1& assoc1, const As2& assoc2)
 -> std::set<std::size_t>
@@ -713,6 +730,7 @@ auto zip_set(const C1& cont1, const C2& cont2, const As1& assoc1, const As2& ass
 	for_each_selection<selector_zip_base>(cont1, cont2, func1, func2);*/
 	return result;
 }
+#endif
 
 /* // TODO
 template<template<class, class> class Type, class R, class C1, class C2>

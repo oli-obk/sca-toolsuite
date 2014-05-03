@@ -43,6 +43,7 @@ class MyProgram : public Program
 				break;
 			default:
 				exit_usage();
+				return 1; // omit warnings
 		}
 
 		std::cout << grid_t(dim, 0, predefined_value);

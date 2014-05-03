@@ -92,11 +92,19 @@ class MyProgram : public Program
 		else
 		 exit_usage();
 
-		bool log_avalanches = false;
+		enum class log_type_t // TODO: -> ASM BASIC?
+		{
+			avalanches,
+			end,
+			nothing
+		};
+		log_type_t log_type = log_type_t::nothing;
+
 		if(argc==5)
 		{
-			if(!strcmp(argv[4], "l")) log_avalanches = true;
-			else if(!strcmp(argv[4], "s")) log_avalanches = false;
+			if(!strcmp(argv[4], "l")) log_type = log_type_t::avalanches;
+			else if(!strcmp(argv[4], "s")) log_type = log_type_t::end;
+			else if(!strcmp(argv[4], "n")) log_type = log_type_t::nothing;
 			else exit_usage();
 		}
 
@@ -105,14 +113,15 @@ class MyProgram : public Program
 		for(std::size_t i = 0; i < grid.size(); ++i) {
 			char_grid[i] = (grid[i] < CHAR_MIN) ? CHAR_MIN : grid[i];
 		}
-		if(log_avalanches) {
+		if(log_type == log_type_t::avalanches) {
 			start<sandpile::_array_queue<int*>>(char_grid, dim, random_seq);
 		} else {
 			start<sandpile::_array_stack<int*>>(char_grid, dim, random_seq);
 			for(std::size_t i = 0; i < grid.size(); ++i) {
 				grid[i] = char_grid[i];
 			}
-			write_grid(stdout, &grid, &dim);
+			if(log_type == log_type_t::end)
+			 write_grid(stdout, &grid, &dim);
 		}
 
 		return 0;
@@ -132,7 +141,7 @@ int main(int argc, char** argv)
 	help.add_param("(1st parameter)", "defines which of the two modes to use");
 	help.add_param("<number>", "number of random numbers to generate");
 	help.add_param("<seed>", "random seed for pseudo random number generator");
-	help.add_param("<logtype>", "'s' calculates resulting arrows, 'l' the number each arrow fires");
+	help.add_param("<logtype>", "'s' calculates resulting arrows, 'l' the number each arrow fires, 'n' nothing");
 
 	MyProgram program;
 	return program.run(argc, argv, &help);

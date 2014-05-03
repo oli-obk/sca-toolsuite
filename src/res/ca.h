@@ -42,6 +42,8 @@ class ca_eqsolver_t
 	int* helper_vars = nullptr; //!< @todo: auto_ptr
 	int helpers_size;
 	int _border_width;
+	int num_states;
+//	n_t_const neighbourhood;
 
 protected:
 	~ca_eqsolver_t() { delete[] helper_vars; }
@@ -66,6 +68,14 @@ protected:
 	//		helpers_size);
 		if(helpers_size > 0)
 		 helper_vars = new int[helpers_size];
+
+		eqsolver::build_tree(equation, &ast);
+
+		eqsolver::ast_minmax minmax_solver(helpers_size);
+		std::pair<int, int> mm = (std::pair<int, int>)minmax_solver(ast);
+		num_states = (mm.first == INT_MIN || mm.second == INT_MAX)
+			? INT_MAX
+			: (mm.second - mm.first + 1);
 	}
 
 	int calculate_next_state(const int *cell_ptr,
@@ -79,8 +89,17 @@ protected:
 		eqsolver::ast_print<eqsolver::variable_print> solver(&vprinter);
 		return (int)solver(ast);
 	}
+
 public:
 	int border_width() const { return _border_width; }
+	n_t get_neighbourhood() const
+	{
+		int bw = border_width();
+		unsigned moore_width = (bw<<1) + 1;
+		dimension moore = { moore_width, moore_width };
+		return n_t(moore, point(bw, bw));
+	}
+	//bool can_optimize_table() const { return num_states }
 };
 
 namespace calc_methods
@@ -98,7 +117,6 @@ class big_table_t
 		ca_eqsolver_t solver(equation);
 	}
 };*/
-
 
 }
 
@@ -150,19 +168,10 @@ public:
 		 *result = next;
 		return next != *cell_ptr;
 	}
-
-	n_t get_neighbourhood() const
-	{
-		int bw = border_width();
-		unsigned moore_width = (bw<<1) + 1;
-		dimension moore = { moore_width, moore_width };
-		return n_t(moore, point(bw, bw));
-	}
 };
 
 class asm_synch_calculator_t
 {
-	int border_width;
 	static constexpr const std::array<point, 5> neighbour_points = {{{0,-1},{-1,0}, {0,0}, {1, 0}, {0,1}}};
 	static constexpr const ca::n_t_constexpr<5> neighbours = ca::n_t_constexpr<5>(neighbour_points);
 public:
@@ -251,7 +260,7 @@ class ca_simulator_t : private ca_calculator_t
 public:
 	ca_simulator_t(const char* equation, bool async = false) :
 		ca_calculator_t(equation),
-		_grid({border_width(), border_width()}),
+		_grid{border_width(), border_width()},
 		neighbours(get_neighbourhood()),
 		async(async)
 	{

@@ -73,19 +73,19 @@ using fptr_base = Ret (*)(Args...);
 //namespace qi = boost::spirit::qi;
 //namespace ascii = boost::spirit::ascii;
 
-template<std::size_t N, class Ret, class ...Args>
+template<class Ret, class ...Args>
 struct nary_op;
 
 template<class Ret, class ...Args>
-using ternary_op = nary_op<3, Ret, Args...>;
+using ternary_op = nary_op<Ret, Args...>;
 template<class Ret, class ...Args>
-using binary_op = nary_op<2, Ret, Args...>;
+using binary_op = nary_op<Ret, Args...>;
 template<class Ret, class ...Args>
-using unary_op = nary_op<1, Ret, Args...>;
+using unary_op = nary_op<Ret, Args...>;
 
 template<std::size_t... Is> struct seq {};
-template<std::size_t N, std::size_t... Is> struct gen_seq : gen_seq<N-1, N-1, Is...> {};
-template<std::size_t... Is> struct gen_seq<0, Is...> : seq<Is...> {};
+template<std::size_t N, std::size_t... Is> struct make_seq : make_seq<N-1, N-1, Is...> {};
+template<std::size_t... Is> struct make_seq<0, Is...> : seq<Is...> {};
 
 struct visit_result_type
 {
@@ -197,7 +197,7 @@ struct variable_area_helpers : public boost::static_visitor<visit_result_type>
 };
 
 //! expression tree node
-struct expression_ast
+class expression_ast
 {
 /*	using type = boost::variant<
 		nil
@@ -208,6 +208,7 @@ struct expression_ast
 		, boost::recursive_wrapper<binary_op<Ret, Args...>>
 		, boost::recursive_wrapper<unary_op<Ret, Args...>>
 		>;*/
+public:
 	using type = boost::variant<
 		nil
 		, unsigned int
@@ -221,17 +222,15 @@ struct expression_ast
 		>;
 
 	expression_ast() : expr(nil()) {}
+	expression_ast(expression_ast const& ai) : expr(ai.expr) {}
+	explicit expression_ast(type const& ai) : expr(ai) {}
+	template <typename Expr>
+	explicit expression_ast(Expr const& expr) : expr(expr) {}
 
 	template <typename T> struct factory_f {
 		template<typename> struct result { typedef T type; };
 		template<typename A> T operator()(A const& a) const { return T(a); }
 	};
-
-	expression_ast(expression_ast const& ai) : expr(ai.expr) {}
-	explicit expression_ast(type const& ai) : expr(ai) {}
-
-	template <typename Expr>
-	explicit expression_ast(Expr const& expr) : expr(expr) {}
 
 	expression_ast& operator+=(expression_ast const& rhs);
 	expression_ast& operator-=(expression_ast const& rhs);
@@ -251,14 +250,14 @@ struct expression_ast
 	expression_ast& operator&&(expression_ast const & rhs);
 	expression_ast& operator||(expression_ast const & rhs);
 
-	type expr;
+	type expr; // TODO: make private + get func?
 };
 
 //! expression tree node extension for ternary operators
-template<std::size_t N, class Ret, class ...Args>
+template<class Ret, class ...Args>
 struct nary_op
 {
-	// below, (*) is a little fix to Sallow
+	// below, (*) is a little fix to allow
 	// expression_ast(type const& ai) to be explicit
 	template<class ...AstClass>
 	nary_op(
@@ -266,11 +265,11 @@ struct nary_op
 		, fptr_base<Ret, Args...> fptr
 		, expression_ast::type const& left // (*)
 		, AstClass const& ... more)
-	: op(op), fptr(fptr), subtrees({(expression_ast)left, more...}) {}
+	: op(op), fptr(fptr), subtrees{(expression_ast)left, more...} {}
 
 	char op;
 	fptr_base<Ret, Args...> fptr;
-	expression_ast subtrees[N];
+	expression_ast subtrees[sizeof...(Args)];
 };
 
 inline int array_subscript_to_coord(std::string* str, int width) {
@@ -286,7 +285,8 @@ inline int array_subscript_to_coord(std::string* str, int width) {
 template<typename variable_handler>
 struct ast_print  : public boost::static_visitor<visit_result_type>
 {
-
+	// todo: only one possible variable_handler? -> then put it in here
+	// ( and don't alloc direct access from outside?)
 
 	const variable_handler* var_print;
 
@@ -331,10 +331,10 @@ private:
 	}
 
 public:
-	template<std::size_t N, class Ret, class ...Args>
-	inline res_type operator()(nary_op<N, Ret, Args...> const& expr) const
+	template<class Ret, class ...Args>
+	inline res_type operator()(nary_op<Ret, Args...> const& expr) const
 	{
-		return apply_fptr(expr, gen_seq<N>());
+		return apply_fptr(expr, make_seq<sizeof...(Args)>());
 	}
 
 	ast_print(const variable_handler* _var_print) : var_print(_var_print) {}
@@ -391,9 +391,348 @@ private:
 		);
 	}
 public:
-	template<std::size_t N, class Ret, class ...Args>
-	inline result_type operator()(nary_op<N, Ret, Args...> const& expr) const {
-		return apply_fptr(expr, gen_seq<N>());
+	template<class Ret, class ...Args>
+	inline result_type operator()(nary_op<Ret, Args...> const& expr) const {
+		return apply_fptr(expr, make_seq<sizeof...(Args)>());
+	}
+
+	//ast_area(variable_area::AREA_TYPE _area_type)
+	//	: var_area(_area_type) {}
+};
+
+namespace minmax_detail
+{
+	typedef std::pair<int, int> int_pair;
+
+	// maps pair (min, max) to those number that are only true or false
+/*	int_pair make_logic_pair()
+	{
+		int_pair result {0, 1};
+		if(min > 0 || max < 0)
+		{
+			result.first = 1;
+		}
+		else if(min == 0 && max == 0)
+		{
+			result.second = 0;
+		}
+		return result;
+	}*/
+/*
+	struct logic_pair
+	{
+		std::pair p;
+		logic_pair()
+	};*/
+
+	/*class logic_pair
+	{
+		int_pair p; // TODO: make const
+	public:
+		//logic_pair(const int_pair& in) : p(in) {}
+		logic_pair(const int_pair& in)
+		{
+			p = {false, true};
+			if(in.first > 0 || in.second < 0)
+			{
+				p.first = true;
+			}
+			else if(in.first == 0 && in.second == 0)
+			{
+				p.second = false;
+			}
+		}
+
+		int_pair operator!() const
+		{
+			int_pair result = {!p.first, !p.second};
+			using std::swap;
+			if(result.first > result.second)
+			 swap(result.first, result.second);
+			return result;
+		}
+
+		int_pair operator&&(const logic_pair& other) const
+		{
+			return int_pair(other.p.first && p.first, other.p.second && p.second);
+		}
+
+
+		bool always_true() const { return p.first && p.second; }
+		bool always_false() const { return !(p.first || p.second); }
+
+	};*/
+
+	class logic_pair
+	{
+		bool poss0 = true, poss1 = true;
+
+		int_pair pair_from_poss(bool _poss0, bool _poss1) const
+		{
+			return _poss0
+				? (_poss1 ? int_pair{0,1} : int_pair{0,0})
+				: int_pair{1,1} ;
+		}
+
+	public:
+		logic_pair(const int_pair& in)
+		{
+			if(in.first > 0 || in.second < 0)
+			{
+				poss0 = false;
+			}
+			else if(in.first == 0 && in.second == 0)
+			{
+				poss1 = false;
+			}
+		}
+
+		int_pair operator!() const
+		{
+			return pair_from_poss(poss1, poss0);
+		}
+		int_pair operator&&(const logic_pair& other) const
+		{
+			/*return (poss1 && other.poss1)
+				?*/
+			bool _poss1 = poss1 && other.poss1;
+			bool _poss0 = poss0 || other.poss0;
+			return pair_from_poss(_poss0, _poss1);
+		}
+		int_pair operator||(const logic_pair& other) const
+		{
+			/*return (poss1 && other.poss1)
+				?*/
+			bool _poss1 = poss1 || other.poss1;
+			bool _poss0 = poss0 && other.poss0;
+			return pair_from_poss(_poss0, _poss1);
+		}
+
+		bool always_true() const { return !poss0; }
+		bool always_false() const { return !poss1; }
+	};
+
+	/*template<class NaryOpT, class ...Types>
+	int_pair apply(NaryOpT const& expr, Types...)
+	{
+		(void) expr;
+		return std::pair<int, int>(42, 37);
+	}*/
+
+	inline int_pair apply(nary_op<int, int> const& expr, int_pair p1)
+	{
+		// TODO: switch with ids?
+		// TODO: layer this out in other classes?
+		// TODO: maybe templates for the pointer (binary size!)
+		const auto& fptr = expr.fptr;
+
+		if(fptr == f1i_not)
+		{
+		//	return std::pair<int, int>(0, 1);
+			return !logic_pair(p1);
+		}
+		else if(fptr == f1i_neg)
+		{
+			// note that this is not the else case
+			return std::pair<int, int>(-p1.second, -p1.first);
+		}
+		else if(fptr == f1i_abs)
+		{
+			// this is easy to proove if you think about the
+			// function's plot
+			return std::pair<int, int>(
+				std::max(std::min(p1.first, -p1.second), 0),
+				std::max(p1.second, -p1.first));
+		}
+		else if(fptr == f1i_sqrt)
+		{
+			// we assume that the user does not sqrt() negative
+			// values. if they'll be needed, we should add nqsrt()
+			return std::pair<int, int>(0, fptr(p1.second));
+		}
+		else if(fptr == f1i_rand)
+		{
+			return std::pair<int, int>(0, p1.second);
+		}
+		else
+		 assert(false);
+	}
+
+	inline int_pair apply(nary_op<int, int, int, int> const& expr, int_pair p1, int_pair p2, int_pair p3)
+	{
+		const auto& fptr = expr.fptr;
+
+		if(fptr == f3i_tern)
+		{
+			logic_pair l(p1);
+			if(l.always_true())
+			 return p2;
+			else if(l.always_false())
+			 return p3;
+			else
+			 return int_pair{ std::min(p2.first, p3.first),
+				std::max(p2.second, p3.second) } ;
+		}
+		else
+		 assert(false);
+	}
+
+	inline int_pair apply(nary_op<int, int, int> const& expr, int_pair p1, int_pair p2)
+	{
+#if 0
+	inline int f2i_add(int arg1, int arg2) { return arg1 + arg2; }
+inline int f2i_sub(int arg1, int arg2) { return arg1 - arg2; }
+inline int f2i_mul(int arg1, int arg2) { return arg1 * arg2; }
+inline int f2i_div(int arg1, int arg2) { return arg1 / arg2; }
+inline int f2i_mod(int arg1, int arg2) { return arg1 % arg2; }
+inline int f2i_min(int arg1, int arg2) { return std::min(arg1, arg2); }
+inline int f2i_max(int arg1, int arg2) { return std::max(arg1, arg2); }
+inline int f2i_lt(int arg1, int arg2) { return (int)(arg1<arg2); }
+inline int f2i_gt(int arg1, int arg2) { return (int)(arg1>arg2); }
+inline int f2i_le(int arg1, int arg2) { return (int)(arg1<=arg2); }
+inline int f2i_ge(int arg1, int arg2) { return (int)(arg1>=arg2); }
+inline int f2i_eq(int arg1, int arg2) { return (int)(arg1==arg2); }
+inline int f2i_neq(int arg1, int arg2) { return (int)(arg1!=arg2); }
+inline int f2i_and(int arg1, int arg2) { return (int)(arg1*arg2); }
+inline int f2i_or(int arg1, int arg2) { return (int)((arg1!=0)||(arg2!=0)); }
+inline int f2i_asn(int* arg1, int arg2) { return (*arg1 = arg2); }
+inline int f2i_com(int arg1, int arg2) { (void)arg1; return arg2; }
+#endif
+
+		// TODO: switch with ids?
+		// TODO: layer this out in other classes?
+		// TODO: maybe templates for the pointer (binary size!)
+		const auto& fptr = expr.fptr;
+
+		if(fptr == f2i_eq)
+		{
+			bool tmp;
+			return ((p1.first == p1.second) && (p2.first == p2.second))
+				? ( tmp = fptr(p1.first, p2.first), int_pair {tmp, tmp} )
+				: int_pair{0, 1};
+		}
+		else if(fptr == f2i_and)
+		{
+			return logic_pair(p1) && logic_pair(p2);
+		}
+		else if(fptr == f2i_or)
+		{
+			return logic_pair(p1) || logic_pair(p2);
+		}
+		else if(fptr == f2i_com)
+		{
+			return p2;
+		}
+		else
+		 assert(false);
+	}
+
+	// TODO: using int_pair_ref = const int_pair& ?
+	inline int_pair apply(nary_op<int, int*, int> const& expr, int_pair* p1, int_pair p2)
+	{
+		const auto& fptr = expr.fptr;
+		assert(fptr == f2i_asn);
+		std::cout << "before : " << p1->first << std::endl;
+		fptr(&p1->first, p2.first);
+		std::cout << "after : " << p1->first << std::endl;
+		return int_pair { fptr(&p1->first, p2.first), fptr(&p1->second, p2.second) };
+		//return int_pair{42, 4};
+	}
+
+}
+
+//! Class for iterating an expression tree and print the used area in the array.
+//! The result is an int describing the half size of a square.
+struct ast_minmax : public boost::static_visitor<unsigned int>
+{
+//	typedef std::pair<int, int> result_type;
+	using int_pair = std::pair<int, int>;
+	constexpr const static int_pair arbitrary = {INT_MIN, INT_MAX};
+
+	struct mm_result_type
+	{
+		typedef std::pair<int, int> int_pair;
+		boost::variant<int_pair, int_pair*> v;
+
+		mm_result_type(int_pair i) : v(i) {}
+		mm_result_type(int_pair* i) : v(i) {}
+
+		// templates assure that the 1st version will be preferred
+		//template<class T> visit_result_type(T& i) : v(i) {}
+		//template<> visit_result_type(int* i) : v(i) {}
+
+		mm_result_type() {}
+		operator int_pair() { return boost::get<int_pair>(v); }
+		operator int_pair*() { return boost::get<int_pair*>(v); }
+	};
+
+	using result_type = mm_result_type;
+
+	struct variable_minmax_helpers : public boost::static_visitor<mm_result_type>
+	{
+		typedef std::pair<int, int> int_pair;
+		int_pair* helper_vars;
+		inline int_pair operator()(nil) const { return arbitrary; }
+		inline int_pair operator()(vaddr::var_x) const { return arbitrary; }
+		inline int_pair operator()(vaddr::var_y) const { return arbitrary; }
+		inline int_pair operator()(vaddr::var_array) const { return arbitrary; }
+
+		inline int_pair* operator()(vaddr::var_helper<true> _h) const {
+			//return (_h.address) ? ((result_type*)(helper_vars + _h.i)) : helper_vars[_h.i];
+			std::cout << "returning ptr: " << helper_vars[_h.i].first << std::endl;
+			return helper_vars + _h.i;
+		}
+		inline int_pair operator()(vaddr::var_helper<false> _h) const {
+			//return (_h.address) ? ((result_type*)(helper_vars + _h.i)) : helper_vars[_h.i];
+			std::cout << "returning value: " << helper_vars[_h.i].first << std::endl;
+			return helper_vars[_h.i];
+		}
+
+		variable_minmax_helpers(std::size_t helpers_size) {
+			helper_vars = new int_pair[helpers_size];
+		}
+		~variable_minmax_helpers() { delete[] helper_vars; }
+	};
+
+	variable_minmax_helpers var_minmax;
+
+	ast_minmax(std::size_t helpers_size) : var_minmax(helpers_size) {}
+
+	inline result_type operator()(const eqsolver::nil&) const { return arbitrary; }
+
+	inline result_type operator()(boost::spirit::info::nil) const { return arbitrary; }
+	inline result_type operator()(int n) const { return int_pair{n, n};  }
+	inline result_type operator()(std::string) const
+	{
+		exit(99);
+	}
+
+	inline result_type operator()(const vaddr& v) const
+	{
+		return boost::apply_visitor(var_minmax, v.expr);
+	}
+
+	inline result_type operator()(expression_ast const& ast) const {
+		return boost::apply_visitor(*this, ast.expr);
+	}
+
+private:
+	template<class NaryOpT, std::size_t ...Idxs>
+	inline result_type apply_fptr(NaryOpT const& expr, seq<Idxs...>) const
+	{
+		result_type res[sizeof...(Idxs)] = {
+			boost::apply_visitor(*this, expr.subtrees[Idxs].expr)... };
+		return minmax_detail::apply(
+			expr,
+			res[Idxs]...
+			// TODO: this cast is dangerous!
+			// (the result is sometimes a pointer, somehow)
+		);
+	}
+public:
+	template<class Ret, class ...Args>
+	inline result_type operator()(nary_op<Ret, Args...> const& expr) const {
+		return apply_fptr(expr, make_seq<sizeof...(Args)>());
 	}
 
 	//ast_area(variable_area::AREA_TYPE _area_type)

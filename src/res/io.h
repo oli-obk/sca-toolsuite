@@ -233,7 +233,7 @@ public:
 	}
 
 
-	const char* name() { return "rotors"; }
+	const char* name() const { return "rotors"; }
 };
 
 /*

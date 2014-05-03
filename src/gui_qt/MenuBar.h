@@ -25,8 +25,8 @@
 #include <QMenuBar>
 #include <QVector>
 #include "StateMachine.h"
-struct QAction;
-struct MainWindow;
+class QAction;
+class MainWindow;
 
 class MenuBar : public QMenuBar
 {

@@ -4,11 +4,14 @@ add_subdirectory(algo)
 add_subdirectory(ca)
 add_subdirectory(io)
 add_subdirectory(rotor)
-add_subdirectory(gui_qt)
 
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/usr/CMakeLists.txt")
+if(BUILD_QT_GUI)
+	add_subdirectory(gui_qt)
+endif(BUILD_QT_GUI)
+
+if(BUILD_USR_DIR)
 	add_subdirectory(usr)
-endif()
+endif(BUILD_USR_DIR)
 
 cp_script(test.sh)
 

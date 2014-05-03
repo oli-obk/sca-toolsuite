@@ -61,10 +61,10 @@ class MyProgram : public Program
 
 	int main()
 	{
-		const char* equation;
+		const char* equation = "v";
 		bool async = false;
 		int num_steps = INT_MAX;
-		unsigned int seed;
+		unsigned int seed = sca_random::find_good_seed();
 		sim_type sim = sim_type::end;
 		FILE* const in_fp = stdin;
 		FILE* const out_fp = stdout;
@@ -91,8 +91,6 @@ class MyProgram : public Program
 				exit_usage();
 		}
 
-		if(argc < 6)
-		 seed = sca_random::find_good_seed();
 		sca_random::set_seed(seed);
 
 		switch(sim)
