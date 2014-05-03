@@ -90,17 +90,22 @@ A: There might be no faster currently, thought we don't know. We knew of the
     Machine: java -server -Xmx1024m -Xss4096k
     Threads: 4
     Algorithm: "Asynchronous (parallel) Fourstates, with cache line optimization."
-    time java -server -cp bin/ -Xmx1024m -Xss4096k parallel.asynchronous.fourstates.SandpileCA -h=1000 -w=1000 -nmt=2140000 -nt=4 -uco=true
+    java -server -cp bin/ -Xmx1024m -Xss4096k parallel.asynchronous.fourstates.SandpileCA -h=1000 -w=1000 -nmt=2140000 -nt=4 -uco=true
 
     2)
 
     Machines: gcc -O3 -flto, clang -O3
     Threads:
+    sh fourstates.sh -h=1000 -w=1000 -nmt=2140000 -nt=4 -uco=true
+
+    3
+    sh onestack.sh -h=1000 -w=1000 -nmt=2140000 -nt=1 -uco=true
 
      From 214.000 to 219.000, time for 10000 grains
 
      02/2010 11.78 s (java -server)
-     10/2011 8.92 s (gcc)
+     10/2011 9.04 s (gcc)
+     8.62
      03/2014 4.37 s (gcc) 4.72 s (clang)
      05/2014 3.15 s (clang), 3.28 s (gcc)
 
