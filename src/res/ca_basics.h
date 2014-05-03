@@ -379,9 +379,10 @@ public:
 
 //using n_t = _n_t<std::vector<point>>;
 
-class n_t : public _n_t<std::vector<point>>
+template<class T> // TODO: unite with upper class...
+class n_t_2 : public _n_t<T>
 {
-	using base = _n_t<std::vector<point>>;
+	using base = _n_t<T>;
 	void init(const std::vector<int>& in_grid,
 		const dimension& in_dim)
 	{
@@ -409,7 +410,7 @@ class n_t : public _n_t<std::vector<point>>
 		}
 
 		// make it all relative to center_cell
-		for(point& p : neighbours)
+		for(point& p : base::neighbours)
 		{
 			// TODO: can be computed from dim?
 			// TODO: but do not remove p-=...
@@ -430,7 +431,7 @@ public:
 	 * @param in_grid
 	 * @param in_dim
 	 */
-	n_t(const std::vector<int>& in_grid,
+	n_t_2(const std::vector<int>& in_grid,
 		const dimension& in_dim)
 	{
 		// TODO: parameter in_dim is useless?
@@ -438,7 +439,7 @@ public:
 	}
 
 	// TODO: deprecated
-	n_t(FILE* fp)
+	n_t_2(FILE* fp)
 	{
 		std::vector<int> in_grid;
 		dimension tmp_dim;
@@ -448,20 +449,33 @@ public:
 
 	// TODO: make constexpr version, too
 	//! assumes that no borders exist
-	n_t(const dimension& _dim, point _center_cell = {0,0})
+	n_t_2(const dimension& _dim, point _center_cell = {0,0})
 		//: //center_cell(_center_cell),
 		//dim(_dim)
 	{
-		neighbours.reserve(_dim.area());
+		base::neighbours.reserve(_dim.area());
 		dimension_container cont(_dim.height(), _dim.width(), 0);
 		for( const point& p : cont )
 		{
-			neighbours.push_back(p - _center_cell);
+			base::neighbours.push_back(p - _center_cell);
 			//bb.add_point(neighbours.back());
 		}
 	}
+
+	public:
+	//! assumes that no borders exist
+	template<std::size_t N>
+	constexpr n_t_2(const std::array<point, N>& arr)
+		: base(arr)
+	{
+	}
 };
 
+using n_t = n_t_2<std::vector<point>>;
+template<std::size_t N>
+using n_t_constexpr = n_t_2<std::array<point, N>>;
+
+#if 0
 template<class T>
 class static_arr
 {
@@ -485,7 +499,9 @@ public:
 	{
 	}
 };
+#endif
 
+/*
 template<std::size_t N>
 class n_t_constexpr : public _n_t<std::array<point, N>>
 {
@@ -496,7 +512,7 @@ public:
 		: base(arr)
 	{
 	}
-};
+};*/
 
 class conf_t
 {
