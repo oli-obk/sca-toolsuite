@@ -1,0 +1,75 @@
+0 Introduction
+::::::::::::::
+
+This file contains benchmarks
+
+CONTENTS
+
+1 Different ASM algorithms
+
+1 Different ASM algorithms
+::::::::::::::::::::::::::
+
+For all algorithms, we used "Intel(R) Core(TM) i5-3570 CPU @ 3.40GHz" which
+has 4 physical (one logical each) cores and 6 MB cache each. Note that only
+the first 2 algorithms were multi-core. Our RAM was 2x4 GB DDR3 (?) RAM.
+
+All algorithms are single-core algorithms.
+
+Setup:
+
+	1)
+
+	Machine: java (1.7.0_51) -server -Xmx1024m -Xss4096k
+	Author: Sebastian Frehmel
+	Algorithm: "One Stack (sequential), with cache line optimization"
+	Description: The stack algorithm by Sebastian Frehmel.
+	Command: java -server -cp bin/ -Xmx1024m -Xss4096k \
+		sequential.asynchronous.onestack.SandpileCASeq \
+		-h=1000 -w=1000 -nmt=2190000 -uco=true
+
+	2)
+
+	Machines: gcc (4.8.1) -O3 -flto
+	Author: Johannes Lorenz
+	Algorithm: "One Stack (sequential), with cache line optimization"
+	Description: The C++-Version of (1) by Johannes Lorenz
+	Command: sh onestack.sh -h=1000 -w=1000 -nmt=2190000 -nt=4 -uco=true
+
+	3, 4)
+
+	Machines: gcc (4.8.1) -O3 -flto, clang (3.3) -O3
+	Author: Johannes Lorenz
+	Algorithm: "sca-toolsuite's avalanche algorithm"
+	Description: (3) is the original algorithm (until March 2014)
+		(4) is the improved version (from May 2014)
+	Command: core/create 1000 1000 | \
+		time algo/random_throw random 2190000 42 n
+
+Results:
+
+	1) 02/2010 8.61 s (java -server)
+	2) 10/2011 9.06 s (clang)
+	3) 03/2014 4.37 s (gcc) 4.72 s (clang)
+	4) 05/2014 3.15 s (clang), 3.28 s (gcc)
+
+Interpretation:
+
+1 vs 2: We were surprised that java outperformed clang on almost the same
+code. However, both codes were developed 3 years ago and were not written for
+current possible optimizations. Also, it should be noted that the java
+algorithms have been much slower in the past, and were outperformed by its
+parallel counterparts. Currently, however, algorithms (1) and (2) seem to be
+both faster than any of their parallel counterparts. We conclude that while
+CPU instructions and compilers got much faster, mutual exclusion is still a
+problematic bottleneck.
+
+1,2 vs 3: The speedup of (3) is due to our algorithm, which only makes half as
+many branch predictions as the older one, because it develops avalanches in
+multiple levels, where in each level, each cell can only throw once.
+
+3 vs 4: The speedup here was mostly due to replacing indices by pointers in
+our stack. The resulting algorithm did not have to recompute array indices,
+as (1),(2) and (3) did. Algorithm (4) is the fastest known algorithm for this
+task, currently.
+

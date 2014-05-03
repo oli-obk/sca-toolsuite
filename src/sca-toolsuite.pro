@@ -69,6 +69,7 @@ OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL.txt \
 	../README.txt \
 	../FAQ.txt \
+	../BENCHMARKS.txt \
 	../CMakeLists.txt \
 	test.sh \
 	CMakeLists.txt \
