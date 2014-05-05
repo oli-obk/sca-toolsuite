@@ -171,12 +171,13 @@ template<class Container>
 class _n_t
 {
 protected:
+#if 0
 	_n_t() {} // TODO: bad coding style
 	constexpr _n_t(const Container& neighbours/*, const bounding_box& bb*/) :
 		neighbours(neighbours)
 	//	bb(bb)
 	{}
-
+#endif
 	//! neighbour positions, relative to center cell
 	//! @invariant The points are always sorted (linewise)
 	Container neighbours;
@@ -341,7 +342,7 @@ public:
 	}
 
 	// TODO: shouldn't this return std::set?
-	_n_t& operator+(const point& rhs)
+	_n_t& operator+(const point& rhs) const
 	{
 		//return _n_t(*this) += rhs;
 		_n_t tmp(*this);
@@ -375,14 +376,14 @@ public:
 		}
 		dim = bb.dim();
 	}*/
-};
+/*};
 
 //using n_t = _n_t<std::vector<point>>;
 
 template<class T> // TODO: unite with upper class...
 class n_t_2 : public _n_t<T>
 {
-	using base = _n_t<T>;
+	using base = _n_t<T>;*/
 	void init(const std::vector<int>& in_grid,
 		const dimension& in_dim)
 	{
@@ -403,14 +404,14 @@ class n_t_2 : public _n_t<T>
 				assert(center_cell.x < 0);
 				center_cell.set(x, y);
 			case 2:
-				base::neighbours.push_back(point(x,y));
+				neighbours.push_back(point(x,y));
 				break;
 			default: break;
 			}
 		}
 
 		// make it all relative to center_cell
-		for(point& p : base::neighbours)
+		for(point& p : neighbours)
 		{
 			// TODO: can be computed from dim?
 			// TODO: but do not remove p-=...
@@ -431,7 +432,7 @@ public:
 	 * @param in_grid
 	 * @param in_dim
 	 */
-	n_t_2(const std::vector<int>& in_grid,
+	_n_t(const std::vector<int>& in_grid,
 		const dimension& in_dim)
 	{
 		// TODO: parameter in_dim is useless?
@@ -439,7 +440,7 @@ public:
 	}
 
 	// TODO: deprecated
-	n_t_2(FILE* fp)
+	_n_t(FILE* fp)
 	{
 		std::vector<int> in_grid;
 		dimension tmp_dim;
@@ -449,15 +450,15 @@ public:
 
 	// TODO: make constexpr version, too
 	//! assumes that no borders exist
-	n_t_2(const dimension& _dim, point _center_cell = {0,0})
+	_n_t(const dimension& _dim, point _center_cell = {0,0})
 		//: //center_cell(_center_cell),
 		//dim(_dim)
 	{
-		base::neighbours.reserve(_dim.area());
+		neighbours.reserve(_dim.area());
 		dimension_container cont(_dim.height(), _dim.width(), 0);
 		for( const point& p : cont )
 		{
-			base::neighbours.push_back(p - _center_cell);
+			neighbours.push_back(p - _center_cell);
 			//bb.add_point(neighbours.back());
 		}
 	}
@@ -465,15 +466,15 @@ public:
 	public:
 	//! assumes that no borders exist
 	template<std::size_t N>
-	constexpr n_t_2(const std::array<point, N>& arr)
-		: base(arr)
+	constexpr _n_t(const std::array<point, N>& arr)
+		: neighbours(arr)
 	{
 	}
 };
 
-using n_t = n_t_2<std::vector<point>>;
+using n_t = _n_t<std::vector<point>>;
 template<std::size_t N>
-using n_t_constexpr = n_t_2<std::array<point, N>>;
+using n_t_constexpr = _n_t<std::array<point, N>>;
 
 #if 0
 template<class T>

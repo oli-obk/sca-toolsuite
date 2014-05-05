@@ -72,10 +72,19 @@ protected:
 		eqsolver::build_tree(equation, &ast);
 
 		eqsolver::ast_minmax minmax_solver(helpers_size);
-		std::pair<int, int> mm = (std::pair<int, int>)minmax_solver(ast);
-		num_states = (mm.first == INT_MIN || mm.second == INT_MAX)
+		//std::pair<int, int> mm = (std::pair<int, int>)minmax_solver(ast);
+	/*	num_states = (mm.first == INT_MIN || mm.second == INT_MAX)
 			? INT_MAX
-			: (mm.second - mm.first + 1);
+			: (mm.second - mm.first + 1);*/
+		std::pair<eqsolver::expression_ast, eqsolver::expression_ast> mm
+			= (std::pair<eqsolver::expression_ast, eqsolver::expression_ast>)minmax_solver(ast);
+
+		eqsolver::ast_dump dumper;
+		std::cout << "original: " << dumper(ast) << std::endl;
+
+		std::cout << "mm first: " << (std::string)dumper(mm.first) << std::endl; // TODO: non return syntax
+		(void)mm;
+		num_states = 0;
 	}
 
 	int calculate_next_state(const int *cell_ptr,

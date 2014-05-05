@@ -29,7 +29,7 @@
 namespace eqsolver
 {
 
-constexpr const ast_minmax::int_pair ast_minmax::arbitrary;
+//const ast_minmax::int_pair ast_minmax::arbitrary = {INT_MIN, INT_MAX};
 
 const char* EQUATION_HELP_STR =
 "Manipulates input by formula in x, y and value.\n"

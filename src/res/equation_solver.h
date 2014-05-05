@@ -22,6 +22,7 @@
 #define EQUATION_SOLVER_H
 
 #include <cmath>
+#include <cstring>
 
 #include <boost/spirit/include/support_info.hpp> // qi::info::nil
 
@@ -111,10 +112,13 @@ struct vaddr
 	struct var_x{};
 	struct var_y{};
 	struct var_array {
-		int x; int y;
-		var_array(std::string const& s1, std::string const& s2) {
-			x = atoi(s1.c_str()); y = atoi(s2.c_str());
+		int x, y;
+		var_array(int x, int y) : x(x), y(y) {}
+		var_array(std::string const& s1, std::string const& s2)
+			: var_array(atoi(s1.c_str()), atoi(s2.c_str()))
+		{
 		}
+		std::string to_str() { return std::to_string(x) + std::to_string(y); }
 	};
 
 	//! is used as "adress to index"
@@ -124,6 +128,9 @@ struct vaddr
 		var_helper(std::string const& s/*, bool _address = false*/)
 		 : i(atoi(s.c_str()))
 		{
+		}
+		std::string to_str() {
+			return "h[" + std::to_string(i) + "]";
 		}
 	};
 	typedef boost::variant<nil, var_x, var_y, var_array, var_helper<true>, var_helper<false>> type;
@@ -343,6 +350,95 @@ public:
 
 };
 
+namespace dump_detail
+{
+
+
+	template<class ...StrClass>
+	inline std::string apply(const std::string& str1, const StrClass&... str_list)
+	{
+		return str1 + ", " + apply(str_list...);
+	}
+
+	template<>
+	inline std::string apply<>(const std::string& str1)
+	{
+		return str1;
+	}
+
+}
+
+//! Class for iterating an expression tree and printing the result.
+struct ast_dump  : public boost::static_visitor<std::string>
+{
+	using result_type = std::string;
+	const char* const err_str = "<error>"; // TODO: static
+
+	struct variable_handler : public boost::static_visitor<std::string>
+	{
+		const char* const err_str = "<error>"; // TODO: use parent class's err str
+		inline result_type operator()(nil) const { return err_str; }
+		inline result_type operator()(vaddr::var_x) const { return "x"; }
+		inline result_type operator()(vaddr::var_y) const { return "y"; }
+		inline result_type operator()(vaddr::var_array _a) const { return _a.to_str(); }
+
+		template<bool Value>
+		inline result_type operator()(vaddr::var_helper<Value> _h) const { return _h.to_str(); } // todo: correct?
+
+		variable_handler(){}
+	};
+
+	const variable_handler var_dump;
+
+	// h and w shall be internal, since we want to avoid adding 2
+	// so it is still general to non-bordered areas
+//	int height, width;
+	//typedef unsigned int res_type;
+//	const res_type x,y, *v;
+	//mutable std::map<int, int> helper_vars;
+//	variable_print var_print;
+
+//	inline int position(int _x, int _y) const { return (_y*(width+1)+_x+1); }
+
+	inline result_type operator()(const eqsolver::nil&) const { return err_str; }
+
+	inline result_type operator()(boost::spirit::info::nil) const { return err_str; }
+	inline result_type operator()(int n) const { return std::to_string(n); }
+	inline result_type operator()(std::string) const
+	{
+		exit(99);
+	}
+
+	inline result_type operator()(const vaddr& v) const
+	{
+		return boost::apply_visitor(var_dump, v.expr);
+	}
+
+	inline result_type operator()(expression_ast const& ast) const
+	{
+		//ast_area helper_num(ast_area::MAX_HELPER);
+		//helper_vars = new int[helper_num()+1];
+		// TODO: delete int[]
+		return boost::apply_visitor(*this, ast.expr);
+	}
+private:
+	template<class NaryOpT, std::size_t ...Idxs>
+	inline result_type apply_fptr(NaryOpT const& expr, seq<Idxs...>) const
+	{
+		return dump_detail::apply(
+			boost::apply_visitor(*this, expr.subtrees[Idxs].expr)...
+		);
+	}
+
+public:
+	template<class Ret, class ...Args>
+	inline result_type operator()(nary_op<Ret, Args...> const& expr) const
+	{
+		return apply_fptr(expr, make_seq<sizeof...(Args)>());
+	}
+
+};
+
 //! computes int max of n values
 template<class ...IntT>
 inline int n_max(int first, IntT ...more) {
@@ -400,9 +496,11 @@ public:
 	//	: var_area(_area_type) {}
 };
 
+#if 0
 namespace minmax_detail
 {
-	typedef std::pair<int, int> int_pair;
+	typedef std::pair<int, int> expr_pair;
+	typedef std::pair<expression_ast, expression_ast> int_pair;
 
 	// maps pair (min, max) to those number that are only true or false
 /*	int_pair make_logic_pair()
@@ -463,6 +561,31 @@ namespace minmax_detail
 
 	};*/
 
+	template<int DefaultValue>
+	struct get_ints_t : public boost::static_visitor<int>
+	{
+		inline result_type operator()(int n) { return n; }
+		template<class T>
+		inline result_type operator()(const T& ) { return DefaultValue; }
+	};
+
+	get_ints_t<INT_MIN> min_getter;
+	get_ints_t<INT_MAX> max_getter;
+
+
+	//void get_ints(std::pair<expression_ast, expression_ast>)
+	int get_min_int(const expression_ast& e) {
+		return boost::apply_visitor(min_getter, e);
+	}
+
+	int get_max_int(const expression_ast& e) {
+		return boost::apply_visitor(max_getter, e);
+	}
+
+	std::pair<int, int> get_int_pair(const expression_ast& e) {
+		return { get_min_int(i), get_max_int(e) };
+	}
+
 	class logic_pair
 	{
 		bool poss0 = true, poss1 = true;
@@ -519,22 +642,32 @@ namespace minmax_detail
 		return std::pair<int, int>(42, 37);
 	}*/
 
-	inline int_pair apply(nary_op<int, int> const& expr, int_pair p1)
+	inline expr_pair apply(nary_op<int, int> const& expr, expr_pair p1)
 	{
 		// TODO: switch with ids?
 		// TODO: layer this out in other classes?
 		// TODO: maybe templates for the pointer (binary size!)
 		const auto& fptr = expr.fptr;
 
+		int_pair ip = get_int_pair(expr);
+
+
+		if(ip.first == INT_MIN && ip.second == INT_MAX)
+		{
+
+
+		}
+		else
+		{
 		if(fptr == f1i_not)
 		{
 		//	return std::pair<int, int>(0, 1);
-			return !logic_pair(p1);
+			return !logic_pair(ip);
 		}
 		else if(fptr == f1i_neg)
 		{
 			// note that this is not the else case
-			return std::pair<int, int>(-p1.second, -p1.first);
+			return std::pair<int, int>(-ip.second, -ip.first);
 		}
 		else if(fptr == f1i_abs)
 		{
@@ -556,9 +689,10 @@ namespace minmax_detail
 		}
 		else
 		 assert(false);
+		}
 	}
 
-	inline int_pair apply(nary_op<int, int, int, int> const& expr, int_pair p1, int_pair p2, int_pair p3)
+	inline expr_pair apply(nary_op<int, int, int, int> const& expr, expr_pair p1, expr_pair p2, expr_pair p3)
 	{
 		const auto& fptr = expr.fptr;
 
@@ -640,18 +774,19 @@ inline int f2i_com(int arg1, int arg2) { (void)arg1; return arg2; }
 	}
 
 }
+#endif
 
 //! Class for iterating an expression tree and print the used area in the array.
 //! The result is an int describing the half size of a square.
 struct ast_minmax : public boost::static_visitor<unsigned int>
 {
 //	typedef std::pair<int, int> result_type;
-	using int_pair = std::pair<int, int>;
-	constexpr const static int_pair arbitrary = {INT_MIN, INT_MAX};
+	using int_pair = std::pair<expression_ast, expression_ast>;
+//	const static int_pair arbitrary;
 
 	struct mm_result_type
 	{
-		typedef std::pair<int, int> int_pair;
+		typedef std::pair<expression_ast, expression_ast> int_pair;
 		boost::variant<int_pair, int_pair*> v;
 
 		mm_result_type(int_pair i) : v(i) {}
@@ -670,25 +805,32 @@ struct ast_minmax : public boost::static_visitor<unsigned int>
 
 	struct variable_minmax_helpers : public boost::static_visitor<mm_result_type>
 	{
-		typedef std::pair<int, int> int_pair;
+		typedef std::pair<expression_ast, expression_ast> int_pair;
 		int_pair* helper_vars;
-		inline int_pair operator()(nil) const { return arbitrary; }
-		inline int_pair operator()(vaddr::var_x) const { return arbitrary; }
-		inline int_pair operator()(vaddr::var_y) const { return arbitrary; }
-		inline int_pair operator()(vaddr::var_array) const { return arbitrary; }
+		const expression_ast expr_x, expr_y, expr_v;
+
+		inline int_pair operator()(nil) const { exit(99); }
+		inline int_pair operator()(vaddr::var_x) const { return int_pair(expr_x, expr_x); }
+		inline int_pair operator()(vaddr::var_y) const { return int_pair(expr_y, expr_y); }
+		inline int_pair operator()(vaddr::var_array) const { return int_pair(expr_v, expr_v); }
 
 		inline int_pair* operator()(vaddr::var_helper<true> _h) const {
 			//return (_h.address) ? ((result_type*)(helper_vars + _h.i)) : helper_vars[_h.i];
-			std::cout << "returning ptr: " << helper_vars[_h.i].first << std::endl;
+		//	std::cout << "returning ptr: " << helper_vars[_h.i].first << std::endl;
 			return helper_vars + _h.i;
 		}
 		inline int_pair operator()(vaddr::var_helper<false> _h) const {
 			//return (_h.address) ? ((result_type*)(helper_vars + _h.i)) : helper_vars[_h.i];
-			std::cout << "returning value: " << helper_vars[_h.i].first << std::endl;
+		//	std::cout << "returning value: " << helper_vars[_h.i].first << std::endl;
 			return helper_vars[_h.i];
 		}
 
-		variable_minmax_helpers(std::size_t helpers_size) {
+		variable_minmax_helpers(std::size_t helpers_size)
+			:  expr_x(expression_ast(vaddr(vaddr::var_x()))),
+			 expr_y(expression_ast(vaddr(vaddr::var_y()))),
+			expr_v(expression_ast(vaddr(vaddr::var_array(0, 0))))
+			 // TODO: should be static
+		{
 			helper_vars = new int_pair[helpers_size];
 		}
 		~variable_minmax_helpers() { delete[] helper_vars; }
@@ -698,10 +840,10 @@ struct ast_minmax : public boost::static_visitor<unsigned int>
 
 	ast_minmax(std::size_t helpers_size) : var_minmax(helpers_size) {}
 
-	inline result_type operator()(const eqsolver::nil&) const { return arbitrary; }
+	inline result_type operator()(const eqsolver::nil&) const { exit(99); }
 
-	inline result_type operator()(boost::spirit::info::nil) const { return arbitrary; }
-	inline result_type operator()(int n) const { return int_pair{n, n};  }
+	inline result_type operator()(boost::spirit::info::nil) const { exit(99); }
+	inline result_type operator()(int n) const { return int_pair{expression_ast(n), expression_ast(n)};  }
 	inline result_type operator()(std::string) const
 	{
 		exit(99);
@@ -722,12 +864,22 @@ private:
 	{
 		result_type res[sizeof...(Idxs)] = {
 			boost::apply_visitor(*this, expr.subtrees[Idxs].expr)... };
+#if 0
 		return minmax_detail::apply(
 			expr,
 			res[Idxs]...
 			// TODO: this cast is dangerous!
 			// (the result is sometimes a pointer, somehow)
 		);
+	/*	expression_ast e1 (INT_MIN);
+		expression_ast e2 (INT_MAX);*/
+		return int_pair(e1, e2); // TODO!! apply...
+#else
+		(void)res;
+		expression_ast e1 (INT_MIN);
+		expression_ast e2 (INT_MAX);
+		return int_pair(e1, e2);
+#endif
 	}
 public:
 	template<class Ret, class ...Args>
