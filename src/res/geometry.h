@@ -102,7 +102,17 @@ public:
 		if(++position.x >= max.x)
 		{
 			position.x = min.x;
-			position.y++;
+			++position.y;
+		}
+		return *this;
+	}
+
+	point_itr& operator--()
+	{
+		if(--position.x < min.x)
+		{
+			position.x = max.x - 1;
+			--position.y;
 		}
 		return *this;
 	}
@@ -158,10 +168,15 @@ struct dimension_container
 		: h(h), w(w), bw(bw)
 	{}
 
-	point_itr begin() const { return point_itr(
-		{(coord_t)(w-(bw<<1)), (coord_t)(h-(bw<<1))}
+	point_itr begin(const point& pos = point::zero) const
+	{
+		return point_itr(
+			{(coord_t)(w-(bw<<1)), (coord_t)(h-(bw<<1))},
+			point::zero,
+			pos
 		);
 	}
+
 	point_itr end() const {
 		return point_itr::from_end(
 			{(coord_t)(w-(bw<<1)), (coord_t)(h-(bw<<1))}
@@ -235,8 +250,11 @@ public:
 		|| p.y >= s::lr.y - (coord_t) border_size;
 	}
 
-	inline u_coord_t width() const { return s::lr.x - s::ul.x; }
-	inline u_coord_t height() const { return s::lr.y - s::ul.y; }
+	inline u_coord_t dx() const { return s::lr.x - s::ul.x; }
+	inline u_coord_t dy() const { return s::lr.y - s::ul.y; }
+
+	inline u_coord_t width() const { return dx(); }
+	inline u_coord_t height() const { return dy(); }
 
 	inline bool operator==(const _rect& other) const {
 		return s::lr == other.s::lr && s::ul == other.s::ul;
@@ -358,11 +376,18 @@ public:
 	cell_t& operator*() { return *ptr; }
 };
 
+//! class representing a grid, i.e. an array with h/w + border
+//! public functions always take human h/w/dim, if not denoted otherwise
 class grid_t
 {
 	std::vector<cell_t> data;
 	dimension _dim; //! dimension of data, including borders
 	u_coord_t border_width;
+
+	//! returns array index for a human point @a p
+	int index_internal(const point& p) const {
+		return p.y * _dim.width() + p.x;
+	}
 
 	//! returns array index for a human point @a p
 	int index(const point& p) const {
@@ -516,6 +541,83 @@ public:
 		 is_ptr = &std::cin;
 		read_grid(*is_ptr, data, _dim, border_width);
 	}
+
+	point find_subgrid(const grid_t& sub, const point& from = point::zero) const
+	{
+		// simple algorithm for now...
+		dimension_container dc(_dim.height(), _dim.width(), border_width);
+		point_itr p = dc.begin(from);
+		bool matches = false;
+		for(; p != dc.end() && !matches; ++p) // TODO: read "from"
+		{
+			rect sub_rect = sub.dim() + *p;
+			matches = true;
+
+			for(const point sp : sub_rect)
+			{
+				if((*this)[sp] != sub[sp - *p])
+				// (TODO: instead of -, use 2nd itr)
+				{
+					matches = false;
+					break;
+				}
+			}
+		}
+		return *(--p); // for loop has incremented once to often
+	}
+
+	//! inserts vertical stripe of length @a ins_len,
+	//! starting at x = @a pos. The new stripe is undefined
+	void insert_stripe_vert(u_coord_t pos, u_coord_t ins_len)
+	{
+		// update vector, keep _dim
+		// we can use _dim, since we always need the full h/w
+		u_coord_t ht = _dim.height();
+		u_coord_t mv_amt = ht * ins_len;
+		coord_t mv_start = index_internal(
+			point(border_width + pos, ht-1));
+
+		data.resize(data.size() + mv_amt, INT_MIN);
+
+		// lowest row separately, since it has a different "last"
+		// TODO: what if the grid has 0 lines?
+		{
+			auto first = data.begin() + mv_start;
+			auto last = data.end() - mv_amt;
+			std::copy_backward(first, last, data.end());
+
+			mv_start -= _dim.width();
+			mv_amt -= ins_len;
+		}
+
+		for( ; mv_start >= 0;
+			mv_start -= _dim.width(), mv_amt -= ins_len)
+		{
+			auto first = data.begin() + mv_start;
+			auto last = first + _dim.width();
+			std::copy_backward(first, last, last + mv_amt);
+		}
+
+		// finally, update _dim
+		_dim = dimension(_dim.width() + ins_len, ht);
+	}
+
+	//! inserts horizontal stripe of length @a ins_len,
+	//! starting at y = @a pos. The new stripe is undefined
+	void insert_stripe_hor(u_coord_t pos, u_coord_t ins_len)
+	{
+		u_coord_t mv_amt = _dim.width() * ins_len;
+
+		data.resize(data.size() + mv_amt);
+
+		auto first = data.begin() + index_internal(
+			point(0, border_width + pos));
+		std::copy_backward(first, data.end() - mv_amt, data.end());
+
+		_dim = dimension(_dim.width(), _dim.height() + ins_len);
+	}
+
+
 };
 
 //! Returns true iff @a idx is on the border for given dimension @a dim
