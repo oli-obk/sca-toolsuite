@@ -28,6 +28,7 @@
 
 struct dimension;
 
+// TODO: remove? or move to cpp file?
 //! Converts internal coordinates into human coordinats.
 inline unsigned int human2internal(unsigned int human, int internal_width) {
 	const unsigned int human_row = human/(internal_width-2);

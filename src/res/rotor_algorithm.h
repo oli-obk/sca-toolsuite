@@ -104,40 +104,48 @@ inline void do_rotor_fix(std::vector<int>& grid, std::vector<int>& chips,
 
 }
 
+
 template<class AvalancheContainer, class ResultType>
-inline void rotor_fix(std::vector<int>& grid, std::vector<int>& chips,
-	const dimension& dim, int hint, AvalancheContainer& array, ResultType& result_logger)
+inline void rotor_fix(grid_t& grid, grid_t& chips,
+	int hint, AvalancheContainer& array, ResultType& result_logger)
 {
-	if(chips[hint]>0) // otherwise, we would need an additional "case 0" label
+	if(chips.data()[hint]>0) // otherwise, we would need an additional "case 0" label
 	{
 		array.push(hint);
-		helpers::do_rotor_fix(grid, chips, dim, array, result_logger);
+		helpers::do_rotor_fix(grid.data(), chips.data(), grid.internal_dim(), array, result_logger);
 	}
 	result_logger.write_separator();
 	array.flush(); // note: empty does not always imply being flushed!
 }
 
+//! version without hint
 template<class AvalancheContainer, class ResultType>
-inline void rotor_fix(std::vector<int>& grid, std::vector<int>& chips,
-	const dimension& dim, AvalancheContainer& array, ResultType& result_logger)
+inline void rotor_fix(grid_t& grid, grid_t& chips,
+	AvalancheContainer& array, ResultType& result_logger)
 {
 	const int INVERT_BIT = (1 << 31);
-	for(unsigned int count = 0; count < dim.area(); ++count)
+	/*for(unsigned int count = 0; count < grid.dim.internal_area(); ++count)
 	{
 		if(! is_border(dim, count)) {
 			array.push(count); // panic: every cell is assumed to be higher than 3
 			chips[count] |= INVERT_BIT; // don't push this one twice
 		}
+	}*/
+	for(const point& p : grid.points())
+	{
+		array.push(grid.index(p));
+		chips[p] |= INVERT_BIT;
 	}
 
 	// note: hint does not matter for correctness
-	helpers::do_rotor_fix(grid, chips, dim, array, result_logger);
+	helpers::do_rotor_fix(grid, chips, array, result_logger);
 }
 
 template<class AvalancheContainer, class ResultType>
-inline void rotor_fix_naive(std::vector<int>& grid, std::vector<int>& chips,
-	const dimension& dim, AvalancheContainer&, ResultType& result_logger)
+inline void rotor_fix_naive(grid_t& grid, grid_t& chips,
+	AvalancheContainer&, ResultType& result_logger)
 {
+	const dimension& dim = grid.internal_dim();
 	const coord_t PALETTE[4]
 		= { -((coord_t)dim.width()), 1, (coord_t)dim.width(), -1 };
 	const uint32_t ONCE = 1;
@@ -145,15 +153,28 @@ inline void rotor_fix_naive(std::vector<int>& grid, std::vector<int>& chips,
 	int cur_field;
 	result_logger.write_header(0);
 
-	for(unsigned int y = 1; y<(dim.height()-1); y++)
-	for(unsigned int x = 1; x<(dim.width()-1); x++)
+	for(const point& p : grid.points())
 	{
-		unsigned int coord = (y*dim.width())+x;
+		unsigned int coord = grid.index(p);
 		//if(is_border(dim, (y*dim.width())+x))
 		//	exit(99);
-		for(int nchips = chips[coord]; nchips; --nchips)
+		for(int nchips = chips[p]; nchips; --nchips)
 		{
 			cur_field = coord;
+			do
+			{
+			//	printf("cur field: %d\n",cur_field);
+				result_logger.write_elem_to_file(cur_field, &ONCE);
+				cur_field += PALETTE[(++grid.data()[cur_field])%=4];
+			}
+			while(grid.data()[cur_field]>=0); // = not border
+		}
+	}
+/*	for(const point& p : grid.points())
+	{
+		for(int nchips = chips[point]; nchips; --nchips)
+		{
+			cur_field = p;
 			do
 			{
 			//	printf("cur field: %d\n",cur_field);
@@ -162,7 +183,8 @@ inline void rotor_fix_naive(std::vector<int>& grid, std::vector<int>& chips,
 			}
 			while(grid[cur_field]>=0); // = not border
 		}
-	}
+	}*/
+
 	result_logger.write_separator();
 }
 

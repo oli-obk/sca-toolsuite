@@ -132,16 +132,67 @@ class big_table_t
 //! base class for all ca classes with virtual functions
 class base
 {
+public:
+#if 0
 	//! calculates next state at (human) position (x,y)
+	//! if the ca is asynchronous, the function returns the next state
+	//! as if the cell was active
 	//! @param dim the grids *internal* dimension
 	virtual int next_state(const int *cell_ptr, const point& p, const dimension& dim) const = 0;
 
 	//! overload with human coordinates and reference to grid. slower.
 	virtual int next_state(const grid_t &grid, const point& p) const = 0;
 
-	//! returns whether cell at point @a p is active.
+	//! returns whether cell at point @a p will change if active
 	//! @a result is set to the result in all cases, if it is not nullptr
 	virtual bool is_cell_active(const grid_t& grid, const point& p, cell_t* result = nullptr) const = 0;
+
+	//! prepares the ca
+	virtual void finalize() = 0;
+
+	//! prepares the ca to run only on cells from @a sim_rect
+	virtual void finalize(const rect& sim_rect) = 0;
+
+	// TODO: function run_once_async()
+#endif
+	struct default_asynchronicity
+	{
+		bool operator()(unsigned ) const { return sca_random::get_int(2); }
+	};
+
+	struct synchronous
+	{
+		bool operator()(unsigned ) const { return true; }
+	};
+#if 0
+/*	//! runs the ca once, but only ever activating cells from @a sim_rect
+	template<class Asynchronicity>
+	virtual void run_once(const rect& sim_rect,
+		const Asynchronicity& async = synchronous()) = 0;*/
+
+	virtual void run_once(const rect& sim_rect) = 0;
+	virtual void run_once(const rect& sim_rect, const default_asynchronicity& async = default_asynchronicity()) = 0;
+
+	//! runs the whole ca
+	//template<class Asynchronicity>
+	virtual void run_once() = 0;
+	virtual void run_once(const default_asynchronicity& async = default_asynchronicity()) = 0;
+
+	virtual const std::vector<point>& active_cells() const = 0;
+	virtual bool has_active_cells() const = 0;
+
+	//! returns true iff not all cells are inactive
+	virtual bool can_run() const = 0;
+
+	virtual grid_t& grid() = 0;
+	virtual const grid_t& grid() const = 0;
+#endif
+};
+
+class input_array : public base
+{
+	//! Shall stabilize grid in one rush
+	virtual void stabilize(const grid_t &grid) const = 0;
 };
 
 /**
@@ -270,7 +321,7 @@ public:
 	// TODO: get states function
 };
 
-class ca_simulator_t : private ca_calculator_t
+class ca_simulator_t : private ca_calculator_t, public base
 {
 	grid_t _grid[2];
 	grid_t *old_grid = _grid, *new_grid = _grid;
@@ -309,19 +360,9 @@ public:
 
 	// TODO: function run_once_async()
 
-	struct default_asynchronicity
-	{
-		bool operator()(unsigned ) const { return sca_random::get_int(2); }
-	};
-
-	struct synchronous
-	{
-		bool operator()(unsigned ) const { return true; }
-	};
-
 	//! runs the ca once, but only ever activating cells from @a sim_rect
 	template<class Asynchronicity>
-	void run_once(const rect& sim_rect,
+	void _run_once(const rect& sim_rect,
 		const Asynchronicity& async = synchronous())
 	{
 		old_grid = _grid + ((round+1)&1);
@@ -367,10 +408,31 @@ public:
 
 	//! runs the whole ca
 	template<class Asynchronicity>
-	void run_once(const Asynchronicity& async = synchronous())
+	void _run_once(const Asynchronicity& async = synchronous())
 	{
 		run_once(rect(_grid->internal_dim(), border_width()), async);
 	}
+
+
+	virtual void run_once(const rect& sim_rect) { _run_once(sim_rect, synchronous()); }
+	virtual void run_once(const rect& sim_rect, const default_asynchronicity& async) {
+		_run_once(sim_rect, async);
+	}
+	virtual void run_once(const rect& sim_rect, const synchronous& async) {
+		_run_once(sim_rect, async);
+	}
+
+
+	//! runs the whole ca
+	//template<class Asynchronicity>
+	virtual void run_once() { _run_once(synchronous()); }
+	virtual void run_once(const default_asynchronicity& async) {
+		_run_once(async);
+	}
+	virtual void run_once(const synchronous& async) {
+		_run_once(async);
+	}
+
 
 	//! returns true iff not all cells are inactive
 	bool can_run() const {

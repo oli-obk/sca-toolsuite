@@ -371,6 +371,7 @@ public:
 
 	const_cell_itr& operator++()
 	{
+		// TODO: use a good modulo function here -> no if
 		if((++ptr) == next_line_end)
 		{
 			ptr += bw_2;
@@ -398,19 +399,13 @@ public:
 //! public functions always take human h/w/dim, if not denoted otherwise
 class grid_t
 {
-	std::vector<cell_t> data;
+	std::vector<cell_t> _data;
 	dimension _dim; //! dimension of data, including borders
 	u_coord_t bw, bw_2;
 
 	//! returns array index for a human point @a p
 	int index_internal(const point& p) const {
 		return p.y * _dim.width() + p.x;
-	}
-
-	//! returns array index for a human point @a p
-	int index(const point& p) const {
-		const int& w = _dim.width();
-		return ((p.y + bw) * w) + bw + p.x;
 	}
 
 	dimension _human_dim() const {
@@ -426,6 +421,8 @@ public:
 	//! returns *internal* dimension
 	const dimension& internal_dim() const { return _dim; } // TODO: remove this?
 	dimension human_dim() const { return _human_dim(); }
+	const std::vector<cell_t>& data() const { return _data; }
+	std::vector<cell_t>& data() { return _data; } // TODO: remove this soon
 
 	u_coord_t dx() const { return _dim.dx() - bw_2; }
 	u_coord_t dy() const { return _dim.dy() - bw_2; }
@@ -439,6 +436,23 @@ public:
 	}*/
 
 	dimension_container points() const { return _dim.points(bw); }
+
+	/*
+	 * conversion
+	 */
+	// note: should those not be in the grid class?
+	//! returns array index for a human point @a p
+	int index(const point& p) const {
+		const int& w = _dim.width();
+		return ((p.y + bw) * w) + bw + p.x;
+	}
+
+/*	point point_of(u_coord_t internal_idx) const {
+		const int& w = _dim.width();
+		const u_coord_t hum_x = (internal_idx % w) - bw;
+		const u_coord_t hum_y = (internal_idx / w) - bw;
+		return point(hum_x, hum_y);
+	}*/
 
 	//! very slow (but faster than allocating a new array)
 	void resize_borders(u_coord_t new_border_width);
@@ -454,7 +468,7 @@ public:
 	//! @param dim internal dimension, border not inclusive
 	// TODO: use climit's INT MIN
 	grid_t(const dimension& dim, u_coord_t border_width, cell_t fill = 0, cell_t border_fill = INT_MIN) :
-		data(storage_area(dim, border_width), fill),
+		_data(storage_area(dim, border_width), fill),
 		_dim(dim.width() + (border_width << 1),
 			dim.height() + (border_width << 1)),
 		bw(border_width),
@@ -463,10 +477,10 @@ public:
 		u_coord_t linewidth = dim.width(),
 			storage_lw = linewidth + bw_2;
 		area_t top = bw * (storage_lw - 1);
-		std::fill_n(data.begin(), top, border_fill);
-		for(std::size_t i = top; i < data.size() - top; i += storage_lw)
-			std::fill_n(data.begin() + i, bw_2, border_fill);
-		std::fill(data.end() - top, data.end(), border_fill);
+		std::fill_n(_data.begin(), top, border_fill);
+		for(std::size_t i = top; i < _data.size() - top; i += storage_lw)
+			std::fill_n(_data.begin() + i, bw_2, border_fill);
+		std::fill(_data.end() - top, _data.end(), border_fill);
 	//	data.assign(data.begin(), data.begin() + top, border_fill);
 	}
 
@@ -480,19 +494,19 @@ public:
 
 	void read(FILE* fp)
 	{
-		read_grid(fp, &data, &_dim, bw);
+		read_grid(fp, &_data, &_dim, bw);
 	}
 
 	void write(FILE* fp) const
 	{
-		write_grid(fp, &data, &_dim, bw);
+		write_grid(fp, &_data, &_dim, bw);
 	}
 
 	grid_t& operator=(const grid_t& rhs)
 	{
 		assert(bw == rhs.bw);
 		assert(bw_2 == rhs.bw_2);
-		data = rhs.data;
+		_data = rhs._data;
 		_dim = rhs._dim;
 		return *this;
 	}
@@ -515,26 +529,47 @@ public:
 
 	cell_t& operator[](point p)
 	{
-		return data[index(p)];
+		return _data[index(p)];
 	}
 
 	const cell_t& operator[](point p) const
 	{
-		return data[index(p)];
+		return _data[index(p)];
 	}
 
-	cell_itr begin() { return cell_itr(data.data(), _dim, bw); }
-	cell_itr end() { return cell_itr(data.data(), _dim, bw, false); }
-	const_cell_itr cbegin() { return const_cell_itr(data.data(), _dim, bw); }
-	const_cell_itr cend() { return const_cell_itr(data.data(), _dim, bw, false); }
+	const cell_t& at_internal(const point& p) const
+	{
+		return _data[p.y * _dim.width() + p.x];
+	}
 
+	cell_t& at_internal(const point& p)
+	{
+		return _data[p.y * _dim.width() + p.x];
+	}
+
+	const cell_t& at_internal(area_t& idx) const
+	{
+		return _data[idx];
+	}
+
+	cell_t& at_internal(area_t& idx)
+	{
+		return _data[idx];
+	}
+
+	cell_itr begin() { return cell_itr(_data.data(), _dim, bw); }
+	cell_itr end() { return cell_itr(_data.data(), _dim, bw, false); }
+	const_cell_itr cbegin() { return const_cell_itr(_data.data(), _dim, bw); }
+	const_cell_itr cend() { return const_cell_itr(_data.data(), _dim, bw, false); }
+
+	//! @param point point in internal format
 	bool point_is_on_border(const point& p) const {
 		return human_dim().point_is_on_border(p, 0);
 	}
 
 	friend std::ostream& operator<< (std::ostream& stream,
 		const grid_t& g) {
-		write_grid(stream, g.data, g._dim, g.bw);
+		write_grid(stream, g._data, g._dim, g.bw);
 		return stream;
 	}
 
@@ -543,7 +578,7 @@ public:
 		bw(border_width),
 		bw_2(bw << 1)
 	{
-		read_grid(stream, data, _dim, bw);
+		read_grid(stream, _data, _dim, bw);
 	}
 
 	//! constructor which reads a grid immediatelly
@@ -562,7 +597,7 @@ public:
 		}
 		else
 		 is_ptr = &std::cin;
-		read_grid(*is_ptr, data, _dim, bw);
+		read_grid(*is_ptr, _data, _dim, bw);
 	}
 
 	point_itr find_subgrid(const grid_t& sub, const point_itr& from) const
@@ -585,8 +620,8 @@ public:
 					mp += point(0,1), op += point(0,1)
 					)
 				{
-					auto first = data.begin() + index(mp);
-					auto o_first = sub.data.begin() + sub.index(op);
+					auto first = _data.begin() + index(mp);
+					auto o_first = sub._data.begin() + sub.index(op);
 					matches = matches &&
 						std::equal(first, first + sub.dx(), o_first);
 				}

@@ -231,7 +231,7 @@ template<class AvalancheContainer>
 // TODO: make hint ptr -> no grid class
 // TODO: use refs for ints?
 inline void avalanche_1d_hint_noflush(const signed& grid_width, AvalancheContainer& array,
-	typename AvalancheContainer::value_type hint)
+	typename AvalancheContainer::value_type hint) // TODO: hint is a const pointer!
 {
 	*hint -= 4; // can be <0, so "*hint & 3" is not correct here
 	array.push(hint);
@@ -280,6 +280,13 @@ inline void avalanche_1d_hint_noflush_single(std::vector<T>& grid, const dimensi
 {
 	array.write_header((uint64_t)grid.data());
 	internal::avalanche_1d_hint_noflush(dim.width(), array, &grid[hint]);
+}
+
+template<class AvalancheContainer>
+inline void avalanche_1d_hint_noflush_single(grid_t& grid, const point& hint, AvalancheContainer& array)
+{
+	array.write_header((uint64_t)grid.data().data());
+	internal::avalanche_1d_hint_noflush(grid.internal_dim().width(), array, &grid[hint]);
 }
 
 /**
@@ -417,6 +424,8 @@ inline void fix(std::vector<int>& grid, const dimension& dim, int hint, Avalanch
 	result_logger.write_separator();
 	array.flush(); // note: empty does not always imply being flushed!
 }
+
+// TODO: remove non-grid_t-versions everywhere
 
 //! version without a hint
 template<class AvalancheContainer, class ResultType>

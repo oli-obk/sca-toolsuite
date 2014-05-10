@@ -50,9 +50,9 @@ void grid_t::resize_borders(u_coord_t new_border_width)
 		auto for_loop
 			= [&](std::size_t n, std::size_t o) {
 		//		std::cout << "copying " << human_lw << " bytes from " << o << " to " << n << std::endl;
-				std::copy_n(data.begin() + o, human_lw, /*result: */ data.begin() + n);
+				std::copy_n(_data.begin() + o, human_lw, /*result: */ _data.begin() + n);
 		//		std::cout << "filling " << new_bw2 << " bytes at " << (n + human_lw) << std::endl;
-				std::fill_n(data.begin() + n + human_lw, new_bw2, INT_MIN);
+				std::fill_n(_data.begin() + n + human_lw, new_bw2, INT_MIN);
 		};
 
 		if(nbw < obw)
@@ -66,16 +66,16 @@ void grid_t::resize_borders(u_coord_t new_border_width)
 				n += new_lw, o+= old_lw)
 			 for_loop(n, o);
 
-			std::fill(data.begin() + new_bot + new_lw,
-				data.begin() + old_bot + old_lw, INT_MIN);
+			std::fill(_data.begin() + new_bot + new_lw,
+				_data.begin() + old_bot + old_lw, INT_MIN);
 
-			data.resize(_dim.area());
+			_data.resize(_dim.area());
 		}
 		else if(nbw > obw)
 		// move elements forward
 		// so start with the bottom line
 		{
-			data.resize(_dim.area(), INT_MIN);
+			_data.resize(_dim.area(), INT_MIN);
 
 			// top border line is filled by resize()
 
@@ -83,8 +83,8 @@ void grid_t::resize_borders(u_coord_t new_border_width)
 				n >= new_top; n -= new_lw, o-= old_lw)
 			 for_loop(n, o);
 
-			std::fill(data.begin() + old_top,
-				data.begin() + new_top, INT_MIN);
+			std::fill(_data.begin() + old_top,
+				_data.begin() + new_top, INT_MIN);
 		}
 
 	/*	std::cout << "grid now:" << std::endl;
@@ -104,14 +104,14 @@ void grid_t::insert_stripe_vert(u_coord_t pos, u_coord_t ins_len)
 	coord_t mv_start = index_internal(
 				point(bw + pos, ht-1));
 
-	data.resize(data.size() + mv_amt, INT_MIN);
+	_data.resize(_data.size() + mv_amt, INT_MIN);
 
 	// lowest row separately, since it has a different "last"
 	// TODO: what if the grid has 0 lines?
 	{
-		auto first = data.begin() + mv_start;
-		auto last = data.end() - mv_amt;
-		std::copy_backward(first, last, data.end());
+		auto first = _data.begin() + mv_start;
+		auto last = _data.end() - mv_amt;
+		std::copy_backward(first, last, _data.end());
 
 		mv_start -= _dim.width();
 		mv_amt -= ins_len;
@@ -120,7 +120,7 @@ void grid_t::insert_stripe_vert(u_coord_t pos, u_coord_t ins_len)
 	for( ; mv_start >= 0;
 		mv_start -= _dim.width(), mv_amt -= ins_len)
 	{
-		auto first = data.begin() + mv_start;
+		auto first = _data.begin() + mv_start;
 		auto last = first + _dim.width();
 		std::copy_backward(first, last, last + mv_amt);
 	}
@@ -135,11 +135,11 @@ void grid_t::insert_stripe_hor(u_coord_t pos, u_coord_t ins_len)
 	std::cout << "inserting hor. stripe of size "
 		<< ins_len << std::endl;
 
-	data.resize(data.size() + mv_amt);
+	_data.resize(_data.size() + mv_amt);
 
-	auto first = data.begin() + index_internal(
+	auto first = _data.begin() + index_internal(
 				point(0, bw + pos));
-	std::copy_backward(first, data.end() - mv_amt, data.end());
+	std::copy_backward(first, _data.end() - mv_amt, _data.end());
 
 	_dim = dimension(_dim.width(), _dim.height() + ins_len);
 }

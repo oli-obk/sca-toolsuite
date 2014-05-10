@@ -30,6 +30,8 @@ DrawArea::DrawArea(StateMachine& _state_machine, QWidget *parent) :
 	state_machine(_state_machine),
 	grid_image(NULL),
 	pixel_factor(1),
+	sim_grid(1),
+	calc_grid(1),
 	min_color(0,255,0),
 	max_color(255,0,0),
 	next_cell(0)
@@ -40,30 +42,28 @@ DrawArea::DrawArea(StateMachine& _state_machine, QWidget *parent) :
 		this, SLOT(state_updated(StateMachine::STATE)));
 }
 
-void DrawArea::increase_cell(int x, int y, int steps)
+void DrawArea::increase_cell(const point& coord, int steps)
 {
-	unsigned int coord = (y*dim.width())+x;
+	const int new_value = sim_grid.at_internal(coord) + steps;
+	sim_grid.at_internal(coord) = new_value;
 
-	std::cout << coord << std::endl;
-	const int new_value = sim_grid[coord] + steps;
-	sim_grid[coord] = new_value;
-
-	if(!is_border(dim, coord))
-	 grid_image->setPixel(x, y, color_of(new_value));
+	if(calc_grid.point_is_on_border(coord))
+	 grid_image->setPixel(coord.x, coord.y, color_of(new_value));
 
 	update_pixmap();
 }
 
 void DrawArea::fire_cell(int coords)
 {
-	const int x = coords % dim.width();
-	const int y = coords / dim.width();
+	const int x = coords % calc_grid.internal_dim().width();
+	const int y = coords / calc_grid.internal_dim().width();
+	const point p(x, y);
 
-	increase_cell(x, y, -4);
-	increase_cell(x, y-1, 1);
-	increase_cell(x-1, y, 1);
-	increase_cell(x+1, y, 1);
-	increase_cell(x, y+1, 1);
+	increase_cell(p, -4);
+	increase_cell(p + point(0, -1), 1);
+	increase_cell(p + point(-1, 0), 1);
+	increase_cell(p + point(+1, 0), 1);
+	increase_cell(p + point(0, +1), 1);
 }
 
 void DrawArea::slot_timeout()
@@ -74,19 +74,19 @@ void DrawArea::slot_timeout()
 		container->flush();
 		if(calc_grid[current_hint]>2)
 		{
-			sandpile::avalanche_1d_hint_noflush_single(calc_grid, dim,
+			sandpile::avalanche_1d_hint_noflush_single(calc_grid,
 				current_hint, *container);
 		}
 		else {
 			calc_grid[current_hint]++;
 			next_fire_timer.stop();
 			delete container;
-			assert(sim_grid == calc_grid);
+			assert(sim_grid.data() == calc_grid.data());
 			state_machine.set(StateMachine::STATE_STABLE);
 			return;
 		}
 	}
-	fire_cell(container->data()[next_cell] - calc_grid.data());
+	fire_cell(container->data()[next_cell] - calc_grid.data().data() /* pointer difference */);
 	next_cell++;
 
 	if(state_machine.get() == StateMachine::STATE_STEP)
@@ -121,12 +121,13 @@ void DrawArea::mousePressEvent(QMouseEvent *event)
 	{	
 		int x = event->pos().x() / pixel_factor;
 		int y = event->pos().y() / pixel_factor;
-		int coords = y * dim.width() + x;
+		//int coords = y * calc_grid.internal_dim().width() + x; // TODO: use point
+		point coords(x, y);
 
-		increase_cell(x, y, 1);
-		calc_grid[coords]++;
+		increase_cell(coords, 1);
+		calc_grid.at_internal(coords)++;
 
-		if( calc_grid[coords] == 4)
+		if( calc_grid.at_internal(coords) == 4)
 		{
 			/*if(state == StateMachine::STATE_STABLE_PAUSED) {
 				state_machine.set(StateMachine::STATE_INSTABLE);
@@ -137,8 +138,8 @@ void DrawArea::mousePressEvent(QMouseEvent *event)
 			state_machine.trigger_throw();
 
 			current_hint = coords;
-			calc_grid[current_hint]--;
-			container = new sandpile::array_queue_no_file(dim.area());
+			calc_grid.at_internal(current_hint)--;
+			container = new sandpile::array_queue_no_file(calc_grid.internal_dim().area()); // TODO: human dim
 
 			if(state_machine.get() != StateMachine::STATE_INSTABLE)
 			 next_fire_timer.start();
@@ -146,11 +147,13 @@ void DrawArea::mousePressEvent(QMouseEvent *event)
 	}
 }
 
-void DrawArea::fill_grid(FILE* fp)
+void DrawArea::fill_grid(std::istream &inf)
 {
-	read_grid(fp, &calc_grid, &dim);
+//	read_grid(fp, &calc_grid, &dim);
+	calc_grid = grid_t(inf, 1);
+
 	// TODO: progress dialog here?
-	sandpile::stabilize(calc_grid, dim); // to keep invariant
+	sandpile::stabilize(calc_grid); // to keep invariant
 	sim_grid = calc_grid;
 
 	ColorTable tmp_ct(min_color, max_color, 0, 7);
@@ -160,9 +163,14 @@ void DrawArea::fill_grid(FILE* fp)
 	 itr->to_32bit((int*)(color_table + entry));
 
 	delete grid_image;
-	grid_image = new QImage(dim.width(), dim.height(), QImage::Format_ARGB32);
+	grid_image = new QImage(calc_grid.internal_dim().width(),
+		calc_grid.internal_dim().height(),
+		QImage::Format_ARGB32);
 
-	for(unsigned int y = 0; y<dim.height(); y++)
+	for(const point& p : sim_grid.points())
+	 grid_image->setPixel(p.x, p.y, color_of(sim_grid[p]));
+
+/*	for(unsigned int y = 0; y<dim.height(); y++)
 	for(unsigned int x = 0; x<dim.width(); x++)
 	{
 		if(x==0||x==dim.width()-1||y==0||y==dim.height()-1)
@@ -172,7 +180,8 @@ void DrawArea::fill_grid(FILE* fp)
 			unsigned int coord = (y*dim.width())+x;
 			grid_image->setPixel(x, y, color_of(sim_grid[coord]));
 		}
-	}
+	}*/
+
 
 	update_pixmap();
 }

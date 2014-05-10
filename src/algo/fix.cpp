@@ -19,31 +19,30 @@
 /*************************************************************************/
 
 #include <cstdlib>
-#include <cstdio>
-#include <vector>
+#include <iostream>
 
 #include "general.h"
 #include "io.h"
 #include "stack_algorithm.h"
 
 template<class AvalancheContainer, class Logger>
-void run(std::vector<int>& grid, const dimension& dim, int hint=-1)
+void run(grid_t& grid, int hint=-1)
 {
-	AvalancheContainer container(dim.area_without_border());
+	AvalancheContainer container(grid.human_dim().area());
 	Logger logger(stdout);
 	if(hint == -1)
 	{
-		fix(grid, dim, container, logger);
+		fix(grid.data(), grid.internal_dim(), container, logger);
 	}
 	else
-	 fix(grid, dim, human2internal(hint, dim.width()), container, logger);
+	 fix(grid.data(), grid.internal_dim(), human2internal(hint, grid.internal_dim().width()), container, logger);
 }
 
 class MyProgram : public Program
 {
 	int main()
 	{
-		FILE* read_fp = stdin;
+		std::istream& read_fp = std::cin;
 		int hint = -1;
 		char output_type = 's';
 
@@ -59,22 +58,19 @@ class MyProgram : public Program
 				return 1;
 		}
 
-		std::vector<int> grid;
-		dimension dim;
-
-		read_grid(read_fp, &grid, &dim);
+		grid_t grid(read_fp, 1);
 
 		switch(output_type) {
 			case 'l': ::run<sandpile::array_stack,
 					sandpile::fix_log_l>(
-					grid, dim, hint);
+					grid, hint);
 				break;
 		//	case 'h': run<ArrayStack, FixLogLHuman>(grid, dim, hint); break;
 			case 's':
 				::run<sandpile::array_stack,
 					sandpile::fix_log_s>(
-					grid, dim, hint);
-				write_grid(stdout, &grid, &dim);
+					grid, hint);
+				std::cout << grid;
 				break;
 		}
 		return 0;

@@ -21,7 +21,7 @@
 #ifndef DRAWAREA_H
 #define DRAWAREA_H
 
-#include <cstdio>
+#include <iostream>
 #include <QLabel>
 #include <QTimer>
 
@@ -45,19 +45,21 @@ class DrawArea : public QLabel
 	int pixel_factor;
 	int TIMER_INTERVAL;
 
-	dimension dim;
+/*	dimension dim;
 	std::vector<int> sim_grid;
-	std::vector<int> calc_grid;
+	std::vector<int> calc_grid;*/
+	grid_t sim_grid, calc_grid;
 	rgb min_color, max_color;
 
 	QRgb color_table[8]; // 0 to 7
 	inline QRgb color_of(int grains) const { return color_table[grains]; }
 
-	void increase_cell(int x, int y, int steps);
+	void increase_cell(const point& coord, int steps);
 	void fire_cell(int coords);
 
 	unsigned int next_cell;
-	int current_hint;
+//	int current_hint;
+	point current_hint;
 	sandpile::_array_queue_no_file<int*>* container;
 	QTimer next_fire_timer;
 
@@ -65,8 +67,8 @@ private slots:
 	void slot_timeout();
 	inline void update_pixmap() {
 		setPixmap(QPixmap::fromImage(*grid_image).scaled(
-			dim.width()*pixel_factor,
-			dim.height()*pixel_factor));
+			sim_grid.internal_dim().width()*pixel_factor,
+			sim_grid.internal_dim().height()*pixel_factor));
 	}
 	void state_updated(StateMachine::STATE new_state);
 
@@ -74,13 +76,13 @@ public:
 	explicit DrawArea(StateMachine& _state_machine, QWidget *parent = 0);
 	inline ~DrawArea() {
 		delete grid_image;
-		write_grid(stdout, &calc_grid, &dim);
+		std::cout << calc_grid;
 	}
 	inline void set_pixel_size(int pixel_size) {
 		pixel_factor = pixel_size;
 		update_pixmap();
 	}
-	void fill_grid(FILE* fp = stdin);
+	void fill_grid(std::istream& inf = std::cin);
 
 signals:
 public slots:

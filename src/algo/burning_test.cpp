@@ -26,38 +26,36 @@ class MyProgram : public Program
 {
 	int main()
 	{
-		FILE* read_fp = stdin;
-		std::vector<int> grid;
-		dimension dim;
-
 		assert_usage(argc==1);
 
-		read_grid(read_fp, &grid, &dim);
-		const unsigned int width_without_border = dim.width() - 2;
+		std::istream& read_fp = std::cin;
+		grid_t grid(read_fp, 1);
+		const dimension& hdim = grid.human_dim();
+		const unsigned int width = hdim.width();
 
+		// TODO: -> asm.h
 		// add border grains
-		for(unsigned int human = 0; human<dim.area_without_border(); human++)
+		const coord_t lowest = hdim.height() - 1;
+		for(const point& p : hdim.points(0))
 		{
-			const int as_internal = human2internal(human, dim.width());
-			if(human%width_without_border == 0 || (human+1)%width_without_border == 0)
-			 grid[as_internal]++; // left or right border
-			if(human<width_without_border ||
-				human >= dim.area_without_border() - width_without_border)
-			 grid[as_internal]++; // top or bottom border
+			grid[p] +=
+				(cell_t)((p.x % width)*((p.x+1)%(width)) == 0) +
+				(cell_t)((p.y == 0) || (p.y == lowest));
 		}
 
 		// stabilize everything
 		// note: it is not completely trivial that every cell fires at most once
-		sandpile::array_queue array(dim.area(), stdout);
-		for(unsigned int human = 0; human<dim.area_without_border(); human++)
+		sandpile::array_queue array(hdim.area(), stdout);
+		for(const point& p : hdim.points(0))
 		{
-			const int as_internal = human2internal(human, dim.width());
-			if(grid[as_internal]>3)
-			 sandpile::avalanche_1d_hint_noflush_single(
-				grid, dim, as_internal, array);
+			if(grid[p] > 3)
+			{
+				sandpile::avalanche_1d_hint_noflush_single(
+					grid, p, array);
+			}
 		}
 
-		const bool recurrent = array.size() == dim.area_without_border();
+		const bool recurrent = array.size() == hdim.area();
 		array.flush();
 		return recurrent ? 0 : 1;
 	}

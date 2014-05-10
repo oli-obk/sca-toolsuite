@@ -31,13 +31,9 @@ class MyProgram : public Program
 	int main()
 	{
 		assert_usage(argc == 3);
+		dimension dim(atoi(argv[1]), atoi(argv[2]));
 
-		std::vector<int> grid;
-		dimension dim(atoi(argv[1]) + 2, atoi(argv[2]) + 2);
-
-		sandpile::get_identity(grid, dim);
-		write_grid(stdout, &grid, &dim);
-
+		std::cout << sandpile::get_identity(dim);
 		return 0;
 	}
 };

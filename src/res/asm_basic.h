@@ -28,17 +28,27 @@
 namespace sandpile
 {
 
-inline void stabilize(std::vector<int>& grid, const dimension& dim)
+inline void stabilize(grid_t& grid)
 {
 	// +1 is an ugly, necessary trick
-	array_stack container(dim.area_without_border() /*+ 1*/);
+	array_stack container(grid.human_dim().area() /*+ 1*/);
 	fix_log_s logger(nullptr);
-	fix(grid, dim, container, logger);
+	fix(grid.data(), grid.internal_dim(), container, logger);
 }
 
 //! Given an empty vector @a grid, creates grid of dimension @a dim
 //! with all cells being @a predefined_value
-inline void get_identity(std::vector<int>& grid, const dimension& dim)
+inline grid_t get_identity(const dimension& dim)
+{
+	grid_t grid(dim, 1, 6); // grid with every cell = 6
+	stabilize(grid);
+	for(cell_t& c : grid)
+	 c = 6 - c;
+	stabilize(grid);
+	return grid;
+}
+
+/*inline void get_identity(std::vector<int>& grid, const dimension& dim)
 {
 	create_empty_grid(grid, dim, 6);
 	stabilize(grid, dim);
@@ -48,34 +58,33 @@ inline void get_identity(std::vector<int>& grid, const dimension& dim)
 		if(*itr>=0)
 		*itr = 6 - (*itr) ;
 	stabilize(grid, dim);
+}*/
+
+//! calculates superstabilization of @a grid
+inline void superstabilize(grid_t& grid,
+	const grid_t& identity)
+{
+	assert(identity.internal_dim() == grid.internal_dim());
+
+	stabilize(grid);
+
+	for(const point& p : grid.points())
+	if(grid[p]>=0) // todo: necessary?
+	 grid[p] = 3 - grid[p] + identity[p];
+
+	stabilize(grid);
+
+	for(const point& p : grid.points())
+	 if(grid[p]>=0)
+	  grid[p] = 3 - grid[p];
+
+	// TODO: mention holroyd  et al as source
 }
 
 //! calculates superstabilization of @a grid
-inline void superstabilize(std::vector<int>& grid, const dimension& dim,
-	const std::vector<int>& identity)
+inline void superstabilize(grid_t& grid)
 {
-	assert(identity.size() == grid.size());
-
-	stabilize(grid, dim);
-
-	unsigned int area = dim.area();
-	for(unsigned int i = 0; i < area; i++)
-	 if(grid[i]>=0)
-	  grid[i] = 3 - grid[i] + identity[i];
-
-	stabilize(grid, dim);
-
-	for(unsigned int i = 0; i < area; i++)
-	 if(grid[i]>=0)
-	  grid[i] = 3 - grid[i];
-}
-
-//! calculates superstabilization of @a grid
-inline void superstabilize(std::vector<int>& grid, const dimension& dim)
-{
-	std::vector<int> identity;
-	get_identity(identity, dim);
-	superstabilize(grid, dim, identity);
+	superstabilize(grid, get_identity(grid.human_dim()));
 }
 
 }

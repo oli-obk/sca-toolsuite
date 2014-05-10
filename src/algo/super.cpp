@@ -31,13 +31,10 @@ class MyProgram : public Program
 	int main()
 	{
 		assert_usage(argc == 1);
+		grid_t grid(std::cin, 1);
 
-		std::vector<int> grid;
-		dimension dim;
-
-		read_grid(stdin, &grid, &dim);
-		sandpile::superstabilize(grid, dim);
-		write_grid(stdout, &grid, &dim);
+		sandpile::superstabilize(grid);
+		std::cout << grid;
 
 		return 0;
 	}

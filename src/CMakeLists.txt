@@ -14,5 +14,6 @@ if(BUILD_USR_DIR)
 endif(BUILD_USR_DIR)
 
 cp_script(test.sh)
+add_test(testscript "sh" "test.sh")
 
 #add_subdirectory(tsa)

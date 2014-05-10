@@ -28,9 +28,9 @@
 #include "asm_basic.h"
 
 template<class AvalancheContainer, class Logger>
-void run(std::vector<int>& grid, std::vector<int>& chips, const dimension& dim, int hint=-1)
+void run(grid_t& grid, grid_t& chips, int hint=-1)
 {
-	AvalancheContainer container(dim.area_without_border());
+	AvalancheContainer container(grid.human_dim().area());
 	Logger logger(stdout);
 	if(hint == -1)
 	{
@@ -40,19 +40,19 @@ void run(std::vector<int>& grid, std::vector<int>& chips, const dimension& dim, 
 			rotor_fix(&grid, &chips, &dim, internal, &container, &logger);
 		}*/
 		//fix(&chips, &dim, &container, &logger);
-		sandpile::superstabilize(chips, dim); // TODO: should this not be in rotor algo . h?
+		sandpile::superstabilize(chips); // TODO: should this not be in rotor algo . h?
 		// -> TODO: does this not need to write logs, too?
-		rotor::rotor_fix_naive(grid, chips, dim, container, logger); // TODO: is naive wanted??
+		rotor::rotor_fix_naive(grid, chips, container, logger); // TODO: is naive wanted??
 	}
 	else
-	 rotor::rotor_fix(grid, chips, dim, human2internal(hint, dim.width()), container, logger);
+	 rotor::rotor_fix(grid, chips, human2internal(hint, grid.internal_dim().width()), container, logger);
 }
 
 class MyProgram : public Program
 {
 	int main()
 	{
-		FILE* read_fp = stdin;
+		std::istream& read_fp = std::cin;
 		int hint = -1;
 		char output_type = 's';
 		const char* shell_command = NULL;
@@ -69,28 +69,34 @@ class MyProgram : public Program
 				return 1;
 		}
 
-		std::vector<int> grid;
-		dimension dim;
+	//	std::vector<int> grid;
+	//	dimension dim;
 
-		read_grid(read_fp, &grid, &dim);
-		for(unsigned int i=0;i<dim.area();i++)
+		//read_grid(read_fp, &grid, &dim);
+		grid_t grid(read_fp, 1);
+	/*	for(unsigned int i=0;i<dim.area();i++)
 		 if(!is_border(dim, i))
-		  grid[i]&=3;
+		  grid[i]&=3;*/
+		for(cell_t& c : grid)
+		 c&=3;
 
-		std::vector<int> chips;
-		dimension dim2;
+		/*std::vector<int> chips;
+		dimension dim2;*/
 		get_input(shell_command);
-		read_grid(read_fp, &chips, &dim2);
 
-		if(dim != dim2)
+		grid_t chips(stdin, 1); // TODO: this will not work with cin somehow, because of get_input()
+
+		//read_grid(read_fp, &chips, &dim2);
+
+		if(grid.internal_dim() != chips.internal_dim())
 		 exit("Different dimensions in both grids are not allowed.");
 
 		switch(output_type) {
 			// TODO: int or int*?
-			case 'l': ::run<sandpile::_array_stack<int>, sandpile::_fix_log_l<int>>(grid, chips, dim, hint); break;
+			case 'l': ::run<sandpile::_array_stack<int>, sandpile::_fix_log_l<int>>(grid, chips, hint); break;
 			case 's':
-				::run<sandpile::_array_stack<int>, sandpile::_fix_log_s<int>>(grid, chips, dim, hint);
-				write_grid(stdout, &grid, &dim);
+				::run<sandpile::_array_stack<int>, sandpile::_fix_log_s<int>>(grid, chips, hint);
+				std::cout << grid;
 				break;
 		}
 
