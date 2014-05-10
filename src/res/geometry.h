@@ -227,18 +227,13 @@ protected:
 	_rect() {} // TODO... this should never be allowed
 	using s = storage;
 public:
-	_rect(const point& ul, const point& lr) : storage(ul, lr) {
-		std::cout << "Constructed dim " << *this << std::endl;
-	}
+	_rect(const point& ul, const point& lr) : storage(ul, lr) {}
 	//! constructs the rect from the inner part of a dim,
 	//! i.e. dim - border
 	_rect(const _rect<rect_storage_origin>& d, const coord_t border_size = 0) :
 		storage({0, 0},
 			{(coord_t)d.width() - (border_size << 1),
-			(coord_t)d.height() - (border_size << 1)}) {
-
-			std::cout << "Constructed dim " << *this << std::endl;
-			}
+			(coord_t)d.height() - (border_size << 1)}) {}
 
 	inline area_t area() const { return (s::lr.x - s::ul.x) * (s::lr.y - s::ul.y); }
 	bool is_inside(const point& p) const {
@@ -419,7 +414,6 @@ class grid_t
 	}
 
 	dimension _human_dim() const {
-		std::cout << "dim width: " << _dim << ", " << bw_2 << std::endl;
 		return dimension(_dim.width() - bw_2, _dim.height() - bw_2);
 	}
 
@@ -466,7 +460,6 @@ public:
 		bw(border_width),
 		bw_2(bw << 1)
 	{
-		std::cout << "dangerous ctor" << std::endl;
 		u_coord_t linewidth = dim.width(),
 			storage_lw = linewidth + bw_2;
 		area_t top = bw * (storage_lw - 1);

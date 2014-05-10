@@ -92,7 +92,6 @@ protected:
 	{
 		// TODO: replace &((*old_grid)[internal]) by old_value
 		// and make old_value a ptr/ref?
-		std::cout << "NEXT STATE: " << dim << ", " << p << ", ptr: " << *cell_ptr << std::endl;
 		eqsolver::variable_print vprinter(dim.height(), dim.width(),
 			p.x, p.y,
 			cell_ptr, helper_vars);
@@ -130,6 +129,20 @@ class big_table_t
 
 }
 
+//! base class for all ca classes with virtual functions
+class base
+{
+	//! calculates next state at (human) position (x,y)
+	//! @param dim the grids *internal* dimension
+	virtual int next_state(const int *cell_ptr, const point& p, const dimension& dim) const = 0;
+
+	//! overload with human coordinates and reference to grid. slower.
+	virtual int next_state(const grid_t &grid, const point& p) const = 0;
+
+	//! returns whether cell at point @a p is active.
+	//! @a result is set to the result in all cases, if it is not nullptr
+	virtual bool is_cell_active(const grid_t& grid, const point& p, cell_t* result = nullptr) const = 0;
+};
 
 /**
  * @brief This class holds anything a cellular automaton's function
@@ -162,7 +175,7 @@ public:
 	}
 
 	//! overload with human coordinates and reference to grid. slower.
-	int next_state_gridptr(const grid_t &grid, const point& p) const
+	int next_state(const grid_t &grid, const point& p) const
 	{
 		return next_state(&grid[p], p, grid.internal_dim());
 	}
@@ -222,7 +235,7 @@ public:
 	}
 
 	//! overload with human coordinates and reference to grid. slower.
-	int next_state_gridptr(const grid_t &grid, const point& p) const
+	int next_state(const grid_t &grid, const point& p) const
 	{
 		return next_state(&grid[p], p, grid.internal_dim());
 	}
