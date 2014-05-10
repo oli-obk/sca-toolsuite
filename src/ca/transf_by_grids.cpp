@@ -83,7 +83,7 @@ class MyProgram : public Program
 		{
 			grid_t cur_grid(std::cin, 0);
 			grid_t out_grid(std::cin, 0);
-			assert(out_grid.dim().area() == 1);
+			assert(out_grid.human_dim().area() == 1);
 
 			cell_t out_cell = out_grid[point::zero];
 

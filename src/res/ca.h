@@ -69,8 +69,7 @@ protected:
 		if(helpers_size > 0)
 		 helper_vars = new int[helpers_size];
 
-		eqsolver::build_tree(equation, &ast);
-
+#if 0
 		eqsolver::ast_minmax minmax_solver(helpers_size);
 		//std::pair<int, int> mm = (std::pair<int, int>)minmax_solver(ast);
 	/*	num_states = (mm.first == INT_MIN || mm.second == INT_MAX)
@@ -84,6 +83,7 @@ protected:
 
 		std::cout << "mm first: " << (std::string)dumper(mm.first) << std::endl; // TODO: non return syntax
 		(void)mm;
+#endif
 		num_states = 0;
 	}
 
@@ -92,6 +92,7 @@ protected:
 	{
 		// TODO: replace &((*old_grid)[internal]) by old_value
 		// and make old_value a ptr/ref?
+		std::cout << "NEXT STATE: " << dim << ", " << p << ", ptr: " << *cell_ptr << std::endl;
 		eqsolver::variable_print vprinter(dim.height(), dim.width(),
 			p.x, p.y,
 			cell_ptr, helper_vars);
@@ -163,7 +164,7 @@ public:
 	//! overload with human coordinates and reference to grid. slower.
 	int next_state_gridptr(const grid_t &grid, const point& p) const
 	{
-		return next_state(&grid[p], p, grid.dim());
+		return next_state(&grid[p], p, grid.internal_dim());
 	}
 
 	//! returns whether cell at point @a p is active.
@@ -172,7 +173,7 @@ public:
 	bool is_cell_active(const grid_t& grid, const point& p, cell_t* result = nullptr) const
 	{
 		const int* cell_ptr = &grid[p];
-		cell_t next = next_state(cell_ptr, p, grid.dim());
+		cell_t next = next_state(cell_ptr, p, grid.internal_dim());
 		if(result)
 		 *result = next;
 		return next != *cell_ptr;
@@ -223,7 +224,7 @@ public:
 	//! overload with human coordinates and reference to grid. slower.
 	int next_state_gridptr(const grid_t &grid, const point& p) const
 	{
-		return next_state(&grid[p], p, grid.dim());
+		return next_state(&grid[p], p, grid.internal_dim());
 	}
 
 	//! returns whether cell at point @a p is active.
@@ -240,7 +241,7 @@ public:
 
 		if(*cell_ptr & 4)
 		{
-			*result = next_state(cell_ptr, p, grid.dim());
+			*result = next_state(cell_ptr, p, grid.internal_dim());
 			return true;
 		}
 		return false;
@@ -291,7 +292,7 @@ public:
 	}
 
 	//! prepares the ca
-	void finalize() { finalize(_grid->dim()); }
+	void finalize() { finalize(_grid->internal_dim()); }
 
 	// TODO: function run_once_async()
 
@@ -332,7 +333,7 @@ public:
 			int new_value;
 			const int old_value = (*old_grid)[p];
 			(*new_grid)[p] = (new_value
-				= next_state(&((*old_grid)[p]), p, _grid->dim()));
+				= next_state(&((*old_grid)[p]), p, _grid->internal_dim()));
 			if(new_value != old_value)
 			{
 				new_changed_cells.push_back(p);
@@ -355,7 +356,7 @@ public:
 	template<class Asynchronicity>
 	void run_once(const Asynchronicity& async = synchronous())
 	{
-		run_once(rect(_grid->dim(), border_width()), async);
+		run_once(rect(_grid->internal_dim(), border_width()), async);
 	}
 
 	//! returns true iff not all cells are inactive

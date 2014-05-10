@@ -33,7 +33,7 @@ Note that indeterminism is supposed to work.
 This toolsuite provides you with a number of tools to
 
   * create, read or write grids
-  * exporting them to TGA and ODS format (importing planned)
+  * exporting them to TGA, latex (planned) ODS format
   * do math with them like in C++
   * simulate every cellular automata with restrictions listed above
   * very fast routines especially for sandpile automata
@@ -43,8 +43,8 @@ Most of the tools can be combined using UNIX pipes (see examples in point 5).
 2 Why using the sca-toolsuite?
 ::::::::::::::::::::::::::::::
 
-Here are good reasons:
-  
+Reaons for using it include the following.
+
   * The sca-toolsuite can simulate cellular automata of any type with both
     high flexibility and high efficiency. Flexibility because you can easily
     specify your cellular automaton like this:
@@ -56,7 +56,7 @@ Here are good reasons:
     try to easify those (future feature). Simulators with precompilation are
     usually faster, but the factor should not be more than 3-4.
 
-  * For sandpiles, we provide the (probably) worlds fastest algorithm. our
+  * For sandpiles, we provide the (probably) worlds fastest algorithm. Our
     computation time was 68 per cent of the fastest algorithm we knew of
     before. For details, see the file `FAQ'.
 

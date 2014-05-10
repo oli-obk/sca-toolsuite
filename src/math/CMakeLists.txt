@@ -12,6 +12,7 @@ add_executable(comb "${src_dir}/comb.cpp"
 
 add_executable(calc "${src_dir}/calc.cpp"
 	${general}
+	${geometry}
 	${eq_solver}
 )
 

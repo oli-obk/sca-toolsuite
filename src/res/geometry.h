@@ -46,6 +46,7 @@ struct point
 	coord_t x, y;
 	constexpr point(coord_t _x, coord_t _y) : x(_x), y(_y) {}
 	point() {}
+	constexpr point(const point& other) : x(other.x), y(other.y) {}
 	void set(int _x, int _y) { x = _x; y = _y; }
 	//! one way to compare points: linewise
 	bool operator<(const point& rhs) const {
@@ -84,6 +85,14 @@ struct point_itr
 	const point min, max;
 	point position;
 public:
+	point_itr& operator=(const point_itr& other)
+	{
+		assert(other.min == min);
+		assert(other.max == max);
+		position = other.position;
+		return *this;
+	}
+
 	point_itr(point max, point min, point position) :
 		min(min), max(max), position(position)
 	{
@@ -96,6 +105,8 @@ public:
 
 	point& operator*() { return position; }
 	const point& operator*() const { return position; }
+	point* operator->() { return &position; }
+	const point* operator->() const { return &position; }
 
 	point_itr& operator++()
 	{
@@ -117,9 +128,13 @@ public:
 		return *this;
 	}
 
+	// TODO: operator +, operator +=
+
 	bool operator!() const {
 		return position.y >= max.y;
 	}
+
+	explicit operator bool() const { return position.y < max.y; }
 
 	bool operator!=(const point_itr& rhs) const {
 		return position != rhs.position; }
@@ -128,6 +143,8 @@ public:
 		return point_itr(max, min, {min.x, max.y});
 	}
 };
+
+// TODO: which ctors/functions can be made constexpr? everywhere...
 
 //! Generic structure to store a 2D matrix
 class matrix
@@ -160,7 +177,7 @@ public:
 //! a container which starts counting from zero, and which has a border width
 struct dimension_container
 {
-	// TODO: dimenion as member?
+	// TODO: dimension as member?
 	const unsigned h, w, bw;
 	dimension_container(unsigned h,
 		unsigned w,
@@ -169,6 +186,7 @@ struct dimension_container
 	{}
 
 	point_itr begin(const point& pos = point::zero) const
+	 // TODO: argument deprecated?
 	{
 		return point_itr(
 			{(coord_t)(w-(bw<<1)), (coord_t)(h-(bw<<1))},
@@ -209,13 +227,18 @@ protected:
 	_rect() {} // TODO... this should never be allowed
 	using s = storage;
 public:
-	_rect(const point& ul, const point& lr) : storage(ul, lr) {}
+	_rect(const point& ul, const point& lr) : storage(ul, lr) {
+		std::cout << "Constructed dim " << *this << std::endl;
+	}
 	//! constructs the rect from the inner part of a dim,
 	//! i.e. dim - border
 	_rect(const _rect<rect_storage_origin>& d, const coord_t border_size = 0) :
 		storage({0, 0},
 			{(coord_t)d.width() - (border_size << 1),
-			(coord_t)d.height() - (border_size << 1)}) {}
+			(coord_t)d.height() - (border_size << 1)}) {
+
+			std::cout << "Constructed dim " << *this << std::endl;
+			}
 
 	inline area_t area() const { return (s::lr.x - s::ul.x) * (s::lr.y - s::ul.y); }
 	bool is_inside(const point& p) const {
@@ -382,7 +405,7 @@ class grid_t
 {
 	std::vector<cell_t> data;
 	dimension _dim; //! dimension of data, including borders
-	u_coord_t border_width;
+	u_coord_t bw, bw_2;
 
 	//! returns array index for a human point @a p
 	int index_internal(const point& p) const {
@@ -392,26 +415,27 @@ class grid_t
 	//! returns array index for a human point @a p
 	int index(const point& p) const {
 		const int& w = _dim.width();
-		const int& bw = border_width;
 		return ((p.y + bw) * w) + bw + p.x;
 	}
 
-	dimension human_dim() const {
-		u_coord_t bw_2 = border_width << 1;
-		return dimension { _dim.height() - bw_2, _dim.width() - bw_2 };
+	dimension _human_dim() const {
+		std::cout << "dim width: " << _dim << ", " << bw_2 << std::endl;
+		return dimension(_dim.width() - bw_2, _dim.height() - bw_2);
 	}
 
 	static area_t storage_area(const dimension& human_dim,
 		u_coord_t border_width) {
-		u_coord_t bw_2 = border_width << 1;
+		const u_coord_t bw_2 = border_width << 1;
 		return (human_dim.width() + bw_2) * (human_dim.height() + bw_2);
 	}
 public:
 	//! returns *internal* dimension
-	const dimension& dim() const { return _dim; } // TODO: remove this?
+	const dimension& internal_dim() const { return _dim; } // TODO: remove this?
+	dimension human_dim() const { return _human_dim(); }
 
-	area_t size() const { return
-		_dim.area_without_border(border_width); }
+	u_coord_t dx() const { return _dim.dx() - bw_2; }
+	u_coord_t dy() const { return _dim.dy() - bw_2; }
+	area_t size() const { return dx() * dy(); }
 
 /*	grid(std::vector<int>& data, const dimension& dim, int border_width) :
 		data(data),
@@ -420,14 +444,15 @@ public:
 	{
 	}*/
 
-	dimension_container points() const { return _dim.points(border_width); }
+	dimension_container points() const { return _dim.points(bw); }
 
 	//! very slow (but faster than allocating a new array)
 	void resize_borders(u_coord_t new_border_width);
 
 	//! simple constructor: empty grid
 	grid_t(u_coord_t border_width) :
-		border_width(border_width)
+		bw(border_width),
+		bw_2(bw << 1)
 	{}
 
 	//! simple constructor: fill grid
@@ -438,39 +463,42 @@ public:
 		data(storage_area(dim, border_width), fill),
 		_dim(dim.width() + (border_width << 1),
 			dim.height() + (border_width << 1)),
-		border_width(border_width)
+		bw(border_width),
+		bw_2(bw << 1)
 	{
-		u_coord_t bw2 = border_width << 1;
+		std::cout << "dangerous ctor" << std::endl;
 		u_coord_t linewidth = dim.width(),
-			storage_lw = linewidth + bw2;
-		area_t top = border_width * (storage_lw - 1);
+			storage_lw = linewidth + bw_2;
+		area_t top = bw * (storage_lw - 1);
 		std::fill_n(data.begin(), top, border_fill);
 		for(std::size_t i = top; i < data.size() - top; i += storage_lw)
-			std::fill_n(data.begin() + i, bw2, border_fill);
+			std::fill_n(data.begin() + i, bw_2, border_fill);
 		std::fill(data.end() - top, data.end(), border_fill);
 	//	data.assign(data.begin(), data.begin() + top, border_fill);
 	}
 
 	//! constructor which reads a grid immediatelly
 	grid_t(FILE* fp, u_coord_t border_width) :
-		border_width(border_width)
+		bw(border_width),
+		bw_2(bw << 1)
 	{
 		read(fp);
 	}
 
 	void read(FILE* fp)
 	{
-		read_grid(fp, &data, &_dim, border_width);
+		read_grid(fp, &data, &_dim, bw);
 	}
 
 	void write(FILE* fp) const
 	{
-		write_grid(fp, &data, &_dim, border_width);
+		write_grid(fp, &data, &_dim, bw);
 	}
 
 	grid_t& operator=(const grid_t& rhs)
 	{
-		assert(border_width == rhs.border_width);
+		assert(bw == rhs.bw);
+		assert(bw_2 == rhs.bw_2);
 		data = rhs.data;
 		_dim = rhs._dim;
 		return *this;
@@ -502,10 +530,10 @@ public:
 		return data[index(p)];
 	}
 
-	cell_itr begin() { return cell_itr(data.data(), _dim, border_width); }
-	cell_itr end() { return cell_itr(data.data(), _dim, border_width, false); }
-	const_cell_itr cbegin() { return const_cell_itr(data.data(), _dim, border_width); }
-	const_cell_itr cend() { return const_cell_itr(data.data(), _dim, border_width, false); }
+	cell_itr begin() { return cell_itr(data.data(), _dim, bw); }
+	cell_itr end() { return cell_itr(data.data(), _dim, bw, false); }
+	const_cell_itr cbegin() { return const_cell_itr(data.data(), _dim, bw); }
+	const_cell_itr cend() { return const_cell_itr(data.data(), _dim, bw, false); }
 
 	bool point_is_on_border(const point& p) const {
 		return human_dim().point_is_on_border(p, 0);
@@ -513,21 +541,23 @@ public:
 
 	friend std::ostream& operator<< (std::ostream& stream,
 		const grid_t& g) {
-		write_grid(stream, g.data, g._dim, g.border_width);
+		write_grid(stream, g.data, g._dim, g.bw);
 		return stream;
 	}
 
 	//! constructor which reads a grid immediatelly
 	grid_t(std::istream& stream, u_coord_t border_width) :
-		border_width(border_width)
+		bw(border_width),
+		bw_2(bw << 1)
 	{
-		read_grid(stream, data, _dim, border_width);
+		read_grid(stream, data, _dim, bw);
 	}
 
 	//! constructor which reads a grid immediatelly
 	//! @todo bw 1 as def is deprecated, maybe inherit asm_grid_t in asm_basics.h?
 	grid_t(const char* filename, u_coord_t border_width = 1) :
-		border_width(border_width)
+		bw(border_width),
+		bw_2(bw << 1)
 	{
 		std::ifstream ifs;
 		std::istream* is_ptr;
@@ -539,84 +569,47 @@ public:
 		}
 		else
 		 is_ptr = &std::cin;
-		read_grid(*is_ptr, data, _dim, border_width);
+		read_grid(*is_ptr, data, _dim, bw);
 	}
 
-	point find_subgrid(const grid_t& sub, const point& from = point::zero) const
+	point_itr find_subgrid(const grid_t& sub, const point_itr& from) const
 	{
 		// simple algorithm for now...
-		dimension_container dc(_dim.height(), _dim.width(), border_width);
-		point_itr p = dc.begin(from);
+		dimension_container dc(_dim.height(), _dim.width(), bw);
+		//point_itr p = dc.begin(from);
+		point_itr p = from;
 		bool matches = false;
+		// (todo) replace dc.end() by an earlier end
 		for(; p != dc.end() && !matches; ++p) // TODO: read "from"
 		{
-			rect sub_rect = sub.dim() + *p;
-			matches = true;
-
-			for(const point sp : sub_rect)
+			if(p->x + sub.dx() <= dx() && p->y + sub.dy() <= dy())
 			{
-				if((*this)[sp] != sub[sp - *p])
-				// (TODO: instead of -, use 2nd itr)
+				matches = true;
+				point end(p->x, p->y + sub.dy());
+				std::cout << "point: " << (*p) << std::endl;
+				for(point mp = *p, op  = point::zero;
+					(mp < end) && matches;
+					mp += point(0,1), op += point(0,1)
+					)
 				{
-					matches = false;
-					break;
+					auto first = data.begin() + index(mp);
+					auto o_first = sub.data.begin() + sub.index(op);
+					matches = matches &&
+						std::equal(first, first + sub.dx(), o_first);
 				}
 			}
 		}
-		return *(--p); // for loop has incremented once to often
+		//return std::make_pair(*(--p), matches); // for loop has incremented once to often
+		return p;
 	}
 
 	//! inserts vertical stripe of length @a ins_len,
 	//! starting at x = @a pos. The new stripe is undefined
-	void insert_stripe_vert(u_coord_t pos, u_coord_t ins_len)
-	{
-		// update vector, keep _dim
-		// we can use _dim, since we always need the full h/w
-		u_coord_t ht = _dim.height();
-		u_coord_t mv_amt = ht * ins_len;
-		coord_t mv_start = index_internal(
-			point(border_width + pos, ht-1));
-
-		data.resize(data.size() + mv_amt, INT_MIN);
-
-		// lowest row separately, since it has a different "last"
-		// TODO: what if the grid has 0 lines?
-		{
-			auto first = data.begin() + mv_start;
-			auto last = data.end() - mv_amt;
-			std::copy_backward(first, last, data.end());
-
-			mv_start -= _dim.width();
-			mv_amt -= ins_len;
-		}
-
-		for( ; mv_start >= 0;
-			mv_start -= _dim.width(), mv_amt -= ins_len)
-		{
-			auto first = data.begin() + mv_start;
-			auto last = first + _dim.width();
-			std::copy_backward(first, last, last + mv_amt);
-		}
-
-		// finally, update _dim
-		_dim = dimension(_dim.width() + ins_len, ht);
-	}
+	void insert_stripe_vert(u_coord_t pos, u_coord_t ins_len);
 
 	//! inserts horizontal stripe of length @a ins_len,
 	//! starting at y = @a pos. The new stripe is undefined
-	void insert_stripe_hor(u_coord_t pos, u_coord_t ins_len)
-	{
-		u_coord_t mv_amt = _dim.width() * ins_len;
-
-		data.resize(data.size() + mv_amt);
-
-		auto first = data.begin() + index_internal(
-			point(0, border_width + pos));
-		std::copy_backward(first, data.end() - mv_amt, data.end());
-
-		_dim = dimension(_dim.width(), _dim.height() + ins_len);
-	}
-
+	void insert_stripe_hor(u_coord_t pos, u_coord_t ins_len);
 
 };
 

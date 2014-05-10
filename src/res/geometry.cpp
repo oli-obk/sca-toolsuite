@@ -28,17 +28,17 @@ constexpr point rect_storage_origin::ul;
 
 void grid_t::resize_borders(u_coord_t new_border_width)
 {
-	if(new_border_width != border_width)
+	if(new_border_width != bw)
 	{
-			const u_coord_t nbw = new_border_width,
-		obw = border_width;
+		const u_coord_t nbw = new_border_width,
+			obw = bw;
 
 		u_coord_t old_lw = _dim.width();
 		u_coord_t new_bw2 = nbw << 1;
 		dimension hd = human_dim();
 
 		_dim = dimension(hd.width() + new_bw2, hd.height() + new_bw2);
-		border_width = nbw;
+		bw = nbw;
 
 		u_coord_t new_lw = _dim.width();
 		u_coord_t human_lw = hd.width();
@@ -93,4 +93,53 @@ void grid_t::resize_borders(u_coord_t new_border_width)
 			std::cout << c << std::endl;
 		}*/
 	}
+}
+
+void grid_t::insert_stripe_vert(u_coord_t pos, u_coord_t ins_len)
+{
+	// update vector, keep _dim
+	// we can use _dim, since we always need the full h/w
+	u_coord_t ht = _dim.height();
+	u_coord_t mv_amt = ht * ins_len;
+	coord_t mv_start = index_internal(
+				point(bw + pos, ht-1));
+
+	data.resize(data.size() + mv_amt, INT_MIN);
+
+	// lowest row separately, since it has a different "last"
+	// TODO: what if the grid has 0 lines?
+	{
+		auto first = data.begin() + mv_start;
+		auto last = data.end() - mv_amt;
+		std::copy_backward(first, last, data.end());
+
+		mv_start -= _dim.width();
+		mv_amt -= ins_len;
+	}
+
+	for( ; mv_start >= 0;
+		mv_start -= _dim.width(), mv_amt -= ins_len)
+	{
+		auto first = data.begin() + mv_start;
+		auto last = first + _dim.width();
+		std::copy_backward(first, last, last + mv_amt);
+	}
+
+	// finally, update _dim
+	_dim = dimension(_dim.width() + ins_len, ht);
+}
+
+void grid_t::insert_stripe_hor(u_coord_t pos, u_coord_t ins_len)
+{
+	u_coord_t mv_amt = _dim.width() * ins_len;
+	std::cout << "inserting hor. stripe of size "
+		<< ins_len << std::endl;
+
+	data.resize(data.size() + mv_amt);
+
+	auto first = data.begin() + index_internal(
+				point(0, bw + pos));
+	std::copy_backward(first, data.end() - mv_amt, data.end());
+
+	_dim = dimension(_dim.width(), _dim.height() + ins_len);
 }

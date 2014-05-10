@@ -98,7 +98,7 @@ class MyProgram : public Program
 			end,
 			nothing
 		};
-		log_type_t log_type = log_type_t::nothing;
+		log_type_t log_type = log_type_t::end;
 
 		if(argc==5)
 		{

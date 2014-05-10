@@ -28,6 +28,9 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
 SET(COMPILER "" CACHE STRING "Compiler to use (allowed: [gcc|clang])")
 
+# testing
+enable_testing ()
+
 #
 # Machine
 #
@@ -172,9 +175,8 @@ add_subdirectory(doc)
 
 #target_link_libraries(calc ...)
 
-# testing
-enable_testing ()
-add_test (test sh ${CMAKE_CURRENT_BINARY_DIR}/src/test.sh)
+
+#add_test (test sh ${CMAKE_CURRENT_BINARY_DIR}/src/test.sh)
 #TODO: use cmake instead of sh script?
 
 #
