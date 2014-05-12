@@ -36,6 +36,8 @@ namespace sca { namespace ca {
 // TODO:
 #define TABLE_OPTIMIZATION
 
+#define CA_DEBUG
+
 class ca_eqsolver_t
 {
 	eqsolver::expression_ast ast;
@@ -58,14 +60,17 @@ protected:
 		eqsolver::ast_area<eqsolver::variable_area_grid>
 			grid_solver;
 		_border_width = (int)grid_solver(ast);
-	//	printf("Size of Moore Neighbourhood: %d\n",
-	//		border_width);
-
+#ifdef CA_DEBUG
+		printf("Size of Moore Neighbourhood: %d\n", // TODO: use cout
+			_border_width);
+#endif
 		eqsolver::ast_area<eqsolver::variable_area_helpers>
 			helpers_solver;
 		helpers_size = (int)helpers_solver(ast) + 1;
-	//	printf("Size of Helper Variable Array: %d\n",
-	//		helpers_size);
+#ifdef CA_DEBUG
+		printf("Size of Helper Variable Array: %d\n",
+			helpers_size);
+#endif
 		if(helpers_size > 0)
 		 helper_vars = new int[helpers_size];
 

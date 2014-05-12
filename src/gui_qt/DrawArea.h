@@ -24,6 +24,8 @@
 #include <iostream>
 #include <QLabel>
 #include <QTimer>
+//#include <QTableWidget>
+#include <QGridLayout>
 
 #include "geometry.h"
 #include "StateMachine.h"
@@ -35,13 +37,13 @@ namespace sandpile
 	class _array_queue_no_file;
 }
 
-class DrawArea : public QLabel
+class DrawArea : public QWidget
 {
 	Q_OBJECT
 
 	StateMachine& state_machine;
 
-	QImage* grid_image;
+//	QImage* grid_image;
 	int pixel_factor;
 	int TIMER_INTERVAL;
 
@@ -63,19 +65,23 @@ class DrawArea : public QLabel
 	sandpile::_array_queue_no_file<int*>* container;
 	QTimer next_fire_timer;
 
+//	QTableWidget& table_widget;
+
+	QGridLayout grid_layout;
+
 private slots:
 	void slot_timeout();
 	inline void update_pixmap() {
-		setPixmap(QPixmap::fromImage(*grid_image).scaled(
+		/*setPixmap(QPixmap::fromImage(*grid_image).scaled(
 			sim_grid.internal_dim().width()*pixel_factor,
-			sim_grid.internal_dim().height()*pixel_factor));
+			sim_grid.internal_dim().height()*pixel_factor));*/
 	}
 	void state_updated(StateMachine::STATE new_state);
 
 public:
 	explicit DrawArea(StateMachine& _state_machine, QWidget *parent = 0);
 	inline ~DrawArea() {
-		delete grid_image;
+	//	delete grid_image;
 		std::cout << calc_grid;
 	}
 	inline void set_pixel_size(int pixel_size) {

@@ -167,7 +167,8 @@ struct variable_print : public boost::static_visitor<visit_result_type>
 	inline unsigned int operator()(nil) const { return 0; }
 	inline result_type operator()(vaddr::var_x _x) const { (void)_x; return x; }
 	inline result_type operator()(vaddr::var_y _y) const { (void)_y; return y; }
-	inline result_type operator()(vaddr::var_array _a) const { return v[_a.x+_a.y*width]; }
+	inline result_type operator()(vaddr::var_array _a) const {
+		return v[_a.x+_a.y*width]; }
 	inline int* operator()(vaddr::var_helper<true> _h) const {
 		//return (_h.address) ? ((result_type*)(helper_vars + _h.i)) : helper_vars[_h.i];
 		return helper_vars + _h.i;
@@ -272,7 +273,10 @@ struct nary_op
 		, fptr_base<Ret, Args...> fptr
 		, expression_ast::type const& left // (*)
 		, AstClass const& ... more)
-	: op(op), fptr(fptr), subtrees{(expression_ast)left, more...} {}
+	: op(op), fptr(fptr), subtrees{(expression_ast)left, more...} {
+		static_assert(sizeof...(AstClass) + 1 == sizeof...(Args),
+			"Invalid number of args for nary_op ctor.");
+	}
 
 	char op;
 	fptr_base<Ret, Args...> fptr;
@@ -332,9 +336,11 @@ private:
 	template<class NaryOpT, std::size_t ...Idxs>
 	inline res_type apply_fptr(NaryOpT const& expr, seq<Idxs...>) const
 	{
-		return expr.fptr(
-			boost::apply_visitor(*this, expr.subtrees[Idxs].expr)...
-		);
+		// the temprorary variable assures that the
+		// apply order is correct
+		result_type res[sizeof...(Idxs)] = { // TODO: make this const?
+			boost::apply_visitor(*this, expr.subtrees[Idxs].expr)... };
+		return expr.fptr(res[Idxs]...);
 	}
 
 public:
@@ -425,9 +431,9 @@ private:
 	template<class NaryOpT, std::size_t ...Idxs>
 	inline result_type apply_fptr(NaryOpT const& expr, seq<Idxs...>) const
 	{
-		return dump_detail::apply(
-			boost::apply_visitor(*this, expr.subtrees[Idxs].expr)...
-		);
+		result_type res[sizeof...(Idxs)] = {
+			boost::apply_visitor(*this, expr.subtrees[Idxs].expr)... };
+		return dump_detail::apply(res[Idxs]...);
 	}
 
 public:

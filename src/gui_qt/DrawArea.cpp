@@ -26,15 +26,18 @@
 #include "DrawArea.h"
 
 DrawArea::DrawArea(StateMachine& _state_machine, QWidget *parent) :
-	QLabel(parent),
+//	QTableWidget(parent),
+	QWidget(parent),
 	state_machine(_state_machine),
-	grid_image(NULL),
+	//grid_image(NULL),
 	pixel_factor(1),
 	sim_grid(1),
 	calc_grid(1),
 	min_color(0,255,0),
 	max_color(255,0,0),
-	next_cell(0)
+	next_cell(0),
+	//table_widget(*this)
+	grid_layout(this)
 {
 	connect(&next_fire_timer, SIGNAL(timeout()),
 		this, SLOT(slot_timeout()));
@@ -47,8 +50,14 @@ void DrawArea::increase_cell(const point& coord, int steps)
 	const int new_value = sim_grid.at_internal(coord) + steps;
 	sim_grid.at_internal(coord) = new_value;
 
-	if(calc_grid.point_is_on_border(coord))
-	 grid_image->setPixel(coord.x, coord.y, color_of(new_value));
+	if(!calc_grid.point_is_on_border(coord))
+	{
+		//table_widget.item(coord.x, coord.y)->setBackgroundColor(color_of(new_value));
+		QPalette pal(color_of(new_value));
+		grid_layout.itemAtPosition(coord.x, coord.y)->widget()->setAutoFillBackground(true); // TODO: needed?
+		grid_layout.itemAtPosition(coord.x, coord.y)->widget()->setPalette(pal);
+	}
+//	 grid_image->setPixel(coord.x, coord.y, color_of(new_value));
 
 	update_pixmap();
 }
@@ -162,14 +171,27 @@ void DrawArea::fill_grid(std::istream &inf)
 		++itr, ++entry)
 	 itr->to_32bit((int*)(color_table + entry));
 
-	delete grid_image;
+/*	delete grid_image;
 	grid_image = new QImage(calc_grid.internal_dim().width(),
 		calc_grid.internal_dim().height(),
-		QImage::Format_ARGB32);
+		QImage::Format_ARGB32);*/
+	//table_widget.resize(calc_grid.internal_dim().width(), calc_grid.internal_dim().height());
+	//table_widget.setRowCount(calc_grid.internal_dim().width());
+	//table_widget.setColumnCount(calc_grid.internal_dim().height());
+	// TODO
 
 	for(const point& p : sim_grid.points())
-	 grid_image->setPixel(p.x, p.y, color_of(sim_grid[p]));
-
+	{
+	//	std::cout << table_widget.size().width() << ", " << table_widget.size().height() << std::endl;
+		std::cout << "grid image: " << sim_grid.internal_dim()
+			<< ", p: " << p << std::endl;
+		//table_widget.item(p.x, p.y)->setBackgroundColor(color_of(sim_grid[p]));
+	//	table_widget.setItem(p.x, p.y, new QTableWidgetItem()); // this is not perfect...
+	//	QRgb cof = color_of(sim_grid[p]); (void) cof;
+	//	assert(table_widget.item(p.x, p.y));
+	//	table_widget.item(p.x, p.y)->setBackgroundColor(color_of(sim_grid[p]));
+		// TODO
+	}
 /*	for(unsigned int y = 0; y<dim.height(); y++)
 	for(unsigned int x = 0; x<dim.width(); x++)
 	{
@@ -181,7 +203,10 @@ void DrawArea::fill_grid(std::istream &inf)
 			grid_image->setPixel(x, y, color_of(sim_grid[coord]));
 		}
 	}*/
-
+	std::cout << "int w h: " << sim_grid.internal_dim().width() << ", "
+		<< sim_grid.internal_dim().height() << std::endl;
+		std::cout << "int2 w h: " << calc_grid.internal_dim().width() << ", "
+		<< calc_grid.internal_dim().height() << std::endl;
 
 	update_pixmap();
 }
