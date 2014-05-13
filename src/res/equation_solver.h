@@ -23,6 +23,7 @@
 
 #include <cmath>
 #include <cstring>
+#include <cstdint>
 
 #include <boost/spirit/include/support_info.hpp> // qi::info::nil
 
@@ -140,6 +141,33 @@ struct vaddr
 	vaddr() : expr(nil()) {}
 };
 
+struct grid_storage_array
+{
+	using storage_t = const int*;
+	storage_t const v;
+	int width;
+	grid_storage_array(storage_t const v, int width) :
+		v(v), width(width) {}
+	inline unsigned int operator()(vaddr::var_array _a) const {
+		return v[_a.x+_a.y*width]; }
+};
+
+template<std::size_t Each>
+struct grid_storage_bits
+{
+	using storage_t = int64_t;
+	constexpr const static storage_t bitmask = (1 << Each) - 1;
+	const storage_t grid;
+	char vpos;
+	int width;
+	inline unsigned int operator()(vaddr::var_array _a) const {
+		return (grid >> ((vpos + _a.x + _a.y*width) * Each)) & bitmask;
+	}
+	//grid_storage_bits
+};
+
+
+template<class GridStorage = grid_storage_array>
 struct variable_print : public boost::static_visitor<visit_result_type>
 {
 	variable_print(int _x) : x(_x) {}
@@ -152,23 +180,27 @@ struct variable_print : public boost::static_visitor<visit_result_type>
 	 * @param _v The address of the current element in the grid. Needed for neighbor calculations.
 	 * @param _h
 	 */
-	variable_print(int _height, int _width, int _x, int _y, const int* _v, const int* _h)
+	variable_print(int _height, int _width, int _x, int _y, const GridStorage& grid_storage, const int* _h)
 		: height(_height), width(_width), x(_x), y(_y),
-		v((const int*)_v), helper_vars((int*)_h) {
+		grid_storage(grid_storage),
+		/*v((const int*)_v), */helper_vars((int*)_h) {
 	}
 
 //	typedef unsigned int result_type;
 
 	int height, width; // TODO: height unused?
 	unsigned int x,y;
-	const int *v;
+//	const int *v;
+	GridStorage grid_storage;
 	int* helper_vars;
 
 	inline unsigned int operator()(nil) const { return 0; }
-	inline result_type operator()(vaddr::var_x _x) const { (void)_x; return x; }
-	inline result_type operator()(vaddr::var_y _y) const { (void)_y; return y; }
+	inline result_type operator()(vaddr::var_x) const { return x; }
+	inline result_type operator()(vaddr::var_y) const { return y; }
 	inline result_type operator()(vaddr::var_array _a) const {
-		return v[_a.x+_a.y*width]; }
+		//return v[_a.x+_a.y*width]; }
+		return grid_storage(_a);
+	}
 	inline int* operator()(vaddr::var_helper<true> _h) const {
 		//return (_h.address) ? ((result_type*)(helper_vars + _h.i)) : helper_vars[_h.i];
 		return helper_vars + _h.i;

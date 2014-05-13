@@ -358,6 +358,10 @@ protected:
 	coord_t bw_2;
 
 public:
+	//! @param top_left begin of data array
+	//! @param dim internal dimension
+	//! @param bw border width
+	//! @param pos_is_begin whether the itr shall point to begin or end
 	const_cell_itr(cell_t* top_left, dimension dim, coord_t bw,
 		bool pos_is_begin = true) :
 		linewidth(dim.width()),
@@ -395,11 +399,9 @@ public:
 	cell_t& operator*() { return *ptr; }
 };
 
-//! class representing a grid, i.e. an array with h/w + border
-//! public functions always take human h/w/dim, if not denoted otherwise
-class grid_t
+class grid_alignment_t
 {
-	std::vector<cell_t> _data;
+protected: // TODO: all protected?
 	dimension _dim; //! dimension of data, including borders
 	u_coord_t bw, bw_2;
 
@@ -412,17 +414,22 @@ class grid_t
 		return dimension(_dim.width() - bw_2, _dim.height() - bw_2);
 	}
 
-	static area_t storage_area(const dimension& human_dim,
+	/*static area_t storage_area(const dimension& human_dim,
 		u_coord_t border_width) {
 		const u_coord_t bw_2 = border_width << 1;
 		return (human_dim.width() + bw_2) * (human_dim.height() + bw_2);
+	}*/
+	area_t storage_area() {
+		//const u_coord_t bw_2 = border_width << 1;
+		//return (human_dim.width() + bw_2) * (human_dim.height() + bw_2);
+		return _dim.area();
 	}
 public:
 	//! returns *internal* dimension
 	const dimension& internal_dim() const { return _dim; } // TODO: remove this?
 	dimension human_dim() const { return _human_dim(); }
-	const std::vector<cell_t>& data() const { return _data; }
-	std::vector<cell_t>& data() { return _data; } // TODO: remove this soon
+
+	u_coord_t border_width() const { return bw; }
 
 	u_coord_t dx() const { return _dim.dx() - bw_2; }
 	u_coord_t dy() const { return _dim.dy() - bw_2; }
@@ -436,6 +443,38 @@ public:
 	}*/
 
 	dimension_container points() const { return _dim.points(bw); }
+
+	//! simple constructor: empty grid
+	grid_alignment_t(u_coord_t border_width) :
+		bw(border_width),
+		bw_2(bw << 1)
+	{}
+
+	grid_alignment_t(const dimension& dim, u_coord_t border_width) :
+		_dim(dim.width() + (border_width << 1),
+			dim.height() + (border_width << 1)),
+		bw(border_width),
+		bw_2(bw << 1) // todo: can we not use the inherited ctor?
+	{}
+
+	grid_alignment_t& operator=(const grid_alignment_t& rhs)
+	{
+		assert(bw == rhs.bw);
+		assert(bw_2 == rhs.bw_2);
+		_dim = rhs._dim;
+		return *this;
+	}
+};
+
+//! class representing a grid, i.e. an array with h/w + border
+//! public functions always take human h/w/dim, if not denoted otherwise
+class grid_t : public grid_alignment_t
+{
+	std::vector<cell_t> _data;
+
+public:
+	const std::vector<cell_t>& data() const { return _data; }
+	std::vector<cell_t>& data() { return _data; } // TODO: remove this soon
 
 	/*
 	 * conversion
@@ -457,10 +496,13 @@ public:
 	//! very slow (but faster than allocating a new array)
 	void resize_borders(u_coord_t new_border_width);
 
-	//! simple constructor: empty grid
+	/*//! simple constructor: empty grid
 	grid_t(u_coord_t border_width) :
 		bw(border_width),
 		bw_2(bw << 1)
+	{}*/
+	grid_t(u_coord_t border_width) :
+		grid_alignment_t(border_width)
 	{}
 
 	//! simple constructor: fill grid
@@ -468,11 +510,13 @@ public:
 	//! @param dim internal dimension, border not inclusive
 	// TODO: use climit's INT MIN
 	grid_t(const dimension& dim, u_coord_t border_width, cell_t fill = 0, cell_t border_fill = INT_MIN) :
-		_data(storage_area(dim, border_width), fill),
-		_dim(dim.width() + (border_width << 1),
+		//_data(storage_area(dim, border_width), fill),
+		/*_dim(dim.width() + (border_width << 1),
 			dim.height() + (border_width << 1)),
 		bw(border_width),
-		bw_2(bw << 1)
+		bw_2(bw << 1)*/
+		grid_alignment_t(dim, border_width),
+		_data(storage_area(), fill)
 	{
 		u_coord_t linewidth = dim.width(),
 			storage_lw = linewidth + bw_2;
@@ -486,8 +530,7 @@ public:
 
 	//! constructor which reads a grid immediatelly
 	grid_t(FILE* fp, u_coord_t border_width) :
-		bw(border_width),
-		bw_2(bw << 1)
+		grid_alignment_t(border_width)
 	{
 		read(fp);
 	}
@@ -504,10 +547,8 @@ public:
 
 	grid_t& operator=(const grid_t& rhs)
 	{
-		assert(bw == rhs.bw);
-		assert(bw_2 == rhs.bw_2);
+		grid_alignment_t::operator=(rhs);
 		_data = rhs._data;
-		_dim = rhs._dim;
 		return *this;
 	}
 
@@ -561,6 +602,7 @@ public:
 	cell_itr end() { return cell_itr(_data.data(), _dim, bw, false); }
 	const_cell_itr cbegin() { return const_cell_itr(_data.data(), _dim, bw); }
 	const_cell_itr cend() { return const_cell_itr(_data.data(), _dim, bw, false); }
+	// TODO: the last two funcs should have cv qualifier
 
 	//! @param point point in internal format
 	bool point_is_on_border(const point& p) const {
@@ -575,8 +617,7 @@ public:
 
 	//! constructor which reads a grid immediatelly
 	grid_t(std::istream& stream, u_coord_t border_width) :
-		bw(border_width),
-		bw_2(bw << 1)
+		grid_alignment_t(border_width)
 	{
 		read_grid(stream, _data, _dim, bw);
 	}
@@ -584,8 +625,7 @@ public:
 	//! constructor which reads a grid immediatelly
 	//! @todo bw 1 as def is deprecated, maybe inherit asm_grid_t in asm_basics.h?
 	grid_t(const char* filename, u_coord_t border_width = 1) :
-		bw(border_width),
-		bw_2(bw << 1)
+		grid_alignment_t(border_width)
 	{
 		std::ifstream ifs;
 		std::istream* is_ptr;

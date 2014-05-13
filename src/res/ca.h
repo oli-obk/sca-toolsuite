@@ -36,7 +36,7 @@ namespace sca { namespace ca {
 // TODO:
 #define TABLE_OPTIMIZATION
 
-#define CA_DEBUG
+//#define CA_DEBUG
 
 class ca_eqsolver_t
 {
@@ -44,6 +44,7 @@ class ca_eqsolver_t
 	int* helper_vars = nullptr; //!< @todo: auto_ptr
 	int helpers_size;
 	int _border_width;
+protected:
 	int num_states;
 //	n_t_const neighbourhood;
 
@@ -52,7 +53,8 @@ protected:
 
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
-	ca_eqsolver_t(const char* equation)
+	ca_eqsolver_t(const char* equation, unsigned num_states = 0)
+		: num_states(num_states)
 	{
 	//	debug("Building AST from equation...\n");
 		eqsolver::build_tree(equation, &ast);
@@ -89,7 +91,7 @@ protected:
 		std::cout << "mm first: " << (std::string)dumper(mm.first) << std::endl; // TODO: non return syntax
 		(void)mm;
 #endif
-		num_states = 0;
+		//num_states = 0;
 	}
 
 	int calculate_next_state(const int *cell_ptr,
@@ -97,10 +99,13 @@ protected:
 	{
 		// TODO: replace &((*old_grid)[internal]) by old_value
 		// and make old_value a ptr/ref?
-		eqsolver::variable_print vprinter(dim.height(), dim.width(),
+		eqsolver::grid_storage_array arr(cell_ptr, dim.width());
+		// TODO: why do we need to specify the default argument?
+		using vprinter_t = eqsolver::variable_print<eqsolver::grid_storage_array>;
+		vprinter_t vprinter(dim.height(), dim.width(),
 			p.x, p.y,
-			cell_ptr, helper_vars);
-		eqsolver::ast_print<eqsolver::variable_print> solver(&vprinter);
+			arr, helper_vars);
+		eqsolver::ast_print<vprinter_t> solver(&vprinter);
 		return (int)solver(ast);
 	}
 
@@ -115,6 +120,125 @@ public:
 	}
 	//bool can_optimize_table() const { return num_states }
 };
+
+#if 0
+template<int Each>
+class const_bitcell_itr
+{
+protected:
+	using storage_t = int64_t;
+	storage_t grid;
+	coord_t linewidth;
+	//cell_t *ptr, *next_line_end;
+	u_coord_t ptr, next_line_end;
+	coord_t bw_2;
+	constexpr const static storage_t bitmask = (1 << Each) - 1;
+
+public:
+	const_bitcell_itr(storage_t grid, dimension dim, coord_t bw,
+		bool pos_is_begin = true) :
+		linewidth(dim.width()),
+		ptr(top_left +
+			((pos_is_begin) ? bw * (linewidth+1)
+			: dim.area() - bw * (linewidth-1)) ),
+		next_line_end(ptr + linewidth - (bw << 1)),
+		bw_2(bw << 1)
+	{
+	}
+
+	const_bitcell_itr& operator++()
+	{
+		// TODO: use a good modulo function here -> no if
+		if((++ptr) == next_line_end)
+		{
+			ptr += bw_2;
+			next_line_end += linewidth;
+		}
+		return *this;
+	}
+
+	const cell_t& operator*() const { return grid & bitmask; }
+
+	bool operator==(const const_cell_itr& rhs) const {
+		return ptr == rhs.ptr; }
+	bool operator!=(const const_cell_itr& rhs) const {
+		return !operator==(rhs); }
+};
+
+class bitcell_itr : public const_bitcell_itr
+{
+public:
+	using const_bitcell_itr::const_bitcell_itr;
+	cell_t& operator*() { return *ptr; }
+};
+#endif
+
+template<int Each>
+class bitgrid : public grid_alignment_t
+{
+/*	std::vector<cell_t> _data;
+	dimension _dim; //! dimension of data, including borders
+	u_coord_t bw, bw_2;*/
+
+	using storage_t = int64_t;
+	constexpr const static storage_t bitmask = (1 << Each) - 1;
+	storage_t grid;
+
+	void size_check()
+	{
+	//	if(_dim.area())
+	}
+
+	bitgrid(const dimension& dim, u_coord_t border_width, cell_t fill = 0, cell_t border_fill = INT_MIN) :
+		grid_alignment_t(dim, border_width),
+		grid(0) // TODO!!
+	{
+		size_check();
+		(void)fill; // TODO
+		(void)border_fill;
+	}
+};
+
+
+class ca_table_t : public ca_eqsolver_t
+{
+	std::vector<int64_t> table;
+
+protected:
+
+	// TODO: single funcs to initialize and make const?
+	// aka: : ast(private_build_ast), ...
+	ca_table_t(const char* equation, cell_t num_states = 0)
+		: ca_eqsolver_t(equation, num_states)
+	{
+		unsigned moore_w = (border_width()<<1) + 1;
+		grid_t grid(dimension(moore_w, moore_w), 0, 0);
+		cell_t& max = grid[point(moore_w-1, moore_w-1)];
+		// odometer
+		while(max < num_states)
+		{
+			// evaluate
+
+			// increase
+			bool go_on;
+			for(cell_itr itr = grid.begin(); itr != grid.end() && go_on; ++itr)
+			{
+				go_on = ((++(*itr))%num_states == 0);
+			}
+		}
+	}
+
+	int calculate_next_state(const int *cell_ptr,
+		const point& p, const dimension& dim) const
+	{
+		(void)cell_ptr;
+		(void)p;
+		(void)dim;
+		return 0;// TODO
+	}
+
+};
+
 
 namespace calc_methods
 {
@@ -206,13 +330,15 @@ class input_array : public base
  *
  * Thus it contains no grid.
  */
-class ca_calculator_t : public ca_eqsolver_t
+template<class Solver>
+class _ca_calculator_t : public Solver
 {
+	using base = Solver;
 public:
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
-	ca_calculator_t(const char* equation) :
-		ca_eqsolver_t(equation)
+	_ca_calculator_t(const char* equation, unsigned num_states = 0) :
+		Solver(equation, num_states)
 	{
 	}
 
@@ -220,13 +346,13 @@ public:
 	//! @param dim the grids internal dimension
 	int next_state(const int *cell_ptr, const point& p, const dimension& dim) const
 	{
-		return calculate_next_state(cell_ptr, p, dim);
+		return base::calculate_next_state(cell_ptr, p, dim);
 	}
 
 	//! overload, with x and y in internal format. slower.
 	int next_state_realxy(const int *cell_ptr, const point& p, const dimension& dim) const
 	{
-		int bw = border_width();
+		int bw = base::border_width();
 		return next_state(cell_ptr, p - point { bw, bw }, dim);
 	}
 
@@ -248,6 +374,8 @@ public:
 		return next != *cell_ptr;
 	}
 };
+
+using ca_calculator_t = _ca_calculator_t<ca_eqsolver_t>;
 
 class asm_synch_calculator_t
 {
