@@ -43,10 +43,10 @@ class MyProgram : public Program
 		for(const point p : grid.points())
 		 std::cout << p << ": " << grid[p] << std::endl;*/
 
-		sca::ca::ca_table_t ca(argv[1], 3);
+		sca::ca::_ca_calculator_t<sca::ca::ca_table_t> ca(argv[1], 3);
 		grid_t grid(std::cin, 0);
 
-		std::cout << ca.calculate_next_state(grid, point(1,1)) << std::endl;
+		std::cout << ca.next_state(grid, point(1,1)) << std::endl;
 
 		return 0;
 	}

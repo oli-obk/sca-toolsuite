@@ -160,15 +160,6 @@ struct grid_storage_bits
 	char vpos;
 	int width;
 	inline unsigned int operator()(vaddr::var_array _a) const {
-		if(grid == 153957)
-		{
-			std::cout << "storage:" << std::endl;
-			std::cout << "vpos: " << vpos << std::endl;
-			std::cout << (vpos + _a.x + _a.y*width) << std::endl;
-			std::cout << each << std::endl;
-			std::cout << (grid >> ((vpos + _a.x + _a.y*width) * each)) << std::endl;
-			std::cout << bitmask << std::endl;
-		}
 		return (grid >> ((vpos + _a.x + _a.y*width) * each)) & bitmask;
 	}
 	grid_storage_bits(storage_t grid, storage_t each, int width, storage_t vpos) :

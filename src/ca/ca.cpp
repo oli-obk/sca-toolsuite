@@ -105,9 +105,26 @@ class MyProgram : public Program
 				break;
 		}
 
+//#define CA_TABLE_OPTIMIZATION
+#ifndef CA_TABLE_OPTIMIZATION
 		ca::ca_simulator_t simulator(equation, async);
 
 		simulator.grid().read(in_fp);
+#else
+		(void)in_fp;
+		grid_t tmp_grid(std::cin, 0); // TODO: in_fp
+
+		cell_t min=INT_MAX, max=INT_MIN;
+		for(const cell_t c: tmp_grid)
+		{
+			min = std::min(min, c);
+			max = std::max(max, c);
+		}
+		assert(min >= 0);
+		assert(min <= max);
+		ca::ca_simulator_t simulator(equation, max, async);
+		simulator.grid() = tmp_grid;
+#endif
 		simulator.finalize();
 
 		for(int round = 0; (round < num_steps) && simulator.can_run(); ++round)

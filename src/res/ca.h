@@ -225,7 +225,7 @@ public:
 			next_line_end += linewidth;
 		//	grid = grid >> (bw_2 * each);
 		}
-		std::cout << "pos now: " << ptr << std::endl;
+		// std::cout << "pos now: " << ptr << std::endl;
 		return *this;
 	}
 
@@ -368,80 +368,51 @@ public:
 		table(1 << (size_each * n_w * n_w))
 	{
 		bitgrid_t grid(size_each, dimension(n_w, n_w), 0, 0);
-		//bit_reference max = grid[point(n_w-1, n_w-1)];
-
-	//	point eval_p = point(border_width(), border_width());
-		//int eval_idx = grid.index_internal(eval_p);
 		const dimension& dim = grid.internal_dim();
-
 		std::size_t max = (int)pow(num_states, (n_w * n_w));
-		std::cout << "max: " << max << std::endl;
-		std::cout << "table size: " << table.size() << std::endl;
-		std::cout << "size each: " << size_each << std::endl;
+	//	std::cout << "max: " << max << std::endl;
+	//	std::cout << "table size: " << table.size() << std::endl;
+	//	std::cout << "size each: " << size_each << std::endl;
 		// odometer
 		for(std::size_t i = 0; i < max; ++i)
 		{
 			// evaluate
-		/*	eqsolver::grid_storage_bits arr(grid.raw_value(), size_each, dim.width(), eval_idx);
-
-			using vprinter_t = eqsolver::variable_print<eqsolver::grid_storage_array>;
-			vprinter_t vprinter(dim.height(), dim.width(),
-				0, 0,
-				arr, helper_vars);
-			eqsolver::ast_print<vprinter_t> solver(&vprinter);
-
-			table.at(grid.raw_value()) = solver(ast);*/
-		/*	std::cout << "table.size: " << size_each << std::endl;
-			std::cout << "table.size: " << n_w << std::endl;
-			std::cout << "table.size: " << border_width() << std::endl;
-			std::cout << "table.size: " << num_states << std::endl;
-			std::cout << "table.size: " << table.size() << std::endl;
-			std::cout << "table.size: " << table.capacity() << std::endl;
-			std::cout << "table.size: " << grid.raw_value() << std::endl;
-			std::cout << "table.size: " << grid << std::endl;*/
-
-			std::cout << "at " << grid.raw_value() ;
-
+			// std::cout << "at " << grid.raw_value() ;
 			table.at(grid.raw_value()) = ca_eqsolver_t::
+				ca_eqsolver_t::
 				calculate_next_state(grid.raw_value(), size_each, center, dim);
-
-			std::cout << ": " << table.at(grid.raw_value()) << std::endl;
-
-			//std::cout << i << std::endl;
+			// std::cout << ": " << table.at(grid.raw_value()) << std::endl;
 
 			// increase
-			//if(i < table.size() - 1)
 			{
 				bool go_on = true;
 				for(bitcell_itr itr = grid.begin(); itr != grid.end() && go_on; ++itr)
 				{
-				//	std::cout << "++: " << *itr << std::endl;
-				//	std::cout << "RES: " << ((*itr) + 1 % num_states) << std::endl;
 					go_on = ((*itr = (((*itr) + 1) % num_states)) == 0);
-					std::cout << "++2: " << *itr << std::endl;
-				//	std::cout << go_on << std::endl;
-					//go_on = ((++(*itr))%num_states == 0);
 				}
 			}
 		}
 	}
 
-	int calculate_next_state(const grid_t& grid_ptr,
-		const point& p) const
+	//int calculate_next_state(const grid_t& grid_ptr,
+	//	const point& p) const
+	int calculate_next_state(const int *cell_ptr,
+		const point& p, const dimension& dim) const
 	{
-		/*(void)cell_ptr;
-		(void)p;
-		(void)dim;*/
 		// TODO: class member?
+
+		(void)p; // for a ca, the coordinates are no cell input
 		bitgrid_t bitgrid(size_each, dimension(n_w, n_w), 0);
 
 		for(const point p2 : bitgrid.points())
 		{
-			bitgrid[p2] = grid_ptr[p+p2-center];
+			//bitgrid[p2] = grid_ptr[p+p2-center];
+			const point offs = p2 - center;
+			const int* ptr = cell_ptr + offs.y * (coord_t)dim.width() + offs.x;
+			bitgrid[p2] = *ptr;
 		}
-	//	return 0;// TODO
-		std::cout << bitgrid << std::endl;
-		std::cout << bitgrid.raw_value() << std::endl;
+	//	std::cout << bitgrid << std::endl;
+	//	std::cout << bitgrid.raw_value() << std::endl;
 		return table[bitgrid.raw_value()];
 	}
 
@@ -673,8 +644,8 @@ class ca_simulator_t : private ca_calculator_t, public base
 	int round = 0;
 	bool async;
 public:
-	ca_simulator_t(const char* equation, bool async = false) :
-		ca_calculator_t(equation),
+	ca_simulator_t(const char* equation, unsigned num_states, bool async = false) :
+		ca_calculator_t(equation, num_states),
 		_grid{border_width(), border_width()},
 		neighbours(get_neighbourhood()),
 		async(async)
