@@ -277,7 +277,11 @@ class bitgrid_t : public grid_alignment_t
 	void size_check()
 	{
 		if(_dim.area() * each > 64)
-		 throw "Error: grid too large for 64 bit integer.";
+		{
+			std::cout << _dim << std::endl;
+			std::cout << each << std::endl;
+			throw "Error: grid too large for 64 bit integer.";
+		}
 	}
 public:
 	bitgrid_t(storage_t each, const dimension& dim, u_coord_t border_width, cell_t fill = 0, cell_t border_fill = 0) :
@@ -347,6 +351,8 @@ class ca_table_t : public ca_eqsolver_t
 	{
 		size_check(int size)
 		{
+			if(size < 0)
+			 throw "Error: Size negative (did you set num_states == 0?).";
 			if(size > (1<<18))
 			 throw "Error: This ca is too large for a table.";
 		}
@@ -373,6 +379,10 @@ public:
 	//	std::cout << "max: " << max << std::endl;
 	//	std::cout << "table size: " << table.size() << std::endl;
 	//	std::cout << "size each: " << size_each << std::endl;
+
+		std::size_t percent = 0, cur;
+
+		std::cout << "Precalculating table, please wait..." << std::endl;
 		// odometer
 		for(std::size_t i = 0; i < max; ++i)
 		{
@@ -382,6 +392,13 @@ public:
 				ca_eqsolver_t::
 				calculate_next_state(grid.raw_value(), size_each, center, dim);
 			// std::cout << ": " << table.at(grid.raw_value()) << std::endl;
+
+			cur = (i * 100) / max; // max can never be 0
+			if(percent < cur)
+			{
+				percent = cur;
+				std::cout << "..." << percent << " percent" << std::endl;
+			}
 
 			// increase
 			{
@@ -404,16 +421,24 @@ public:
 		(void)p; // for a ca, the coordinates are no cell input
 		bitgrid_t bitgrid(size_each, dimension(n_w, n_w), 0);
 
+		int min = INT_MAX, max = INT_MIN; // any better alternative?
 		for(const point p2 : bitgrid.points())
 		{
 			//bitgrid[p2] = grid_ptr[p+p2-center];
 			const point offs = p2 - center;
 			const int* ptr = cell_ptr + offs.y * (coord_t)dim.width() + offs.x;
 			bitgrid[p2] = *ptr;
+			min = std::min(min, *ptr);
+			max = std::max(max, *ptr);
 		}
 	//	std::cout << bitgrid << std::endl;
 	//	std::cout << bitgrid.raw_value() << std::endl;
-		return table[bitgrid.raw_value()];
+
+		// todo: better hashing function for not exactly n bits?
+		const bool in_range = (min >= 0 && max < num_states);
+		return in_range
+			? table[bitgrid.raw_value()]
+			: *cell_ptr; // can not happen, except for border -> don't change
 	}
 
 };
