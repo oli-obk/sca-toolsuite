@@ -21,10 +21,14 @@
 #ifndef IO_H
 #define IO_H
 
+// TODO: make this file a "geometry_io.cpp" file
+
 #include <vector>
 #include <cctype> // isdigit()
 #include <iostream>
 #include <cstring>
+#include <cstdint>
+#include <climits>
 
 struct dimension;
 
@@ -152,6 +156,94 @@ struct converter
 	converter(const source& _src, destination& _dest) : src(_src), dest(_dest) {}
 };
 #endif
+
+
+
+class grid_storage_r
+{
+public:
+	virtual void insert_horizontal_border_begin(
+		int human_linewidth,
+		int border_width) = 0;
+
+	virtual void insert_horizontal_border_end(
+		int human_linewidth,
+		int border_width) = 0;
+
+	virtual void insert_vertical_border_end(
+		int border_width) = 0;
+
+	virtual void append(const int val) = 0;
+};
+
+class grid_storage_w
+{
+public:
+	virtual int operator[](std::size_t pos) const = 0;
+};
+
+// TODO: only forward, and include from io.cpp?
+class vector_storage_r : public grid_storage_r
+{
+	std::vector<int>& grid;
+
+	inline void insert_horizontal_border(
+		std::vector<int>::iterator itr,
+		int human_linewidth,
+		int border_width)
+	{
+		grid.insert(itr,
+			(human_linewidth + (border_width<<1))*border_width,
+			INT_MIN);
+	}
+public:
+	inline void insert_horizontal_border_begin(
+		int human_linewidth,
+		int border_width)
+	{
+		insert_horizontal_border(grid.begin(), human_linewidth, border_width);
+	}
+
+	inline void insert_horizontal_border_end(
+		int human_linewidth,
+		int border_width)
+	{
+		insert_horizontal_border(grid.end(), human_linewidth, border_width);
+	}
+
+	inline void insert_vertical_border_end(
+		int border_width)
+	{
+		grid.insert(grid.end(), border_width, INT_MIN);
+	}
+
+	void append(const int val) { grid.push_back(val); }
+
+	vector_storage_r(std::vector<int>& grid) : grid(grid) {}
+};
+
+class vector_storage_w : public grid_storage_w
+{
+	const std::vector<int>& grid;
+public:
+	int operator[](std::size_t pos) const { return grid[pos]; }
+	vector_storage_w(const std::vector<int>& grid) : grid(grid) {}
+};
+
+class bit_storage_w : public grid_storage_w
+{
+	uint64_t grid, each;
+	uint64_t bitmask;
+public:
+	int operator[](std::size_t pos) const {
+		return (grid >> (pos * each)) & bitmask;
+	}
+	bit_storage_w(uint64_t grid, uint64_t each) :
+		grid(grid),
+		each(each),
+		bitmask((1 << each)-1)
+		{}
+};
 
 class base_grid
 {
@@ -281,13 +373,14 @@ inline void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	read_grid(fp, grid, dim, &read_number, border);
 }
 
-void read_grid(const base_grid* grid_class, std::istream& is, std::vector<int>& grid, dimension& dim,
-	int border = -1);
+void read_grid(const base_grid* grid_class, std::istream& is, dimension& dim,
+	grid_storage_r &storage_class, int border = -1);
 
 template<class GridType = number_grid>
 void read_grid(std::istream& is, std::vector<int>& grid, dimension& dim, int border = -1) {
 	GridType grid_class;
-	read_grid(&grid_class, is, grid, dim, border);
+	vector_storage_r storage(grid);
+	read_grid(&grid_class, is, dim, storage, border);
 }
 
 
@@ -311,8 +404,8 @@ void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
 //void write_grid(std::ostream& os, const std::vector<int>& grid, const dimension& dim,
 //	void (*PRINTFUNC)(char*&, int), int border);
 
-void write_grid(const base_grid* grid_class, std::ostream& os, const std::vector<int>& grid, const dimension& dim,
-	int border);
+void write_grid(const base_grid* grid_class, std::ostream& os, const dimension& dim,
+	int border, const grid_storage_w &storage_class);
 
 inline void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
 	int border) {
@@ -324,7 +417,8 @@ void write_grid(std::ostream& os, const std::vector<int>& grid, const dimension&
 	int border)
 {
 	GridType grid_class;
-	write_grid(&grid_class, os, grid, dim, border);
+	const vector_storage_w storage(grid);
+	write_grid(&grid_class, os, dim, border, storage);
 }
 
 

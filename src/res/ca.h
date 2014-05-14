@@ -109,132 +109,340 @@ protected:
 		return (int)solver(ast);
 	}
 
+	int calculate_next_state(uint64_t grid_int, uint64_t size_each,
+		const point& p, const dimension& dim) const
+	{
+		int eval_idx = dim.width() * p.y + p.x; // TODO: bw?
+		eqsolver::grid_storage_bits arr(grid_int, size_each, dim.width(), eval_idx);
+
+		using vprinter_t = eqsolver::variable_print<eqsolver::grid_storage_bits>;
+		vprinter_t vprinter(dim.height(), dim.width(),
+			p.x, p.y,
+			arr, helper_vars);
+		eqsolver::ast_print<vprinter_t> solver(&vprinter);
+		return solver(ast);
+	}
+
 public:
 	int border_width() const { return _border_width; }
 	n_t get_neighbourhood() const
 	{
 		int bw = border_width();
-		unsigned moore_width = (bw<<1) + 1;
-		dimension moore = { moore_width, moore_width };
+		unsigned n_width = (bw<<1) + 1;
+		dimension moore = { n_width, n_width };
 		return n_t(moore, point(bw, bw));
 	}
 	//bool can_optimize_table() const { return num_states }
 };
 
-#if 0
-template<int Each>
-class const_bitcell_itr
+class bit_reference_base
 {
 protected:
-	using storage_t = int64_t;
-	storage_t grid;
+	uint64_t minbit, bitmask;
+	bit_reference_base(uint64_t minbit, uint64_t bitmask) :
+		minbit(minbit),
+		bitmask(bitmask) {}
+	cell_t bits_in(const uint64_t& grid) const {
+		return (grid >> minbit) & bitmask;
+	}
+};
+
+class const_bit_reference : public bit_reference_base
+{
+	const uint64_t& grid;
+public:
+	const_bit_reference(const uint64_t& grid, uint64_t minbit, uint64_t bitmask) :
+		bit_reference_base(minbit, bitmask),
+		grid(grid)
+	{
+	}
+
+public:
+	operator cell_t () const { return bits_in(grid); }
+};
+
+class bit_reference : public bit_reference_base
+{
+// TODO:
+//	friend class bitgrid_t; // TODO?
+//	reference();	//! no public constructor
+	//u_coord_t minbit;
+
+	uint64_t& grid;
+public:
+	bit_reference(uint64_t& grid, uint64_t minbit, uint64_t bitmask) :
+		bit_reference_base(minbit, bitmask),
+		grid(grid)
+	{
+	}
+public:
+	operator cell_t () const { return bits_in(grid); }
+
+	//! TODO: faster ops for ++ etc.
+	bit_reference& operator= (const cell_t c) {
+		grid = grid & (~(bitmask << minbit));
+		grid = grid | ((uint64_t)c << minbit);
+		return *this;
+	}
+	bit_reference& operator++() {
+		grid += (uint64_t)(1 << minbit);
+		return *this;
+	}
+};
+
+
+class bitcell_itr_base
+{
+protected:
+	using storage_t = uint64_t;
+	const storage_t each;
 	coord_t linewidth;
 	//cell_t *ptr, *next_line_end;
 	u_coord_t ptr, next_line_end;
 	coord_t bw_2;
-	constexpr const static storage_t bitmask = (1 << Each) - 1;
+	const storage_t bitmask;
 
 public:
-	const_bitcell_itr(storage_t grid, dimension dim, coord_t bw,
+	bitcell_itr_base(storage_t each, dimension dim, coord_t bw,
 		bool pos_is_begin = true) :
+		each(each),
 		linewidth(dim.width()),
-		ptr(top_left +
+		ptr(0 +
 			((pos_is_begin) ? bw * (linewidth+1)
 			: dim.area() - bw * (linewidth-1)) ),
 		next_line_end(ptr + linewidth - (bw << 1)),
-		bw_2(bw << 1)
+		bw_2(bw << 1),
+		bitmask((1 << each) - 1)
 	{
 	}
 
-	const_bitcell_itr& operator++()
+	bitcell_itr_base& operator++() // TODO: the return value of this is a bug
 	{
 		// TODO: use a good modulo function here -> no if
-		if((++ptr) == next_line_end)
+		if((/*grid = grid >> each,*/ ++ptr) == next_line_end)
 		{
-			ptr += bw_2;
+			ptr += bw_2; // TODO: ptr is somehow unneeded
 			next_line_end += linewidth;
+		//	grid = grid >> (bw_2 * each);
 		}
+		std::cout << "pos now: " << ptr << std::endl;
 		return *this;
 	}
 
-	const cell_t& operator*() const { return grid & bitmask; }
-
-	bool operator==(const const_cell_itr& rhs) const {
+	bool operator==(const bitcell_itr_base& rhs) const {
 		return ptr == rhs.ptr; }
-	bool operator!=(const const_cell_itr& rhs) const {
+	bool operator!=(const bitcell_itr_base& rhs) const {
 		return !operator==(rhs); }
 };
 
-class bitcell_itr : public const_bitcell_itr
+class const_bitcell_itr : public bitcell_itr_base
 {
+	storage_t grid;
 public:
-	using const_bitcell_itr::const_bitcell_itr;
-	cell_t& operator*() { return *ptr; }
-};
-#endif
+	const_bitcell_itr(storage_t grid, storage_t each, dimension dim, coord_t bw,
+		bool pos_is_begin = true) :
+		bitcell_itr_base(each, dim, bw, pos_is_begin),
+		grid(grid) {}
 
-template<int Each>
-class bitgrid : public grid_alignment_t
+	const_bit_reference operator*() const {
+		return const_bit_reference(grid, ptr * each, bitmask);
+	}
+};
+
+class bitcell_itr : public bitcell_itr_base
+{
+	storage_t& grid;
+public:
+	bitcell_itr(storage_t& grid, storage_t each, dimension dim, coord_t bw,
+		bool pos_is_begin = true) :
+		bitcell_itr_base(each, dim, bw, pos_is_begin),
+		grid(grid) {}
+
+	bit_reference operator*() {
+		return bit_reference(grid, ptr * each, bitmask);
+	}
+};
+
+class bitgrid_t : public grid_alignment_t
 {
 /*	std::vector<cell_t> _data;
 	dimension _dim; //! dimension of data, including borders
 	u_coord_t bw, bw_2;*/
 
-	using storage_t = int64_t;
-	constexpr const static storage_t bitmask = (1 << Each) - 1;
+
+	using storage_t = uint64_t;
+	const storage_t each, bitmask;
 	storage_t grid;
 
 	void size_check()
 	{
-	//	if(_dim.area())
+		if(_dim.area() * each > 64)
+		 throw "Error: grid too large for 64 bit integer.";
 	}
-
-	bitgrid(const dimension& dim, u_coord_t border_width, cell_t fill = 0, cell_t border_fill = INT_MIN) :
+public:
+	bitgrid_t(storage_t each, const dimension& dim, u_coord_t border_width, cell_t fill = 0, cell_t border_fill = 0) :
 		grid_alignment_t(dim, border_width),
-		grid(0) // TODO!!
+		each(each),
+		bitmask((1<<each)-1),
+		grid(0) // start at zero and then or
 	{
 		size_check();
-		(void)fill; // TODO
-		(void)border_fill;
+		// we do not know a more simple collective operation than this
+		// TODO: only fill border
+		for(unsigned char pos = 0; pos < storage_area(); ++pos)
+		{
+			grid = grid | ((uint64_t)(border_fill) << (each * pos));
+		}
+
+		// 2nd for loop: cache does not matter
+		//for(const bit_reference& b : this)
+		for(auto b = this->begin(); b != this->end(); ++b)
+		{
+			*b = (uint64_t)fill;
+		}
+
+	/*	(void)fill; // TODO
+		(void)border_fill;*/
 	}
+
+	bit_reference operator[](point p)
+	{
+		//return (grid >> (index(p)*each)) & bitmask;
+		return bit_reference(grid, index(p)*each, bitmask);
+	}
+
+	const const_bit_reference operator[](point p) const
+	{
+		return const_bit_reference(grid, index(p)*each, bitmask);
+		//return (grid >> (index(p)*each)) & bitmask;
+	}
+
+	friend std::ostream& operator<< (std::ostream& stream,
+		const bitgrid_t& g) {
+		const bit_storage_w str(g.grid, g.each);
+		const number_grid ng;
+		write_grid(&ng, stream, g._dim, g.bw, str);
+		return stream;
+	}
+
+	//TODO: reference class like in std::vector<bool>?
+//	cell_t get(point p) { return (grid >> (index(p)*each)) & bitmask; }
+//	void set(point p, const cell_t& value) { return grid = grid & (bitmask << (index(p)*each)); }
+
+	bitcell_itr begin() { return bitcell_itr(grid, each, _dim, bw); }
+	bitcell_itr end() { return bitcell_itr(grid, each, _dim, bw, false); }
+	const_bitcell_itr cbegin() const { return const_bitcell_itr(grid, each, _dim, bw); }
+	const_bitcell_itr cend() const { return const_bitcell_itr(grid, each, _dim, bw, false); }
+
+	storage_t raw_value() const { return grid; }
 };
 
 
 class ca_table_t : public ca_eqsolver_t
 {
-	std::vector<int64_t> table;
+	unsigned n_w, size_each;
+	point center;
 
-protected:
+	class size_check
+	{
+		size_check(int size)
+		{
+			if(size > (1<<18))
+			 throw "Error: This ca is too large for a table.";
+		}
+	};
 
+	std::vector<uint64_t> table;
+
+	using storage_t = uint64_t;
+
+//protected: // TODO
+public:
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
-	ca_table_t(const char* equation, cell_t num_states = 0)
-		: ca_eqsolver_t(equation, num_states)
+	ca_table_t(const char* equation, cell_t num_states = 0) :
+		ca_eqsolver_t(equation, num_states),
+		n_w((border_width()<<1) + 1),
+		size_each((int)ceil(log(num_states))), // TODO: use int arithm
+		center(border_width(), border_width()),
+		table(1 << (size_each * n_w * n_w))
 	{
-		unsigned moore_w = (border_width()<<1) + 1;
-		grid_t grid(dimension(moore_w, moore_w), 0, 0);
-		cell_t& max = grid[point(moore_w-1, moore_w-1)];
+		bitgrid_t grid(size_each, dimension(n_w, n_w), 0, 0);
+		//bit_reference max = grid[point(n_w-1, n_w-1)];
+
+	//	point eval_p = point(border_width(), border_width());
+		//int eval_idx = grid.index_internal(eval_p);
+		const dimension& dim = grid.internal_dim();
+
+		std::size_t max = (int)pow(num_states, (n_w * n_w));
+		std::cout << "max: " << max << std::endl;
+		std::cout << "table size: " << table.size() << std::endl;
+		std::cout << "size each: " << size_each << std::endl;
 		// odometer
-		while(max < num_states)
+		for(std::size_t i = 0; i < max; ++i)
 		{
 			// evaluate
+		/*	eqsolver::grid_storage_bits arr(grid.raw_value(), size_each, dim.width(), eval_idx);
+
+			using vprinter_t = eqsolver::variable_print<eqsolver::grid_storage_array>;
+			vprinter_t vprinter(dim.height(), dim.width(),
+				0, 0,
+				arr, helper_vars);
+			eqsolver::ast_print<vprinter_t> solver(&vprinter);
+
+			table.at(grid.raw_value()) = solver(ast);*/
+		/*	std::cout << "table.size: " << size_each << std::endl;
+			std::cout << "table.size: " << n_w << std::endl;
+			std::cout << "table.size: " << border_width() << std::endl;
+			std::cout << "table.size: " << num_states << std::endl;
+			std::cout << "table.size: " << table.size() << std::endl;
+			std::cout << "table.size: " << table.capacity() << std::endl;
+			std::cout << "table.size: " << grid.raw_value() << std::endl;
+			std::cout << "table.size: " << grid << std::endl;*/
+
+			std::cout << "at " << grid.raw_value() ;
+
+			table.at(grid.raw_value()) = ca_eqsolver_t::
+				calculate_next_state(grid.raw_value(), size_each, center, dim);
+
+			std::cout << ": " << table.at(grid.raw_value()) << std::endl;
+
+			//std::cout << i << std::endl;
 
 			// increase
-			bool go_on;
-			for(cell_itr itr = grid.begin(); itr != grid.end() && go_on; ++itr)
+			//if(i < table.size() - 1)
 			{
-				go_on = ((++(*itr))%num_states == 0);
+				bool go_on = true;
+				for(bitcell_itr itr = grid.begin(); itr != grid.end() && go_on; ++itr)
+				{
+				//	std::cout << "++: " << *itr << std::endl;
+				//	std::cout << "RES: " << ((*itr) + 1 % num_states) << std::endl;
+					go_on = ((*itr = (((*itr) + 1) % num_states)) == 0);
+					std::cout << "++2: " << *itr << std::endl;
+				//	std::cout << go_on << std::endl;
+					//go_on = ((++(*itr))%num_states == 0);
+				}
 			}
 		}
 	}
 
-	int calculate_next_state(const int *cell_ptr,
-		const point& p, const dimension& dim) const
+	int calculate_next_state(const grid_t& grid_ptr,
+		const point& p) const
 	{
-		(void)cell_ptr;
+		/*(void)cell_ptr;
 		(void)p;
-		(void)dim;
-		return 0;// TODO
+		(void)dim;*/
+		// TODO: class member?
+		bitgrid_t bitgrid(size_each, dimension(n_w, n_w), 0);
+
+		for(const point p2 : bitgrid.points())
+		{
+			bitgrid[p2] = grid_ptr[p+p2-center];
+		}
+	//	return 0;// TODO
+		std::cout << bitgrid << std::endl;
+		std::cout << bitgrid.raw_value() << std::endl;
+		return table[bitgrid.raw_value()];
 	}
 
 };

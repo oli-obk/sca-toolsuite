@@ -152,18 +152,34 @@ struct grid_storage_array
 		return v[_a.x+_a.y*width]; }
 };
 
-template<std::size_t Each>
 struct grid_storage_bits
 {
 	using storage_t = int64_t;
-	constexpr const static storage_t bitmask = (1 << Each) - 1;
+	const storage_t each, bitmask;
 	const storage_t grid;
 	char vpos;
 	int width;
 	inline unsigned int operator()(vaddr::var_array _a) const {
-		return (grid >> ((vpos + _a.x + _a.y*width) * Each)) & bitmask;
+		if(grid == 153957)
+		{
+			std::cout << "storage:" << std::endl;
+			std::cout << "vpos: " << vpos << std::endl;
+			std::cout << (vpos + _a.x + _a.y*width) << std::endl;
+			std::cout << each << std::endl;
+			std::cout << (grid >> ((vpos + _a.x + _a.y*width) * each)) << std::endl;
+			std::cout << bitmask << std::endl;
+		}
+		return (grid >> ((vpos + _a.x + _a.y*width) * each)) & bitmask;
 	}
-	//grid_storage_bits
+	grid_storage_bits(storage_t grid, storage_t each, int width, storage_t vpos) :
+		each(each),
+		bitmask((1<<each)-1),
+		grid(grid),
+		vpos(vpos),
+		width(width)
+	{
+
+	}
 };
 
 

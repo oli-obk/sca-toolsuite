@@ -64,7 +64,8 @@ SOURCES += algo/relax.cpp \
 	res/general.cpp \
 	res/graph_io.cpp \
 	res/geometry.cpp \
-	res/eqs_functions.cpp
+	res/eqs_functions.cpp \
+	test/test.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL.txt \
 	../README.txt \
@@ -79,4 +80,5 @@ OTHER_FILES += ../DOCUMENTATION \
 	math/CMakeLists.txt \
 	ca/CMakeLists.txt \
 	rotor/CMakeLists.txt \
-	gui_qt/CMakeLists.txt
+	gui_qt/CMakeLists.txt \
+	test/CMakeLists.txt

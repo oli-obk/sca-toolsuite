@@ -260,6 +260,7 @@ public:
 		return _rect<rect_storage_default>(s::ul + rhs, s::lr + rhs);
 	}
 
+	// TODO: should we also allow borders in all our computations?
 	bool point_is_on_border(const point& p,
 		const u_coord_t border_size) const {
 		return p.x < s::ul.x + (coord_t) border_size
@@ -405,11 +406,6 @@ protected: // TODO: all protected?
 	dimension _dim; //! dimension of data, including borders
 	u_coord_t bw, bw_2;
 
-	//! returns array index for a human point @a p
-	int index_internal(const point& p) const {
-		return p.y * _dim.width() + p.x;
-	}
-
 	dimension _human_dim() const {
 		return dimension(_dim.width() - bw_2, _dim.height() - bw_2);
 	}
@@ -425,6 +421,22 @@ protected: // TODO: all protected?
 		return _dim.area();
 	}
 public:
+
+	//! returns array index for a human point @a p
+	int index_internal(const point& p) const {
+		return (p.y + bw) * _dim.width() + p.x + bw;
+	}
+
+	/*
+	 * conversion
+	 */
+	// note: should those not be in the dim class?
+	//! returns array index for a human point @a p
+	int index(const point& p) const {
+		const int& w = _dim.width();
+		return ((p.y + bw) * w) + bw + p.x;
+	}
+
 	//! returns *internal* dimension
 	const dimension& internal_dim() const { return _dim; } // TODO: remove this?
 	dimension human_dim() const { return _human_dim(); }
@@ -475,16 +487,6 @@ class grid_t : public grid_alignment_t
 public:
 	const std::vector<cell_t>& data() const { return _data; }
 	std::vector<cell_t>& data() { return _data; } // TODO: remove this soon
-
-	/*
-	 * conversion
-	 */
-	// note: should those not be in the grid class?
-	//! returns array index for a human point @a p
-	int index(const point& p) const {
-		const int& w = _dim.width();
-		return ((p.y + bw) * w) + bw + p.x;
-	}
 
 /*	point point_of(u_coord_t internal_idx) const {
 		const int& w = _dim.width();

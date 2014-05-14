@@ -36,8 +36,8 @@ inline void insert_horizontal_border(std::vector<int>* grid,
 	int border_width)
 {
 	grid->insert(itr,
-		(human_linewidth + (border_width<<1))*border_width,
-		INT_MIN);
+	(human_linewidth + (border_width<<1))*border_width,
+	INT_MIN);
 }
 
 inline void insert_vertical_border(std::vector<int>* grid,
@@ -110,17 +110,14 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 
 	insert_horizontal_border(grid, grid->end(), line_width, border);
 
-	/*dim->height() = line_count + (((int)(border))<<1);
-	dim->width() = line_width + (((int)(border))<<1);*/
-
 	*dim = dimension(line_width + (((int)(border))<<1),
 		line_count + (((int)(border))<<1));
 
-	assert(dim->area() == grid->size());
+	//assert(dim->area() == grid->size());
 }
 
 // TODO: cell_t
-void read_grid(const base_grid* grid_class, std::istream& is, std::vector<int>& grid, dimension& dim,
+void read_grid(const base_grid* grid_class, std::istream& is, dimension& dim, grid_storage_r &storage_class,
 	/*void (*SCANFUNC)(const char *&, int *),*/ int border)
 {
 	assert(grid_class);
@@ -146,8 +143,8 @@ void read_grid(const base_grid* grid_class, std::istream& is, std::vector<int>& 
 			// scan symbol
 			grid_class->read(ptr, &read_symbol);
 			if(!col_count) // (TODO: move this somewhere else?)
-			 insert_vertical_border(&grid, grid.end(), border); // TODO: ref instead of ptr
-			grid.push_back(read_symbol);
+			 storage_class.insert_vertical_border_end(border); // TODO: ref instead of ptr
+			storage_class.append(read_symbol);
 			col_count++;
 
 			// read separating whitespace
@@ -157,7 +154,7 @@ void read_grid(const base_grid* grid_class, std::istream& is, std::vector<int>& 
 				// first newline => determine line length
 				if(! line_count) {
 					line_width = col_count;
-					insert_horizontal_border(&grid, grid.begin(), line_width, border);
+					storage_class.insert_horizontal_border_begin(line_width, border);
 				}
 				else
 				 assert(line_width == col_count);
@@ -165,7 +162,7 @@ void read_grid(const base_grid* grid_class, std::istream& is, std::vector<int>& 
 				line_count++;
 				col_count = 0;
 
-				insert_vertical_border(&grid, grid.end(), border);
+				storage_class.insert_vertical_border_end(border);
 			}
 			else
 			 assert(read_symbol == ' ');
@@ -179,12 +176,12 @@ void read_grid(const base_grid* grid_class, std::istream& is, std::vector<int>& 
 		throw "Read IO error (buffer overflow?)";
 	} // otherwise, we have just reached the end of the grid
 
-	insert_horizontal_border(&grid, grid.end(), line_width, border);
+	storage_class.insert_horizontal_border_end(line_width, border);
 
 	dim = dimension(line_width + (((int)(border))<<1),
 		line_count + (((int)(border))<<1));
 
-	assert(dim.area() == grid.size());
+	//assert(dim.area() == grid.size());
 }
 
 void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
@@ -203,8 +200,8 @@ void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
 	}
 }
 
-void write_grid(const base_grid* grid_class, std::ostream& os, const std::vector<int> &grid, const dimension &dim,
-	int border)
+void write_grid(const base_grid* grid_class, std::ostream& os, const dimension &dim,
+	int border, const grid_storage_w &storage_class)
 {
 	assert(grid_class);
 	unsigned int last_symbol = dim.width() - 1 - border;
@@ -216,7 +213,7 @@ void write_grid(const base_grid* grid_class, std::ostream& os, const std::vector
 		for(unsigned int x = border; x < dim.width() - border; x++) {
 		//	PRINTFUNC(fp, (*grid)[x + (dim->width())*y]); // TODO: two [] operators
 		//	fputc((x == last_symbol) ? '\n':' ', fp);
-			grid_class->write(ptr, grid[x + (dim.width())*y]);
+			grid_class->write(ptr, storage_class[x + (dim.width())*y]);
 			*(ptr++) = (x == last_symbol) ? '\n' : ' ';
 		}
 		*ptr = 0;
