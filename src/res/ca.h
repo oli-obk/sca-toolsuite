@@ -324,7 +324,7 @@ public:
 	friend std::ostream& operator<< (std::ostream& stream,
 		const bitgrid_t& g) {
 		const bit_storage_w str(g.grid, g.each);
-		const number_grid ng;
+		const number_grid ng{};
 		write_grid(&ng, stream, g._dim, g.bw, str);
 		return stream;
 	}
@@ -581,6 +581,7 @@ public:
 
 using ca_calculator_t = _ca_calculator_t<ca_eqsolver_t>;
 
+#if 0 // TODO: clang forbids this for some strange reason
 class asm_synch_calculator_t
 {
 	static constexpr const std::array<point, 5> neighbour_points = {{{0,-1},{-1,0}, {0,0}, {1, 0}, {0,1}}};
@@ -657,6 +658,7 @@ public:
 
 	// TODO: get states function
 };
+#endif
 
 class ca_simulator_t : private ca_calculator_t, public base
 {
