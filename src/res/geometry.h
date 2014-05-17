@@ -437,6 +437,14 @@ public:
 		return ((p.y + bw) * w) + bw + p.x;
 	}
 
+	point internal2human(const point& p) const {
+		return point(p.x - border_width(), p.y - border_width());
+	}
+
+	point human2internal(const point& p) const {
+		return point(p.x + border_width(), p.y + border_width());
+	}
+
 	//! returns *internal* dimension
 	const dimension& internal_dim() const { return _dim; } // TODO: remove this?
 	dimension human_dim() const { return _human_dim(); }
@@ -590,12 +598,12 @@ public:
 		return _data[p.y * _dim.width() + p.x];
 	}
 
-	const cell_t& at_internal(area_t& idx) const
+	const cell_t& at_internal(const area_t& idx) const
 	{
 		return _data[idx];
 	}
 
-	cell_t& at_internal(area_t& idx)
+	cell_t& at_internal(const area_t& idx)
 	{
 		return _data[idx];
 	}
@@ -606,7 +614,7 @@ public:
 	const_cell_itr cend() { return const_cell_itr(_data.data(), _dim, bw, false); }
 	// TODO: the last two funcs should have cv qualifier
 
-	//! @param point point in internal format
+	//! @param point point in human (TODO?!?!) format
 	bool point_is_on_border(const point& p) const {
 		return human_dim().point_is_on_border(p, 0);
 	}

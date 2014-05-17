@@ -77,7 +77,9 @@ void create_S(graph_t* S, graph_t* A)
 		component(num_vertices(*A)),
 		discover_time(num_vertices(*A));
 
-	const int num = strong_components(*A, &component[0]);
+//	const int num = strong_components(*A, &component[0]);
+TODO: const int num = boost::strong_components(*A,
+		      			boost::make_iterator_property_map(component.begin(), boost::get(boost::vertex_index, *A), component[0]));
 
 	// now, create new graph
 	for(unsigned int i=0; i<num;i++)

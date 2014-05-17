@@ -18,64 +18,52 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef CASELECTOR_H
+#define CASELECTOR_H
 
-#include <QMainWindow>
-#include <QImage>
-#include <QPushButton>
-#include <QMenuBar>
-//#include <QToolBar>
-#include <QWidget>
-#include <QLabel>
+#include <QDialog>
+
 #include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QSpinBox>
-#include <QLineEdit>
+#include <QTextEdit>
+#include <QRadioButton>
 #include <QComboBox>
-#include <QMessageBox>
+class QDialogButtonBox;
 
 #include "labeled_widget.h"
-#include "StateMachine.h"
-#include "DrawArea.h"
-#include "MenuBar.h"
 
-class MainWindow : public QMainWindow
+namespace ca
 {
-	Q_OBJECT
+	class input_array;
+}
 
-	StateMachine state_machine;
-
-	MenuBar menu_bar;
-	//QToolBar tool_bar;
-	QWidget central_widget;
-	QHBoxLayout hbox_main;
-
-	QVBoxLayout vbox_left;
-	DrawArea draw_area;
-
-	QVBoxLayout vbox_right;
-	QWidget spacer;
-	QPushButton btn_run, btn_step;
-	LabeledWidget<QSpinBox> pixel_size_chooser, time_interval_chooser;
-//	LabeledWidget<QComboBox> ca_type_chooser;
-//	LabeledWidget<QLineEdit> ca_formula_edit;
-	LabeledWidget<QPushButton> ca_type_edit;
-
-	void setup_ui();
-	void retranslate_ui();
-
-private slots:
-	void state_updated(StateMachine::STATE new_state);
-	void change_pixel_size(int new_size);
-	void change_ca_type();
-
-public:
-	explicit MainWindow(QWidget *parent = 0);
-
-public slots:
-	void slot_help_about ();
-	void slot_help_about_qt ();
+enum class ca_type_t
+{
+	formula,
+	custom,
+	invalid
 };
 
-#endif // MAINWINDOW_H
+struct ca_id
+{
+	ca_type_t ca_type;
+	const char* name_or_type;
+};
+
+class CaSelector : public QDialog
+{
+	Q_OBJECT
+	QVBoxLayout vbox_main;
+	LabeledWidget<QComboBox> ca_type_edit;
+	LabeledWidget<QTextEdit> formula_edit;
+	QDialogButtonBox* button_box;
+
+	ca::input_array* ca_obj;
+	void get_ca_id();
+private slots:
+	void try_accept();
+
+public:
+	explicit CaSelector(QWidget *parent = nullptr);
+};
+
+#endif // CASELECTOR_H

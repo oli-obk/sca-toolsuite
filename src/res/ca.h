@@ -375,7 +375,7 @@ public:
 	{
 		bitgrid_t grid(size_each, dimension(n_w, n_w), 0, 0);
 		const dimension& dim = grid.internal_dim();
-		std::size_t max = (int)pow(num_states, (n_w * n_w));
+		const std::size_t max = (int)pow(num_states, (n_w * n_w));
 	//	std::cout << "max: " << max << std::endl;
 	//	std::cout << "table size: " << table.size() << std::endl;
 	//	std::cout << "size each: " << size_each << std::endl;

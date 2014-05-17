@@ -18,64 +18,31 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef LABELED_WIDGET_H
+#define LABELED_WIDGET_H
 
-#include <QMainWindow>
-#include <QImage>
-#include <QPushButton>
-#include <QMenuBar>
-//#include <QToolBar>
-#include <QWidget>
 #include <QLabel>
-#include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QSpinBox>
-#include <QLineEdit>
-#include <QComboBox>
-#include <QMessageBox>
 
-#include "labeled_widget.h"
-#include "StateMachine.h"
-#include "DrawArea.h"
-#include "MenuBar.h"
-
-class MainWindow : public QMainWindow
+template<class QtWidget>
+class LabeledWidget
 {
-	Q_OBJECT
-
-	StateMachine state_machine;
-
-	MenuBar menu_bar;
-	//QToolBar tool_bar;
-	QWidget central_widget;
-	QHBoxLayout hbox_main;
-
-	QVBoxLayout vbox_left;
-	DrawArea draw_area;
-
-	QVBoxLayout vbox_right;
-	QWidget spacer;
-	QPushButton btn_run, btn_step;
-	LabeledWidget<QSpinBox> pixel_size_chooser, time_interval_chooser;
-//	LabeledWidget<QComboBox> ca_type_chooser;
-//	LabeledWidget<QLineEdit> ca_formula_edit;
-	LabeledWidget<QPushButton> ca_type_edit;
-
-	void setup_ui();
-	void retranslate_ui();
-
-private slots:
-	void state_updated(StateMachine::STATE new_state);
-	void change_pixel_size(int new_size);
-	void change_ca_type();
+	QLabel lbl;
+	QtWidget _widget;
+	QHBoxLayout _layout;
 
 public:
-	explicit MainWindow(QWidget *parent = 0);
+	QHBoxLayout& layout() { return _layout; }
+	const QHBoxLayout& layout() const { return _layout; }
+	QtWidget& widget() { return _widget; }
+	const QtWidget& widget() const { return _widget; }
 
-public slots:
-	void slot_help_about ();
-	void slot_help_about_qt ();
+	LabeledWidget(const char* text) :
+		lbl(text)
+	{
+		_layout.addWidget(&lbl);
+		_layout.addWidget(&_widget, 1);
+	}
 };
 
-#endif // MAINWINDOW_H
+#endif // LABELED_WIDGET_H

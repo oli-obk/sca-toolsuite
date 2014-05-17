@@ -47,19 +47,28 @@ DrawArea::DrawArea(StateMachine& _state_machine, QWidget *parent) :
 
 void DrawArea::increase_cell(const point& coord, int steps)
 {
-	const int new_value = sim_grid.at_internal(coord) + steps;
-	sim_grid.at_internal(coord) = new_value;
+	const int new_value = sim_grid[coord] + steps;
+	sim_grid[coord] = new_value;
 
 	if(!calc_grid.point_is_on_border(coord))
 	{
 		//table_widget.item(coord.x, coord.y)->setBackgroundColor(color_of(new_value));
+#if 0
 		QPalette pal(color_of(new_value));
 		grid_layout.itemAtPosition(coord.x, coord.y)->widget()->setAutoFillBackground(true); // TODO: needed?
 		grid_layout.itemAtPosition(coord.x, coord.y)->widget()->setPalette(pal);
+#endif
+		//labels[coord.y * sim_grid.internal_dim().width() + coord.x]->setPixmap(pixmap_table[sim_grid[coord]]);
+
+		const point human_point = coord; // TODO: remove
+
+		labels[sim_grid.index(human_point)]->setPixmap(&pixmap_table[sim_grid[human_point]]);
+
+	// TODO
 	}
 //	 grid_image->setPixel(coord.x, coord.y, color_of(new_value));
 
-	update_pixmap();
+	//update_pixmap();
 }
 
 void DrawArea::fire_cell(int coords)
@@ -116,27 +125,24 @@ void DrawArea::state_updated(StateMachine::STATE new_state)
 			next_fire_timer.start();
 			break;
 		default: break;
-	}
+		}
 }
 
-void DrawArea::mousePressEvent(QMouseEvent *event)
+void DrawArea::onMousePressed(point coords)
 {
+	//int coords = y * calc_grid.internal_dim().width() + x; // TODO: use point
+
 	StateMachine::STATE state = state_machine.get();
 
-	if (event->button() == Qt::LeftButton &&
-		(state == StateMachine::STATE_STABLE
+	if(state == StateMachine::STATE_STABLE
 		|| state == StateMachine::STATE_WELCOME
-		|| state == StateMachine::STATE_STABLE_PAUSED))
-	{	
-		int x = event->pos().x() / pixel_factor;
-		int y = event->pos().y() / pixel_factor;
-		//int coords = y * calc_grid.internal_dim().width() + x; // TODO: use point
-		point coords(x, y);
+		|| state == StateMachine::STATE_STABLE_PAUSED)
+	{
+		//point coords(x, y);
 
-		increase_cell(coords, 1);
-		calc_grid.at_internal(coords)++;
+		increase_cell(calc_grid.human2internal(coords), 1);
 
-		if( calc_grid.at_internal(coords) == 4)
+		if( ++calc_grid[coords] == 4 )
 		{
 			/*if(state == StateMachine::STATE_STABLE_PAUSED) {
 				state_machine.set(StateMachine::STATE_INSTABLE);
@@ -147,13 +153,29 @@ void DrawArea::mousePressEvent(QMouseEvent *event)
 			state_machine.trigger_throw();
 
 			current_hint = coords;
-			calc_grid.at_internal(current_hint)--;
+			calc_grid[current_hint]--;
 			container = new sandpile::array_queue_no_file(calc_grid.internal_dim().area()); // TODO: human dim
 
 			if(state_machine.get() != StateMachine::STATE_INSTABLE)
 			 next_fire_timer.start();
 		}
 	}
+}
+
+void DrawArea::mousePressEvent(QMouseEvent *event) // TODO: remove
+{
+	Q_UNUSED(event);
+/*	StateMachine::STATE state = state_machine.get();
+
+	if (event->button() == Qt::LeftButton &&
+		(state == StateMachine::STATE_STABLE
+		|| state == StateMachine::STATE_WELCOME
+		|| state == StateMachine::STATE_STABLE_PAUSED))
+	{	
+		int x = event->pos().x() / pixel_factor;
+		int y = event->pos().y() / pixel_factor;
+		onMousePressed(x,y);
+	}*/
 }
 
 void DrawArea::fill_grid(std::istream &inf)
@@ -169,7 +191,25 @@ void DrawArea::fill_grid(std::istream &inf)
 	int entry = 0;
 	for(ColorTable::const_iterator itr(tmp_ct); itr.valid();
 		++itr, ++entry)
-	 itr->to_32bit((int*)(color_table + entry));
+	{
+		itr->to_32bit((int*)(color_table + entry));
+	}
+
+	pixmap_table.resize(8);
+	for(int i = 0; i < 7; ++i)
+	{
+		pixmap_table[i] = QPixmap(1, 1);
+		pixmap_table[i].fill(color_table[i]);
+	}
+
+	labels.resize(calc_grid.human_dim().area());
+	for(const point& p : calc_grid.points()) {
+		int idx = p.y * calc_grid.human_dim().width() + p.x;
+		labels[idx] = new ImgContainer(parentWidget(), p);
+		grid_layout.addWidget(labels[idx], p.y, p.x);
+		QObject::connect(labels[idx], SIGNAL(clicked(point)), this, SLOT(onMousePressed(point)));
+	}
+
 
 /*	delete grid_image;
 	grid_image = new QImage(calc_grid.internal_dim().width(),
@@ -179,7 +219,27 @@ void DrawArea::fill_grid(std::istream &inf)
 	//table_widget.setRowCount(calc_grid.internal_dim().width());
 	//table_widget.setColumnCount(calc_grid.internal_dim().height());
 	// TODO
+#if 0
+	labels.resize(calc_grid.internal_dim().area());
+	int colc = calc_grid.internal_dim().width();
+	int rowc = calc_grid.internal_dim().height();
 
+	for(int col = 0; col < colc; ++col)
+	for(int row = 0; row < rowc; ++row)
+	{
+
+		int coord = row * colc + col;
+		pixmap_table[entry] = QPixmap(1, 1);
+		pixmap_table[entry].fill(color_of(sim_grid.at_internal(coord))); // TODO: use point class instead (everywhere)
+		/*QPixmap::fromImage(*grid_image).scaled(
+			sim_grid.internal_dim().width()*pixel_factor,
+			sim_grid.internal_dim().height()*pixel_factor);*/
+
+
+//		grid_layout.addWidget(imgs[row * colc + col], row, col);
+	}
+#endif
+#if 0
 	for(const point& p : sim_grid.points())
 	{
 	//	std::cout << table_widget.size().width() << ", " << table_widget.size().height() << std::endl;
@@ -191,6 +251,9 @@ void DrawArea::fill_grid(std::istream &inf)
 	//	assert(table_widget.item(p.x, p.y));
 	//	table_widget.item(p.x, p.y)->setBackgroundColor(color_of(sim_grid[p]));
 		// TODO
+
+		QImage *img = grid_layout.itemAtPosition(p.y, p.x)->widget();
+		img->setPixel(p.x, p.y, color_of(sim_grid[coord]));
 	}
 /*	for(unsigned int y = 0; y<dim.height(); y++)
 	for(unsigned int x = 0; x<dim.width(); x++)
@@ -207,7 +270,7 @@ void DrawArea::fill_grid(std::istream &inf)
 		<< sim_grid.internal_dim().height() << std::endl;
 		std::cout << "int2 w h: " << calc_grid.internal_dim().width() << ", "
 		<< calc_grid.internal_dim().height() << std::endl;
-
+#endif
 	update_pixmap();
 }
 

@@ -21,14 +21,7 @@
 #include <QVector>
 #include <QStatusBar>
 #include "MainWindow.h"
-
-template<class QtWidget>
-LabeledWidget<QtWidget>::LabeledWidget(const char *text) :
-	lbl(text)
-{
-	_layout.addWidget(&lbl);
-	_layout.addWidget(&_widget, 1);
-}
+#include "CaSelector.h"
 
 void MainWindow::setup_ui()
 {
@@ -56,6 +49,8 @@ void MainWindow::setup_ui()
 	vbox_right.addWidget(&btn_step);
 	vbox_right.addLayout(&pixel_size_chooser.layout());
 	vbox_right.addLayout(&time_interval_chooser.layout());
+	ca_type_edit.widget().setText("Select");
+	vbox_right.addLayout(&ca_type_edit.layout());
 	btn_run.setCheckable(true);
 
 	draw_area.fill_grid();
@@ -71,13 +66,15 @@ void MainWindow::setup_ui()
 		&state_machine, SLOT(trigger_step()));
 	connect(&btn_run, SIGNAL(released()),
 		&state_machine, SLOT(trigger_pause()));
+	connect(&ca_type_edit.widget(), SIGNAL(clicked()),
+		this, SLOT(change_ca_type()));
 
-	pixel_size_chooser.widget().setMinimum(1);
+	/*pixel_size_chooser.widget().setMinimum(1);
 	pixel_size_chooser.widget().setMaximum(255);
 	pixel_size_chooser.widget().setValue(4);
 	time_interval_chooser.widget().setMinimum(0);
 	time_interval_chooser.widget().setMaximum(1000);
-	time_interval_chooser.widget().setValue(10);
+	time_interval_chooser.widget().setValue(10);*/
 }
 
 void MainWindow::retranslate_ui()
@@ -95,8 +92,9 @@ MainWindow::MainWindow(QWidget *parent) :
 	draw_area(state_machine),
 	pixel_size_chooser("UI size: "),
 	time_interval_chooser("Step time: "),
-	ca_type_chooser("CA input type: "),
-	ca_formula_edit("CA formula: ")
+	/*ca_type_chooser("CA input type: "),
+	ca_formula_edit("CA formula: ")*/
+	ca_type_edit("")
 {
 	setup_ui();
 	retranslate_ui();
@@ -137,5 +135,12 @@ void MainWindow::state_updated(StateMachine::STATE new_state)
 void MainWindow::change_pixel_size(int new_size)
 {
 	draw_area.set_pixel_size(new_size);
+}
+
+void MainWindow::change_ca_type()
+{
+	CaSelector ca_sel(this);
+	ca_sel.setModal(true);
+	ca_sel.exec();
 }
 

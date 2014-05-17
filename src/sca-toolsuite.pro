@@ -25,7 +25,9 @@ HEADERS += res/io.h res/stack_algorithm.h \
 	res/graph_io.h \
 	res/geometry.h \
 	res/eqs_internal.h \
-	res/eqs_functions.h
+	res/eqs_functions.h \
+    gui_qt/CaSelector.h \
+    gui_qt/labeled_widget.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \
@@ -65,7 +67,8 @@ SOURCES += algo/relax.cpp \
 	res/graph_io.cpp \
 	res/geometry.cpp \
 	res/eqs_functions.cpp \
-	test/test.cpp
+	test/test.cpp \
+	gui_qt/CaSelector.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL.txt \
 	../README.txt \

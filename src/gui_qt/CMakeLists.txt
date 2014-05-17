@@ -1,8 +1,8 @@
 # CMakeLists.txt for Qt GUI
 
-set(gui_sources DrawArea.cpp main.cpp MainWindow.cpp MenuBar.cpp StateMachine.cpp
+set(gui_sources DrawArea.cpp main.cpp MainWindow.cpp MenuBar.cpp StateMachine.cpp CaSelector.cpp
 	../res/io.cpp ../res/image.cpp ../res/general.cpp ../res/geometry.cpp)
-set(gui_headers DrawArea.h MainWindow.h MenuBar.h StateMachine.h)
+set(gui_headers DrawArea.h MainWindow.h MenuBar.h StateMachine.h CaSelector.h labeled_widget.h)
 set(other_headers ../res/io.h ../res/image.h ../res/general.h ../res/geometry.h)
 
 QT4_WRAP_CPP(gui_headers_moc ${gui_headers})

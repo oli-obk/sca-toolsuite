@@ -566,7 +566,12 @@ public:
 	bool operator==(const conf_t& rhs) const
 	{
 		unsigned size = data.size();
+		if(size != rhs.data.size()) // TODO: remove for debug
+		{
+			std::cout << "sizes: " << size << ", " << rhs.data.size() << std::endl;
+		}
 		assert(size == rhs.data.size());
+
 		return (data == rhs.data);
 	}
 

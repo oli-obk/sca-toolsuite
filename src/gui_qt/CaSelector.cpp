@@ -18,64 +18,56 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
-
-#include <QMainWindow>
-#include <QImage>
-#include <QPushButton>
-#include <QMenuBar>
-//#include <QToolBar>
-#include <QWidget>
-#include <QLabel>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QSpinBox>
-#include <QLineEdit>
-#include <QComboBox>
+#include <QDialogButtonBox>
 #include <QMessageBox>
 
-#include "labeled_widget.h"
-#include "StateMachine.h"
-#include "DrawArea.h"
-#include "MenuBar.h"
+#include "CaSelector.h"
+#include "ca.h"
 
-class MainWindow : public QMainWindow
+enum ca_source
 {
-	Q_OBJECT
-
-	StateMachine state_machine;
-
-	MenuBar menu_bar;
-	//QToolBar tool_bar;
-	QWidget central_widget;
-	QHBoxLayout hbox_main;
-
-	QVBoxLayout vbox_left;
-	DrawArea draw_area;
-
-	QVBoxLayout vbox_right;
-	QWidget spacer;
-	QPushButton btn_run, btn_step;
-	LabeledWidget<QSpinBox> pixel_size_chooser, time_interval_chooser;
-//	LabeledWidget<QComboBox> ca_type_chooser;
-//	LabeledWidget<QLineEdit> ca_formula_edit;
-	LabeledWidget<QPushButton> ca_type_edit;
-
-	void setup_ui();
-	void retranslate_ui();
-
-private slots:
-	void state_updated(StateMachine::STATE new_state);
-	void change_pixel_size(int new_size);
-	void change_ca_type();
-
-public:
-	explicit MainWindow(QWidget *parent = 0);
-
-public slots:
-	void slot_help_about ();
-	void slot_help_about_qt ();
+	formula,
+	file,
+	custom_name
 };
 
-#endif // MAINWINDOW_H
+void CaSelector::try_accept()
+{
+	bool ok = true;
+
+	/*switch(ca_type_edit.widget().currentIndex())
+	{
+		case formula:
+			ca_obj = new ;
+
+	}*/
+
+	if(ok)
+		accept();
+	else
+	 QMessageBox::critical(this, "Invalid ca.", "Is your formula wrong?");
+}
+
+CaSelector::CaSelector(QWidget *parent) :
+	QDialog(parent),
+	ca_type_edit("ca type"),
+	formula_edit(""),
+	button_box( new QDialogButtonBox(
+		QDialogButtonBox::Ok |
+		QDialogButtonBox::Cancel,
+		Qt::Horizontal,
+		this)
+		)
+{
+	ca_type_edit.widget().addItem("formula");
+	ca_type_edit.widget().addItem("file");
+	ca_type_edit.widget().addItem("custom name");
+
+	vbox_main.addLayout(&ca_type_edit.layout());
+	vbox_main.addLayout(&formula_edit.layout());
+	vbox_main.addWidget(button_box);
+	setLayout(&vbox_main);
+
+	connect(button_box, SIGNAL(accepted()), this, SLOT(try_accept()));
+	connect(button_box, SIGNAL(rejected()), this, SLOT(reject()));
+}
