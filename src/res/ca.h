@@ -101,7 +101,7 @@ protected:
 		// and make old_value a ptr/ref?
 		eqsolver::grid_storage_array arr(cell_ptr, dim.width());
 		// TODO: why do we need to specify the default argument?
-		using vprinter_t = eqsolver::variable_print<eqsolver::grid_storage_array>;
+		using vprinter_t = eqsolver::_variable_print<eqsolver::grid_storage_array>;
 		vprinter_t vprinter(dim.height(), dim.width(),
 			p.x, p.y,
 			arr, helper_vars);
@@ -115,7 +115,7 @@ protected:
 		int eval_idx = dim.width() * p.y + p.x; // TODO: bw?
 		eqsolver::grid_storage_bits arr(grid_int, size_each, dim.width(), eval_idx);
 
-		using vprinter_t = eqsolver::variable_print<eqsolver::grid_storage_bits>;
+		using vprinter_t = eqsolver::_variable_print<eqsolver::grid_storage_bits>;
 		vprinter_t vprinter(dim.height(), dim.width(),
 			p.x, p.y,
 			arr, helper_vars);

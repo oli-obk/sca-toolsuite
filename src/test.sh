@@ -121,7 +121,7 @@ call_test "Testing math/sub2" 1 "core/create 2 2 1 | math/sub2 \"core/create 2 2
 call_test "Testing core/diff2" 1 "core/create 9 9 3 | core/diff2 core/create 9 9 3"
 
 # test binary
-call_test "Testing test/test" 1 "test/tests"
+# call_test "Testing test/test" 1 "test/tests"
 
 # obligatory
 call_test "Testing io/to_ods" 0 "core/create 9 4 4 | io/to_ods tmp"

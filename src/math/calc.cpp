@@ -18,6 +18,8 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
+#include <iostream>
+
 #include "general.h"
 #include "io.h"
 #include "equation_solver.h"
@@ -26,7 +28,8 @@ class MyProgram : public Program
 {
 	int main()
 	{
-		FILE* read_fp = stdin;
+		//FILE* read_fp = stdin;
+		std::istream& read_fp = std::cin;
 		const char* equation = "";
 		char separator = ' ';
 		switch(argc)
@@ -39,18 +42,33 @@ class MyProgram : public Program
 		eqsolver::expression_ast ast;
 		eqsolver::build_tree(equation, &ast);
 
-		int symbols_read;
+//		int symbols_read;
 		int index;
 		sca_random::set_seed();
 
+#if 0
 		do {
-			symbols_read = fscanf(read_fp, "%d", &index);
+			/*symbols_read = fscanf(read_fp, "%d", &index);
 			if(symbols_read > 0) {
 				eqsolver::variable_print vprinter(index);
 				eqsolver::ast_print<eqsolver::variable_print> solver(&vprinter); // TODO: don't set x every time
 				fprintf(stdout, "%d%c", (int)solver(ast),separator);
+			}*/
+			read_fp >> index;
+			if(read_fp.good() > 0) {
+				eqsolver::variable_print vprinter(index);
+				eqsolver::ast_print<eqsolver::variable_print> solver(&vprinter); // TODO: don't set x every time
+				fprintf(stdout, "%d%c", (int)solver(ast),separator);
 			}
-		} while(symbols_read > 0);
+		} while(read_fp.good() > 0);
+		#endif
+		while(read_fp >> index)
+		{
+			eqsolver::variable_print vprinter(index);
+			eqsolver::ast_print<eqsolver::variable_print> solver(&vprinter); // TODO: don't set x every time
+			std::cout << (int)solver(ast) << separator;
+		}
+
 		return 0;
 	}
 };

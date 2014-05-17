@@ -141,6 +141,12 @@ struct vaddr
 	vaddr() : expr(nil()) {}
 };
 
+struct grid_storage_nothing
+{
+	inline unsigned int operator()(vaddr::var_array ) const {
+		return INT_MIN; }
+};
+
 struct grid_storage_array
 {
 	using storage_t = const int*;
@@ -175,9 +181,9 @@ struct grid_storage_bits
 
 
 template<class GridStorage = grid_storage_array>
-struct variable_print : public boost::static_visitor<visit_result_type>
+struct _variable_print : public boost::static_visitor<visit_result_type>
 {
-	variable_print(int _x) : x(_x) {}
+	_variable_print(int _x) : x(_x) {}
 	/**
 	 * @brief variable_print
 	 * @param _height
@@ -187,7 +193,7 @@ struct variable_print : public boost::static_visitor<visit_result_type>
 	 * @param _v The address of the current element in the grid. Needed for neighbor calculations.
 	 * @param _h
 	 */
-	variable_print(int _height, int _width, int _x, int _y, const GridStorage& grid_storage, const int* _h)
+	_variable_print(int _height, int _width, int _x, int _y, const GridStorage& grid_storage, const int* _h)
 		: height(_height), width(_width), x(_x), y(_y),
 		grid_storage(grid_storage),
 		/*v((const int*)_v), */helper_vars((int*)_h) {
@@ -218,6 +224,8 @@ struct variable_print : public boost::static_visitor<visit_result_type>
 	}
 
 };
+
+using variable_print = _variable_print<grid_storage_nothing>;
 
 struct variable_area_grid : public boost::static_visitor<visit_result_type>
 {
