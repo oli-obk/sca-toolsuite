@@ -11,10 +11,11 @@ CONTENTS
 ::::::::::::::::::::::::::
 
 For all algorithms, we used "Intel(R) Core(TM) i5-3570 CPU @ 3.40GHz" which
-has 4 physical (one logical each) cores and 6 MB cache each. Note that only
-the first 2 algorithms were multi-core. Our RAM was 2x4 GB DDR3 (?) RAM.
+has 4 physical (one logical each) cores and 6 MB cache each. However, all
+listed algorithms are single-core. Our RAM was 2x4 GB DDR3 (?) RAM.
 
-All algorithms are single-core algorithms.
+We measured 10.000 grains in the critical phase by running all algorithms both
+for 2140000 and 2190000 grains and dividing the difference by 5.
 
 Setup:
 
@@ -23,7 +24,6 @@ Setup:
 	Machine: java (1.7.0_51) -server -Xmx1024m -Xss4096k
 	Author: Sebastian Frehmel
 	Algorithm: "One Stack (sequential), with cache line optimization"
-	Description: The stack algorithm by Sebastian Frehmel.
 	Command: java -server -cp bin/ -Xmx1024m -Xss4096k \
 		sequential.asynchronous.onestack.SandpileCASeq \
 		-h=1000 -w=1000 -nmt=2190000 -uco=true
@@ -33,7 +33,6 @@ Setup:
 	Machines: gcc (4.8.1) -O3 -flto
 	Author: Johannes Lorenz
 	Algorithm: "One Stack (sequential), with cache line optimization"
-	Description: The C++-Version of (1) by Johannes Lorenz
 	Command: sh onestack.sh -h=1000 -w=1000 -nmt=2190000 -nt=4 -uco=true
 
 	3, 4)
@@ -41,7 +40,7 @@ Setup:
 	Machines: gcc (4.8.1) -O3 -flto, clang (3.3) -O3
 	Author: Johannes Lorenz
 	Algorithm: "sca-toolsuite's avalanche algorithm"
-	Description: (3) is the original algorithm (until March 2014)
+		(3) is the original algorithm (until March 2014)
 		(4) is the improved version (from May 2014)
 	Command: core/create 1000 1000 | \
 		time algo/random_throw random 2190000 42 n
