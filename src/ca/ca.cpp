@@ -107,7 +107,8 @@ class MyProgram : public Program
 
 //#define CA_TABLE_OPTIMIZATION
 #ifndef CA_TABLE_OPTIMIZATION
-		ca::ca_simulator_t simulator(equation, async);
+		using ca_sim_t = ca::ca_simulator_t<ca::ca_eqsolver_t>;
+		ca_sim_t simulator(equation, async);
 
 		simulator.grid().read(in_fp);
 #else
@@ -149,9 +150,9 @@ class MyProgram : public Program
 
 			// TODO: why is the param necessary?
 			if(async)
-			 simulator.run_once(ca::ca_simulator_t::default_asynchronicity());
+			 simulator.run_once(ca_sim_t::default_asynchronicity());
 			else
-			 simulator.run_once(ca::ca_simulator_t::synchronous());
+			 simulator.run_once(ca_sim_t::synchronous());
 		}
 
 		if(sim == sim_type::anim)

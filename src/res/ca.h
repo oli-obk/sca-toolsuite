@@ -660,7 +660,8 @@ public:
 };
 #endif
 
-class ca_simulator_t : private ca_calculator_t, public base
+template<class Solver>
+class ca_simulator_t : private _ca_calculator_t<Solver>, public base
 {
 	grid_t _grid[2];
 	grid_t *old_grid = _grid, *new_grid = _grid;
@@ -670,11 +671,20 @@ class ca_simulator_t : private ca_calculator_t, public base
 	std::set<point> cells_to_check; // TODO: use pointers here, like in grid
 	int round = 0;
 	bool async;
+	using calc = _ca_calculator_t<Solver>;
 public:
 	ca_simulator_t(const char* equation, unsigned num_states, bool async = false) :
-		ca_calculator_t(equation, num_states),
-		_grid{border_width(), border_width()},
-		neighbours(get_neighbourhood()),
+		calc(equation, num_states),
+		_grid{calc::border_width(), calc::border_width()},
+		neighbours(calc::get_neighbourhood()),
+		async(async)
+	{
+	}
+
+	ca_simulator_t(const char* equation, bool async = false) : // TODO: 2 ctots?
+		calc(equation),
+		_grid{calc::border_width(), calc::border_width()},
+		neighbours(calc::get_neighbourhood()),
 		async(async)
 	{
 	}
@@ -726,7 +736,7 @@ public:
 			int new_value;
 			const int old_value = (*old_grid)[p];
 			(*new_grid)[p] = (new_value
-				= next_state(&((*old_grid)[p]), p, _grid->internal_dim()));
+				= calc::next_state(&((*old_grid)[p]), p, _grid->internal_dim()));
 			if(new_value != old_value)
 			{
 				new_changed_cells.push_back(p);
@@ -749,7 +759,7 @@ public:
 	template<class Asynchronicity>
 	void _run_once(const Asynchronicity& async = synchronous())
 	{
-		run_once(rect(_grid->internal_dim(), border_width()), async);
+		run_once(rect(_grid->internal_dim(), calc::border_width()), async);
 	}
 
 
@@ -779,6 +789,7 @@ public:
 	}
 };
 
+#if 0
 class configuration_graph_types
 {
 #if 0
@@ -797,6 +808,7 @@ protected:
 	typedef std::stack<vertex_t> stack_t;
 #endif
 };
+
 
 class scientific_ca_t : public ca_simulator_t, public configuration_graph_types
 {
@@ -874,6 +886,7 @@ public:
 	}
 #endif
 };
+#endif
 
 } }
 
