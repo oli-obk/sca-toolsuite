@@ -143,8 +143,9 @@ if(COMPILER STREQUAL "gcc")
 	# enable these flags if you get tons of errors from boost...
 	#set(WARN_EXC "-Wno-unused-local-typedefs -Wno-maybe-uninitialized")
 	set(CMAKE_CXX_FLAGS_RELEASE "-flto")
-	set(FLTO_FLAGS "-flto")
+	#set(FLTO_FLAGS "-flto") # TODO
 
+	set(FLTO_FLAGS "")
 	SET( CMAKE_CXX_COMPILER "g++" )
 	SET( CMAKE_CC_COMPILER "gcc" )
 elseif(COMPILER STREQUAL "clang")
@@ -155,6 +156,8 @@ elseif(COMPILER STREQUAL "clang")
 else()
 	message(FATAL_ERROR "Please specify -DCOMPILER=[gcc|clang]")
 endif()
+
+#if(LFTO STREQUAL "1")
 
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
