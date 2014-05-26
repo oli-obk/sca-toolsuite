@@ -68,7 +68,8 @@ SOURCES += algo/relax.cpp \
 	res/geometry.cpp \
 	res/eqs_functions.cpp \
 	test/test.cpp \
-	gui_qt/CaSelector.cpp
+	gui_qt/CaSelector.cpp \
+	img/transform.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL.txt \
 	../README.txt \
@@ -84,4 +85,5 @@ OTHER_FILES += ../DOCUMENTATION \
 	ca/CMakeLists.txt \
 	rotor/CMakeLists.txt \
 	gui_qt/CMakeLists.txt \
-	test/CMakeLists.txt
+	test/CMakeLists.txt \
+	img/CMakeLists.txt
