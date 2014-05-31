@@ -46,6 +46,8 @@ inline int f1i_sqrt(int arg1) { return (int)std::sqrt((int)arg1); }
 inline int f1i_rand(int arg1) { return (int)sca_random::get_int(arg1); }
 inline int f2i_add(int arg1, int arg2) { return arg1 + arg2; }
 inline int f2i_sub(int arg1, int arg2) { return arg1 - arg2; }
+inline int f2i_lshift(int arg1, int arg2) { return (unsigned)arg1 << (unsigned)arg2; }
+inline int f2i_rshift(int arg1, int arg2) { return(unsigned)arg1 >> (unsigned)arg2; }
 inline int f2i_mul(int arg1, int arg2) { return arg1 * arg2; }
 inline int f2i_div(int arg1, int arg2) { return arg1 / arg2; }
 inline int f2i_mod(int arg1, int arg2) { return arg1 % arg2; }
@@ -59,6 +61,9 @@ inline int f2i_eq(int arg1, int arg2) { return (int)(arg1==arg2); }
 inline int f2i_neq(int arg1, int arg2) { return (int)(arg1!=arg2); }
 inline int f2i_and(int arg1, int arg2) { return (int)(arg1*arg2); }
 inline int f2i_or(int arg1, int arg2) { return (int)((arg1!=0)||(arg2!=0)); }
+inline int f2i_land(int arg1, int arg2) { return (unsigned)arg1 & (unsigned)arg2; }
+inline int f2i_lor(int arg1, int arg2) { return (unsigned)arg1 | (unsigned)arg2; }
+inline int f2i_lxor(int arg1, int arg2) { return (unsigned)arg1 ^ (unsigned)arg2; }
 inline int f2i_asn(int* arg1, int arg2) { return (*arg1 = arg2); }
 inline int f2i_com(int arg1, int arg2) { (void)arg1; return arg2; }
 inline int f3i_tern(int arg1, int arg2, int arg3) { return((bool)arg1)?arg2:arg3; }
@@ -287,6 +292,9 @@ public:
 		template<typename A> T operator()(A const& a) const { return T(a); }
 	};
 
+	expression_ast& operator<<(expression_ast const& rhs);
+	expression_ast& operator>>(expression_ast const& rhs);
+
 	expression_ast& operator+=(expression_ast const& rhs);
 	expression_ast& operator-=(expression_ast const& rhs);
 
@@ -304,6 +312,10 @@ public:
 
 	expression_ast& operator&&(expression_ast const & rhs);
 	expression_ast& operator||(expression_ast const & rhs);
+
+	expression_ast& operator&(expression_ast const & rhs);
+	expression_ast& operator|(expression_ast const & rhs);
+	expression_ast& operator^(expression_ast const & rhs);
 
 	type expr; // TODO: make private + get func?
 };

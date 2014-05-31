@@ -131,8 +131,12 @@ struct calculator : qi::grammar<Iterator, expression_ast(), ascii::space_type>
 		or_expression = and_expression [_val = _1]
 			>> *("||" >> and_expression [_val = _val || _1]);
 
-		and_expression = equation [_val = _1]
-			>> *("&&" >> equation [_val = _val && _1]);
+		and_expression = lor [_val = _1]
+			>> *("&&" >> lor [_val = _val && _1]);
+
+		lor = lxor[_val = _1] >> *("|" >> lxor [_val = _val | _1]);
+		lxor = land[_val = _1] >> *("^" >> land [_val = _val ^ _1]);
+		land = equation [_val = _1] >> *("&" >> equation [_val = _val & _1]);
 
 		equation =
 			inequation [_val = _1]
@@ -143,11 +147,17 @@ struct calculator : qi::grammar<Iterator, expression_ast(), ascii::space_type>
 			;
 
 		inequation =
-			sum [_val = _1]
-			>> *( ('<' >> sum [_val < _1])
-			    | ('>' >> sum [_val > _1])
-			    | ("<=" >> sum [_val <= _1])
-			    | (">=" >> sum [_val >= _1])
+			shift [_val = _1]
+			>> *( ('<' >> shift [_val < _1])
+			    | ('>' >> shift [_val > _1])
+			    | ("<=" >> shift [_val <= _1])
+			    | (">=" >> shift [_val >= _1])
+			    )
+			;
+
+		shift = sum [_val = _1]
+			>> *(   ("<<" >> sum            [_val << _1])
+			    |   (">>" >> sum            [_val >> _1])
 			    )
 			;
 
@@ -203,7 +213,8 @@ struct calculator : qi::grammar<Iterator, expression_ast(), ascii::space_type>
 	}
 	qi::rule<Iterator, expression_ast(), ascii::space_type> comma_assignment, assignment,
 	tern_expression,
-	or_expression, and_expression, equation, inequation, sum, term, factor, function;
+	or_expression, and_expression, equation, inequation, sum, term, factor, function,
+	lor, lxor, land, shift;
 	qi::rule<Iterator, vaddr()> variable, array_variable, helper_variable, helper_address;
 	qi::rule<Iterator, std::string()> str_int;
 	//qi::rule<Iterator, std::string()> array_variable, helper_variable, variable, array_subscript, str_int;

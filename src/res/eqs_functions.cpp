@@ -38,6 +38,8 @@ namespace eqsolver
 	const variable_print::result_type *variable_print::v;
 	int* variable_print::helper_vars;
 */
+MAKE_OP(<<,'<',f2i_lshift);
+MAKE_OP(>>,'>',f2i_rshift);
 MAKE_OP(+=,'+',f2i_add);
 MAKE_OP(-=,'-',f2i_sub);
 MAKE_OP(*=,'*',f2i_mul);
@@ -49,6 +51,9 @@ MAKE_OP(<=,'l',f2i_le);
 MAKE_OP(>=,'g',f2i_ge);
 MAKE_OP(==,'=',f2i_eq);
 MAKE_OP(!=,'!',f2i_neq);
+MAKE_OP(&,'&',f2i_land);
+MAKE_OP(|,'|',f2i_lor);
+MAKE_OP(^,'^',f2i_lxor);
 MAKE_OP(&&,'&',f2i_and);
 MAKE_OP(||,'|',f2i_or);
 

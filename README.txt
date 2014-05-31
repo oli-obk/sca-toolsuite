@@ -137,6 +137,9 @@ core/create 8 8 2 | algo/burning_test | io/avalanches_bin2human 8  | io/seq_to_f
 # run game of life for 3 steps
 core/create 9 6 0 | math/add 10 11 19 20 32 33 34 | ca/ca "`cat ../data/ca/game_of_life.txt`" 3
 
+# transform image, using a CA on ARGB pixels
+img/transform "v&(255)|(255<<24)" < in.png > out.png
+
 7 Thanks to
 :::::::::::
 
