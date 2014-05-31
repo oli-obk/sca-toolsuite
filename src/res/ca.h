@@ -462,11 +462,11 @@ class big_table_t
 
 }
 
+#if 0
 //! base class for all ca classes with virtual functions
 class base
 {
 public:
-#if 0
 	//! calculates next state at (human) position (x,y)
 	//! if the ca is asynchronous, the function returns the next state
 	//! as if the cell was active
@@ -487,7 +487,7 @@ public:
 	virtual void finalize(const rect& sim_rect) = 0;
 
 	// TODO: function run_once_async()
-#endif
+
 	struct default_asynchronicity
 	{
 		bool operator()(unsigned ) const { return sca_random::get_int(2); }
@@ -497,7 +497,7 @@ public:
 	{
 		bool operator()(unsigned ) const { return true; }
 	};
-#if 0
+
 /*	//! runs the ca once, but only ever activating cells from @a sim_rect
 	template<class Asynchronicity>
 	virtual void run_once(const rect& sim_rect,
@@ -517,15 +517,85 @@ public:
 	//! returns true iff not all cells are inactive
 	virtual bool can_run() const = 0;
 
+	//! returns the current grid
 	virtual grid_t& grid() = 0;
 	virtual const grid_t& grid() const = 0;
-#endif
-};
 
-class input_array : public base
+};
+#endif
+
+class input_ca
 {
-	//! Shall stabilize grid in one rush
-	virtual void stabilize(const grid_t &grid) const = 0;
+public:
+	//! calculates next state at (human) position (x,y)
+	//! if the ca is asynchronous, the function returns the next state
+	//! as if the cell was active
+	//! @param dim the grids *internal* dimension
+	virtual int next_state(const int *cell_ptr, const point& p) const = 0;
+
+	//! overload with human coordinates and reference to grid. slower.
+	virtual int next_state(const point& p) const = 0;
+
+	//! returns whether cell at point @a p will change if active
+	//! @a result is set to the result in all cases, if it is not nullptr
+	virtual bool is_cell_active(const point& p, cell_t* result = nullptr) const = 0;
+
+	//! prepares the ca
+	virtual void finalize() = 0;
+
+	//! prepares the ca to run only on cells from @a sim_rect
+	virtual void finalize(const rect& sim_rect) = 0;
+
+	// TODO: function run_once_async()
+
+	struct default_asynchronicity
+	{
+		bool operator()(unsigned ) const { return sca_random::get_int(2); }
+	};
+
+	struct synchronous
+	{
+		bool operator()(unsigned ) const { return true; }
+	};
+
+/*	//! runs the ca once, but only ever activating cells from @a sim_rect
+	template<class Asynchronicity>
+	virtual void run_once(const rect& sim_rect,
+		const Asynchronicity& async = synchronous()) = 0;*/
+
+	virtual void run_once(const rect& sim_rect) = 0;
+	virtual void run_once(const rect& sim_rect, const default_asynchronicity& async = default_asynchronicity()) = 0;
+
+	//! runs the whole ca
+	//template<class Asynchronicity>
+	virtual void run_once() = 0;
+	virtual void run_once(const default_asynchronicity& async = default_asynchronicity()) = 0;
+
+	virtual const std::vector<point>& active_cells() const = 0;
+	virtual bool has_active_cells() const = 0;
+
+	//! returns true iff not all cells are inactive
+	virtual bool is_stable() const = 0;
+
+	//! returns the current grid
+	virtual grid_t& grid() = 0;
+	virtual const grid_t& grid() const = 0;
+
+	enum class stable_t
+	{
+		always,
+		unknown,
+		never
+	};
+
+	//! whether we know if the ca will get stable
+	//! @todo: give asynch as param
+	virtual stable_t gets_stable() const = 0;
+
+	//! if gets_stable() returns always, this will get to an end
+	//! configuration. if it returns never, this must return false.
+	//! otherwise, the computation can take forever
+	virtual bool stabilize() = 0;
 };
 
 /**
@@ -537,7 +607,7 @@ class input_array : public base
 template<class Solver>
 class _ca_calculator_t : public Solver
 {
-	using base = Solver;
+	using _base = Solver;
 public:
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
@@ -550,13 +620,13 @@ public:
 	//! @param dim the grids internal dimension
 	int next_state(const int *cell_ptr, const point& p, const dimension& dim) const
 	{
-		return base::calculate_next_state(cell_ptr, p, dim);
+		return _base::calculate_next_state(cell_ptr, p, dim);
 	}
 
 	//! overload, with x and y in internal format. slower.
 	int next_state_realxy(const int *cell_ptr, const point& p, const dimension& dim) const
 	{
-		int bw = base::border_width();
+		int bw = _base::border_width();
 		return next_state(cell_ptr, p - point { bw, bw }, dim);
 	}
 
@@ -660,33 +730,66 @@ public:
 };
 #endif
 
+/**
+ * Defines sequence: (stabilisation)((input)(stabilisation))*
+ */
 template<class Solver>
-class ca_simulator_t : private _ca_calculator_t<Solver>, public base
+class ca_simulator_t : /*private _ca_calculator_t<Solver>,*/ public input_ca
 {
+	_ca_calculator_t<Solver> ca_calc;
+	_ca_calculator_t<Solver> ca_input; //!< TODO: Solver class is enough
+
 	grid_t _grid[2];
 	grid_t *old_grid = _grid, *new_grid = _grid;
-	n_t neighbours;
+	n_t neighbours; // TODO: const?
 	std::vector<point> //recent_active_cells(old_grid->size()),
 			new_changed_cells; // TODO: this vector will shrink :/
+	//! temporary variable
 	std::set<point> cells_to_check; // TODO: use pointers here, like in grid
-	int round = 0;
-	bool async;
-	using calc = _ca_calculator_t<Solver>;
+	int round = 0; //!< steps since last input
+	bool async; // TODO: const?
+	//using calc = _ca_calculator_t<Solver>;
 public:
-	ca_simulator_t(const char* equation, unsigned num_states, bool async = false) :
-		calc(equation, num_states),
-		_grid{calc::border_width(), calc::border_width()},
-		neighbours(calc::get_neighbourhood()),
+	ca_simulator_t(const char* equation, const char* input_equation,
+		unsigned num_states, bool async = false) :
+		ca_calc(equation, num_states),
+		ca_input(input_equation, num_states),
+		_grid{ca_calc.border_width(), ca_calc.border_width()},
+		neighbours(ca_calc.get_neighbourhood()),
 		async(async)
 	{
 	}
 
 	ca_simulator_t(const char* equation, bool async = false) : // TODO: 2 ctots?
-		calc(equation),
-		_grid{calc::border_width(), calc::border_width()},
-		neighbours(calc::get_neighbourhood()),
+		ca_calc(equation),
+		ca_input(equation),
+		_grid{ca_calc.border_width(), ca_calc.border_width()},
+		neighbours(ca_calc.get_neighbourhood()),
 		async(async)
 	{
+	}
+	// TODO: no function should take grid pointer
+
+	//! calculates next state at (human) position (x,y)
+	//! @param dim the grids internal dimension
+	int next_state(const int *cell_ptr, const point& p) const
+	{
+		return ca_calc.next_state(cell_ptr, p, grid().internal_dim());
+	}
+
+	//! overload with human coordinates and reference to grid. slower.
+	int next_state(const point& p) const
+	{
+		return ca_calc.next_state(grid(), p);
+	}
+
+	//! returns whether cell at point @a p is active.
+	//! @a result is set to the result in all cases, if it is not nullptr
+	// TODO: overloads
+	// TODO: faster than scanning the vector?
+	bool is_cell_active(const point& p, cell_t* result = nullptr) const
+	{
+		return ca_calc.is_cell_active(grid(), p, result);
 	}
 
 	grid_t& grid() { return *new_grid; }
@@ -701,10 +804,16 @@ public:
 		// TODO: make this generic for arbitrary neighbourhoods
 		new_changed_cells.reserve(sim_rect.area());
 		for( const point &p : sim_rect ) {
-			new_changed_cells.push_back(p); }
+			// TODO: use active criterion if possible
+			// TODO: otherwise, invariant can be broken...
+			// TODO: (because these cells are not active)
+			//for(const point np : neighbours)
+			if(is_cell_active(p))
+			 new_changed_cells.push_back(p);
+		}
 	}
 
-	//! prepares the ca
+	//! prepares the ca - *must* be run before simulating
 	void finalize() { finalize(_grid->internal_dim()); }
 
 	// TODO: function run_once_async()
@@ -736,7 +845,8 @@ public:
 			int new_value;
 			const int old_value = (*old_grid)[p];
 			(*new_grid)[p] = (new_value
-				= calc::next_state(&((*old_grid)[p]), p, _grid->internal_dim()));
+				= ca_calc.next_state(&((*old_grid)[p]),
+					p, _grid->internal_dim()));
 			if(new_value != old_value)
 			{
 				new_changed_cells.push_back(p);
@@ -752,6 +862,8 @@ public:
 		++round;
 	}
 
+	// TODO: move up to virtual class
+	//! active cells during a stabilisation
 	const std::vector<point>& active_cells() const { return new_changed_cells; }
 	bool has_active_cells() const { return active_cells().empty(); }
 
@@ -759,7 +871,7 @@ public:
 	template<class Asynchronicity>
 	void _run_once(const Asynchronicity& async = synchronous())
 	{
-		run_once(rect(_grid->internal_dim(), calc::border_width()), async);
+		run_once(rect(_grid->internal_dim(), ca_calc.border_width()), async);
 	}
 
 
@@ -786,6 +898,33 @@ public:
 	//! returns true iff not all cells are inactive
 	bool can_run() const {
 		return (new_changed_cells.size() || async); // TODO: async condition is wrong
+	}
+
+	stable_t gets_stable() const { return stable_t::unknown; }
+
+	bool is_stable() const { return false; } // TODO!!!!
+
+	bool stabilize()
+	{
+		if(gets_stable() == stable_t::never)
+		 return false;
+		else
+		{
+			while(can_run()) { run_once(); }
+			return true;
+		}
+	}
+
+	// note: the input functions could be put into a different class
+	// however, we currently don't think it would be practical
+
+	void input(const point& p) // TODO: ret value?
+	{
+		// TODO: refresh active cells etc.
+		ca_input.next_state(grid(), p);
+		for(const point np : neighbours)
+		if(is_cell_active(p + np))
+		 new_changed_cells.push_back(p + np);
 	}
 };
 

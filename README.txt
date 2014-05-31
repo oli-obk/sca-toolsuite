@@ -57,8 +57,8 @@ Reaons for using it include the following.
     usually faster, but the factor should not be more than 3-4.
 
   * For sandpiles, we provide the (probably) worlds fastest algorithm. Our
-    computation time was 68 per cent of the fastest algorithm we knew of
-    before. For details, see the file `FAQ'.
+    computation time was 37 per cent of the fastest algorithm we knew of
+    before. For details, see the files `BENCHMARKS' and `FAQ'.
 
   * We have a GUI. It works for all ca, with special functionality for
     sandpiles.
@@ -72,7 +72,7 @@ Reaons for using it include the following.
     toolsuite:
       
       * rotor-routing (as described by Priezzhev et al, 1996)
-      * image manipulation (future feature), e.g. with filters
+      * image manipulation, e.g. with filters
       * solving math equations (future feature) or calculating
       * writing C code in scripts
       * spreadsheet
