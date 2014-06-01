@@ -230,6 +230,7 @@ public:
 	_rect(const point& ul, const point& lr) : storage(ul, lr) {}
 	//! constructs the rect from the inner part of a dim,
 	//! i.e. dim - border
+	// TODO: deprecate this? dangerous...
 	_rect(const _rect<rect_storage_origin>& d, const coord_t border_size = 0) :
 		storage({0, 0},
 			{(coord_t)d.width() - (border_size << 1),
@@ -449,6 +450,8 @@ public:
 	const dimension& internal_dim() const { return _dim; } // TODO: remove this?
 	dimension human_dim() const { return _human_dim(); }
 
+	rect human_rect() const { return human_dim() + point(bw, bw); }
+
 	u_coord_t border_width() const { return bw; }
 
 	u_coord_t dx() const { return _dim.dx() - bw_2; }
@@ -479,8 +482,11 @@ public:
 
 	grid_alignment_t& operator=(const grid_alignment_t& rhs)
 	{
-		assert(bw == rhs.bw);
-		assert(bw_2 == rhs.bw_2);
+	//	assert(bw == rhs.bw);
+	//	assert(bw_2 == rhs.bw_2);
+		bw = rhs.bw;
+		bw_2 = rhs.bw_2;
+
 		_dim = rhs._dim;
 		return *this;
 	}

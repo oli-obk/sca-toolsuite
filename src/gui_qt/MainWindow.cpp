@@ -49,7 +49,7 @@ void MainWindow::setup_ui()
 	vbox_right.addWidget(&btn_step);
 	vbox_right.addLayout(&pixel_size_chooser.layout());
 	vbox_right.addLayout(&time_interval_chooser.layout());
-	ca_type_edit.widget().setText("Select");
+	ca_type_edit.widget().setText("Select ca");
 	vbox_right.addLayout(&ca_type_edit.layout());
 	btn_run.setCheckable(true);
 
@@ -68,6 +68,8 @@ void MainWindow::setup_ui()
 		&state_machine, SLOT(trigger_pause()));
 	connect(&ca_type_edit.widget(), SIGNAL(clicked()),
 		this, SLOT(change_ca_type()));
+	connect(&menu_bar, SIGNAL(toggle_fullscreen()),
+		this, SLOT(slot_fullscreen()));
 
 	/*pixel_size_chooser.widget().setMinimum(1);
 	pixel_size_chooser.widget().setMaximum(255);
@@ -83,13 +85,13 @@ void MainWindow::retranslate_ui()
 	btn_step.setText("Step");
 }
 
-MainWindow::MainWindow(QWidget *parent) :
+MainWindow::MainWindow(const char *ca_eq, const char *input_eq, QWidget *parent) :
 	QMainWindow(parent),
 	menu_bar(this),
 //	tool_bar(this),
 	central_widget(this),
 	hbox_main(&central_widget),
-	draw_area(state_machine),
+	draw_area(state_machine, ca_eq, input_eq),
 	pixel_size_chooser("UI size: "),
 	time_interval_chooser("Step time: "),
 	/*ca_type_chooser("CA input type: "),
@@ -105,7 +107,7 @@ void MainWindow::slot_help_about()
 {
 	QMessageBox::about ( NULL, "About",
 			     "<h1>Qt GUI for sca-toolsuite</h1>"
-			     "<i>(c) 2012-2012</i><br/>"
+			     "<i>(c) 2012-2014</i><br/>"
 			     "by Johannes Lorenz<br/><br/>"
 			     "<a href=\"https://github.com/JohannesLorenz/sca-toolsuite\">https://github.com/JohannesLorenz/sca-toolsuite</a>");
 
@@ -141,6 +143,11 @@ void MainWindow::change_ca_type()
 {
 	CaSelector ca_sel(this);
 	ca_sel.setModal(true);
-	ca_sel.exec();
+	if(ca_sel.exec() == QDialog::Accepted)
+	 draw_area.reset_ca(ca_sel.instantiate_ca());
+}
+
+void MainWindow::slot_fullscreen() {
+	if( isFullScreen() ) showNormal(); else showFullScreen();
 }
 

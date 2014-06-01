@@ -33,7 +33,7 @@ Note that indeterminism is supposed to work.
 This toolsuite provides you with a number of tools to
 
   * create, read or write grids
-  * exporting them to TGA, latex (planned) ODS format
+  * exporting them to TGA, latex (planned) and ODS format
   * do math with them like in C++
   * simulate every cellular automata with restrictions listed above
   * very fast routines especially for sandpile automata
@@ -61,7 +61,7 @@ Reaons for using it include the following.
     before. For details, see the files `BENCHMARKS' and `FAQ'.
 
   * We have a GUI. It works for all ca, with special functionality for
-    sandpiles.
+    sandpiles (in progress).
 
   * The code is quite bug safe. All algorithms were designed both easy and
     fast. Also, we propose the file src/test.sh to test all our programs.
@@ -75,8 +75,8 @@ Reaons for using it include the following.
       * image manipulation, e.g. with filters
       * solving math equations (future feature) or calculating
       * writing C code in scripts
-      * spreadsheet
-      * running two-dimensional games easily
+      * spreadsheet (future feature)
+      * running two-dimensional games easily (in progress)
       * ...
       
 3 License

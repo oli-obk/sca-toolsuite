@@ -22,101 +22,97 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPaintEvent>
-#include "asm_basic.h"
+//#include "asm_basic.h"
 #include "DrawArea.h"
 
-DrawArea::DrawArea(StateMachine& _state_machine, QWidget *parent) :
-//	QTableWidget(parent),
+DrawArea::DrawArea(StateMachine& _state_machine, const char *ca_eq,
+	const char *input_eq, QWidget *parent) :
 	QWidget(parent),
 	state_machine(_state_machine),
-	//grid_image(NULL),
 	pixel_factor(1),
-	sim_grid(1),
-	calc_grid(1),
+	TIMER_INTERVAL(250),
 	min_color(0,255,0),
 	max_color(255,0,0),
-	next_cell(0),
-	//table_widget(*this)
+	ca(new sca::ca::ca_simulator_t<sca::ca::ca_eqsolver_t>(
+		ca_eq, input_eq)),
 	grid_layout(this)
 {
 	connect(&next_fire_timer, SIGNAL(timeout()),
 		this, SLOT(slot_timeout()));
 	connect(&state_machine, SIGNAL(updated(StateMachine::STATE)),
 		this, SLOT(state_updated(StateMachine::STATE)));
-}
 
-void DrawArea::increase_cell(const point& coord, int steps)
-{
-	const int new_value = sim_grid[coord] + steps;
-	sim_grid[coord] = new_value;
+	ColorTable tmp_ct(min_color, max_color, 0, 7);
+	int entry = 0;
 
-	if(!calc_grid.point_is_on_border(coord))
+	for(ColorTable::const_iterator itr(tmp_ct); itr.valid();
+		++itr, ++entry)
 	{
-		//table_widget.item(coord.x, coord.y)->setBackgroundColor(color_of(new_value));
-#if 0
-		QPalette pal(color_of(new_value));
-		grid_layout.itemAtPosition(coord.x, coord.y)->widget()->setAutoFillBackground(true); // TODO: needed?
-		grid_layout.itemAtPosition(coord.x, coord.y)->widget()->setPalette(pal);
-#endif
-		//labels[coord.y * sim_grid.internal_dim().width() + coord.x]->setPixmap(pixmap_table[sim_grid[coord]]);
-
-		const point human_point = coord; // TODO: remove
-
-		labels[sim_grid.index(human_point)]->setPixmap(&pixmap_table[sim_grid[human_point]]);
-
-	// TODO
+		itr->to_32bit((int*)(color_table + entry));
 	}
-//	 grid_image->setPixel(coord.x, coord.y, color_of(new_value));
+	color_table[8] = 0; // sentinel - black
 
-	//update_pixmap();
+	pixmap_table.resize(9);
+	for(int i = 0; i < 9; ++i)
+	{
+		pixmap_table[i] = QPixmap(1, 1);
+		pixmap_table[i].fill(color_table[i]);
+	}
+
 }
 
-void DrawArea::fire_cell(int coords)
+DrawArea::~DrawArea()
 {
-	const int x = coords % calc_grid.internal_dim().width();
-	const int y = coords / calc_grid.internal_dim().width();
-	const point p(x, y);
+	// delete grid_image;
+	for(int i = 0; i < labels.size(); ++i)
+	 delete labels[i];
 
-	increase_cell(p, -4);
-	increase_cell(p + point(0, -1), 1);
-	increase_cell(p + point(-1, 0), 1);
-	increase_cell(p + point(+1, 0), 1);
-	increase_cell(p + point(0, +1), 1);
+	// make program output
+	std::cout << ca->grid();
+	delete ca;
+}
+
+void DrawArea::set_pixel_size(int pixel_size) {
+	pixel_factor = pixel_size;
+	update_pixmap();
 }
 
 void DrawArea::slot_timeout()
 {
-	if(next_cell==0 || next_cell == container->size())
+	for(const point& p : recent_active_cells)
 	{
-		next_cell = 0;
-		container->flush();
-		if(calc_grid[current_hint]>2)
-		{
-			sandpile::avalanche_1d_hint_noflush_single(calc_grid,
-				current_hint, *container);
-		}
-		else {
-			calc_grid[current_hint]++;
-			next_fire_timer.stop();
-			delete container;
-			assert(sim_grid.data() == calc_grid.data());
-			state_machine.set(StateMachine::STATE_STABLE);
-			return;
-		}
+		int coord = p.y * ca->grid().human_dim().width() + p.x;
+		labels[coord]->setPixmap(&pixmap_of(ca->grid()[p]));
 	}
-	fire_cell(container->data()[next_cell] - calc_grid.data().data() /* pointer difference */);
-	next_cell++;
+	recent_active_cells = ca->active_cells();
+
+	if(ca->has_active_cells())
+	 ca->run_once();
+	else {
+		next_fire_timer.stop();
+		state_machine.set(StateMachine::STATE_STABLE);
+	}
 
 	if(state_machine.get() == StateMachine::STATE_STEP)
 	 state_machine.set(StateMachine::STATE_INSTABLE);
 }
 
+void DrawArea::update_pixmap()
+{
+	for(const point& p : ca->grid().points())
+	{
+		int coord = p.y * ca->grid().human_dim().width() + p.x;
+		labels[coord]->setPixmap(&pixmap_of(ca->grid()[p]));
+	}
+}
+
 void DrawArea::state_updated(StateMachine::STATE new_state)
 {
 	switch(new_state)
-	{
+		{
 		case StateMachine::STATE_STEP:
-			QTimer::singleShot(TIMER_INTERVAL, this, SLOT(slot_timeout()));
+			QTimer::singleShot(TIMER_INTERVAL,
+				this, SLOT(slot_timeout()));
 			break;
 		case StateMachine::STATE_INSTABLE:
 			next_fire_timer.stop();
@@ -130,147 +126,67 @@ void DrawArea::state_updated(StateMachine::STATE new_state)
 
 void DrawArea::onMousePressed(point coords)
 {
-	//int coords = y * calc_grid.internal_dim().width() + x; // TODO: use point
-
 	StateMachine::STATE state = state_machine.get();
 
 	if(state == StateMachine::STATE_STABLE
 		|| state == StateMachine::STATE_WELCOME
 		|| state == StateMachine::STATE_STABLE_PAUSED)
 	{
-		//point coords(x, y);
+		ca->input(coords);
 
-		increase_cell(calc_grid.human2internal(coords), 1);
+		int coord = coords.y * ca->grid().human_dim().width() + coords.x;
+		labels[coord]->setPixmap(&pixmap_of(ca->grid()[coords]));
 
-		if( ++calc_grid[coords] == 4 )
+		state_machine.trigger_throw();
+		if(state_machine.get() != StateMachine::STATE_INSTABLE)
 		{
-			/*if(state == StateMachine::STATE_STABLE_PAUSED) {
-				state_machine.set(StateMachine::STATE_INSTABLE);
-			}
-			else*/
-
-			//state_machine.set(StateMachine::STATE_SIMULATING);
-			state_machine.trigger_throw();
-
-			current_hint = coords;
-			calc_grid[current_hint]--;
-			container = new sandpile::array_queue_no_file(calc_grid.internal_dim().area()); // TODO: human dim
-
-			if(state_machine.get() != StateMachine::STATE_INSTABLE)
-			 next_fire_timer.start();
+			next_fire_timer.start();
 		}
 	}
-}
-
-void DrawArea::mousePressEvent(QMouseEvent *event) // TODO: remove
-{
-	Q_UNUSED(event);
-/*	StateMachine::STATE state = state_machine.get();
-
-	if (event->button() == Qt::LeftButton &&
-		(state == StateMachine::STATE_STABLE
-		|| state == StateMachine::STATE_WELCOME
-		|| state == StateMachine::STATE_STABLE_PAUSED))
-	{	
-		int x = event->pos().x() / pixel_factor;
-		int y = event->pos().y() / pixel_factor;
-		onMousePressed(x,y);
-	}*/
 }
 
 void DrawArea::fill_grid(std::istream &inf)
 {
-//	read_grid(fp, &calc_grid, &dim);
-	calc_grid = grid_t(inf, 1);
+	ca->grid() = grid_t(inf, ca->border_width());
+	ca->finalize();
 
-	// TODO: progress dialog here?
-	sandpile::stabilize(calc_grid); // to keep invariant
-	sim_grid = calc_grid;
-
-	ColorTable tmp_ct(min_color, max_color, 0, 7);
-	int entry = 0;
-	for(ColorTable::const_iterator itr(tmp_ct); itr.valid();
-		++itr, ++entry)
+	labels.resize(ca->grid().human_dim().area());
+	for(const point& p : ca->grid().points())
 	{
-		itr->to_32bit((int*)(color_table + entry));
-	}
-
-	pixmap_table.resize(8);
-	for(int i = 0; i < 7; ++i)
-	{
-		pixmap_table[i] = QPixmap(1, 1);
-		pixmap_table[i].fill(color_table[i]);
-	}
-
-	labels.resize(calc_grid.human_dim().area());
-	for(const point& p : calc_grid.points()) {
-		int idx = p.y * calc_grid.human_dim().width() + p.x;
+		int idx = p.y * ca->grid().human_dim().width() + p.x;
 		labels[idx] = new ImgContainer(parentWidget(), p);
 		grid_layout.addWidget(labels[idx], p.y, p.x);
-		QObject::connect(labels[idx], SIGNAL(clicked(point)), this, SLOT(onMousePressed(point)));
+		QObject::connect(labels[idx], SIGNAL(clicked(point)),
+			this, SLOT(onMousePressed(point)));
 	}
 
-
-/*	delete grid_image;
-	grid_image = new QImage(calc_grid.internal_dim().width(),
-		calc_grid.internal_dim().height(),
-		QImage::Format_ARGB32);*/
-	//table_widget.resize(calc_grid.internal_dim().width(), calc_grid.internal_dim().height());
-	//table_widget.setRowCount(calc_grid.internal_dim().width());
-	//table_widget.setColumnCount(calc_grid.internal_dim().height());
-	// TODO
-#if 0
-	labels.resize(calc_grid.internal_dim().area());
-	int colc = calc_grid.internal_dim().width();
-	int rowc = calc_grid.internal_dim().height();
-
-	for(int col = 0; col < colc; ++col)
-	for(int row = 0; row < rowc; ++row)
-	{
-
-		int coord = row * colc + col;
-		pixmap_table[entry] = QPixmap(1, 1);
-		pixmap_table[entry].fill(color_of(sim_grid.at_internal(coord))); // TODO: use point class instead (everywhere)
-		/*QPixmap::fromImage(*grid_image).scaled(
-			sim_grid.internal_dim().width()*pixel_factor,
-			sim_grid.internal_dim().height()*pixel_factor);*/
-
-
-//		grid_layout.addWidget(imgs[row * colc + col], row, col);
-	}
-#endif
-#if 0
-	for(const point& p : sim_grid.points())
-	{
-	//	std::cout << table_widget.size().width() << ", " << table_widget.size().height() << std::endl;
-		std::cout << "grid image: " << sim_grid.internal_dim()
-			<< ", p: " << p << std::endl;
-		//table_widget.item(p.x, p.y)->setBackgroundColor(color_of(sim_grid[p]));
-	//	table_widget.setItem(p.x, p.y, new QTableWidgetItem()); // this is not perfect...
-	//	QRgb cof = color_of(sim_grid[p]); (void) cof;
-	//	assert(table_widget.item(p.x, p.y));
-	//	table_widget.item(p.x, p.y)->setBackgroundColor(color_of(sim_grid[p]));
-		// TODO
-
-		QImage *img = grid_layout.itemAtPosition(p.y, p.x)->widget();
-		img->setPixel(p.x, p.y, color_of(sim_grid[coord]));
-	}
-/*	for(unsigned int y = 0; y<dim.height(); y++)
-	for(unsigned int x = 0; x<dim.width(); x++)
-	{
-		if(x==0||x==dim.width()-1||y==0||y==dim.height()-1)
-		 grid_image->setPixel(x,y, 9);
-		else
-		{
-			unsigned int coord = (y*dim.width())+x;
-			grid_image->setPixel(x, y, color_of(sim_grid[coord]));
-		}
-	}*/
-	std::cout << "int w h: " << sim_grid.internal_dim().width() << ", "
-		<< sim_grid.internal_dim().height() << std::endl;
-		std::cout << "int2 w h: " << calc_grid.internal_dim().width() << ", "
-		<< calc_grid.internal_dim().height() << std::endl;
-#endif
+	// TODO: redundant -> see reset_ca()
 	update_pixmap();
+	state_machine.trigger_throw();
+	if(state_machine.get() != StateMachine::STATE_INSTABLE)
+	{
+		next_fire_timer.start();
+	}
+}
+
+void DrawArea::reset_ca(sca::ca::input_ca *new_ca)
+{
+	grid_t grid_copy = std::move(ca->grid());
+	delete ca;
+	ca = new_ca;
+	new_ca->grid() = std::move(grid_copy);
+	new_ca->finalize();
+
+	update_pixmap(); // TODO: useless?
+	state_machine.trigger_throw();
+	if(state_machine.get() != StateMachine::STATE_INSTABLE)
+	{
+		next_fire_timer.start();
+	}
+}
+
+void DrawArea::set_timeout_interval(int msecs) {
+	TIMER_INTERVAL = msecs;
+	next_fire_timer.setInterval(TIMER_INTERVAL);
 }
 

@@ -540,7 +540,8 @@ public:
 	//! @a result is set to the result in all cases, if it is not nullptr
 	virtual bool is_cell_active(const point& p, cell_t* result = nullptr) const = 0;
 
-	//! prepares the ca
+	//! prepares the ca - *must* be called before the first run
+	//! and *after* assigning the grid
 	virtual void finalize() = 0;
 
 	//! prepares the ca to run only on cells from @a sim_rect
@@ -564,12 +565,12 @@ public:
 		const Asynchronicity& async = synchronous()) = 0;*/
 
 	virtual void run_once(const rect& sim_rect) = 0;
-	virtual void run_once(const rect& sim_rect, const default_asynchronicity& async = default_asynchronicity()) = 0;
+	virtual void run_once(const rect& sim_rect, const default_asynchronicity& async) = 0;
 
 	//! runs the whole ca
 	//template<class Asynchronicity>
 	virtual void run_once() = 0;
-	virtual void run_once(const default_asynchronicity& async = default_asynchronicity()) = 0;
+	virtual void run_once(const default_asynchronicity& async) = 0;
 
 	virtual const std::vector<point>& active_cells() const = 0;
 	virtual bool has_active_cells() const = 0;
@@ -596,6 +597,12 @@ public:
 	//! configuration. if it returns never, this must return false.
 	//! otherwise, the computation can take forever
 	virtual bool stabilize() = 0;
+
+	virtual void input(const point& p) = 0;
+
+	virtual u_coord_t border_width() const = 0;
+
+	virtual ~input_ca() {}
 };
 
 /**
@@ -749,6 +756,8 @@ class ca_simulator_t : /*private _ca_calculator_t<Solver>,*/ public input_ca
 	int round = 0; //!< steps since last input
 	bool async; // TODO: const?
 	//using calc = _ca_calculator_t<Solver>;
+
+	void initialize_first() { run_once(); }
 public:
 	ca_simulator_t(const char* equation, const char* input_equation,
 		unsigned num_states, bool async = false) :
@@ -760,27 +769,45 @@ public:
 	{
 	}
 
-	ca_simulator_t(const char* equation, bool async = false) : // TODO: 2 ctots?
-		ca_calc(equation),
-		ca_input(equation),
-		_grid{ca_calc.border_width(), ca_calc.border_width()},
-		neighbours(ca_calc.get_neighbourhood()),
-		async(async)
+	ca_simulator_t(const char* equation, const char* input_equation,
+		bool async = false) : // TODO: 2 ctots?
+		ca_simulator_t(equation, input_equation, 0, async)
 	{
 	}
+
+	ca_simulator_t(const char* equation,
+		bool async = false) :
+		ca_simulator_t(equation, "v", async)
+	{
+	}
+
+	virtual ~ca_simulator_t() {}
+
+	// TODO: there is no virtual function right now...
+	void reset_ca(const char* equation, const char* input_equation)
+	{
+		ca_calc = _ca_calculator_t<Solver>(equation);
+		ca_input = _ca_calculator_t<Solver>(input_equation);
+		grid.resize_borders(ca_calc.border_width());
+		neighbours = ca_calc.get_neighbourhood();
+	}
+
 	// TODO: no function should take grid pointer
 
 	//! calculates next state at (human) position (x,y)
 	//! @param dim the grids internal dimension
 	int next_state(const int *cell_ptr, const point& p) const
 	{
-		return ca_calc.next_state(cell_ptr, p, grid().internal_dim());
+		(void) cell_ptr;
+	//	return ca_calc.next_state(cell_ptr, p, grid().internal_dim());
+		return (*new_grid)[p];
 	}
 
 	//! overload with human coordinates and reference to grid. slower.
 	int next_state(const point& p) const
 	{
-		return ca_calc.next_state(grid(), p);
+	//	return ca_calc.next_state(grid(), p);
+		return (*new_grid)[p];
 	}
 
 	//! returns whether cell at point @a p is active.
@@ -789,15 +816,20 @@ public:
 	// TODO: faster than scanning the vector?
 	bool is_cell_active(const point& p, cell_t* result = nullptr) const
 	{
-		return ca_calc.is_cell_active(grid(), p, result);
+		//return ca_calc.is_cell_active(grid(), p, result);
+		//return ca_calc.is_cell_active(old_grid, p, result);
+		if(result)
+		 *result =  (*new_grid)[p];
+		return (*old_grid)[p] == (*new_grid)[p];
 	}
 
-	grid_t& grid() { return *new_grid; }
-	const grid_t& grid() const { return *new_grid; }
+	grid_t& grid() { return *old_grid; }
+	const grid_t& grid() const { return *old_grid; }
 
 	//! prepares the ca to run only on cells from @a sim_rect
 	void finalize(const rect& sim_rect)
 	{
+		// incorrect if we finalize later? (what is 0 and 1?)
 		_grid[1] = _grid[0]; // fit borders
 
 		// make all cells active, but not those close to the border
@@ -808,13 +840,15 @@ public:
 			// TODO: otherwise, invariant can be broken...
 			// TODO: (because these cells are not active)
 			//for(const point np : neighbours)
-			if(is_cell_active(p))
+			if(ca_calc.is_cell_active(_grid[0], p))
 			 new_changed_cells.push_back(p);
 		}
+
+		initialize_first();
 	}
 
 	//! prepares the ca - *must* be run before simulating
-	void finalize() { finalize(_grid->internal_dim()); }
+	void finalize() { finalize(_grid->human_dim()); }
 
 	// TODO: function run_once_async()
 
@@ -831,7 +865,7 @@ public:
 		for(const point& np : neighbours)
 		{
 			const point p = ap + np;
-			if(sim_rect.is_inside(p))
+			if(sim_rect.is_inside(p)) // TODO: intsct?
 		//	if(!_grid->point_is_on_border(p))
 			 cells_to_check.insert(p);
 		}
@@ -847,6 +881,9 @@ public:
 			(*new_grid)[p] = (new_value
 				= ca_calc.next_state(&((*old_grid)[p]),
 					p, _grid->internal_dim()));
+
+		//	std::cout << "at " << p << ": " << new_value
+		//		<< ", " << old_value << std::endl;
 			if(new_value != old_value)
 			{
 				new_changed_cells.push_back(p);
@@ -859,19 +896,24 @@ public:
 			(*new_grid)[p] = (*old_grid)[p];
 		}
 
+	//	std::cout << "NOW:" <<  std::endl;
+	//	std::cout << *old_grid;
+	//	std::cout << *new_grid;
+
 		++round;
 	}
 
 	// TODO: move up to virtual class
 	//! active cells during a stabilisation
+	// TODO: not all of these cells must be active
 	const std::vector<point>& active_cells() const { return new_changed_cells; }
-	bool has_active_cells() const { return active_cells().empty(); }
+	bool has_active_cells() const { return !active_cells().empty(); }
 
 	//! runs the whole ca
 	template<class Asynchronicity>
 	void _run_once(const Asynchronicity& async = synchronous())
 	{
-		run_once(rect(_grid->internal_dim(), ca_calc.border_width()), async);
+		run_once(_grid->human_dim(), async);
 	}
 
 
@@ -920,11 +962,23 @@ public:
 
 	void input(const point& p) // TODO: ret value?
 	{
-		// TODO: refresh active cells etc.
-		ca_input.next_state(grid(), p);
-		for(const point np : neighbours)
-		if(is_cell_active(p + np))
-		 new_changed_cells.push_back(p + np);
+		//if(has_)
+		// TODO: for now, we assume that the ca is always stable
+		(*old_grid)[p] = (*new_grid)[p] = ca_input.next_state(*new_grid, p);
+		/*for(const point np : neighbours)
+		{
+			point cur = p + np;
+			if(!grid().point_is_on_border(cur)
+				&& ca_calc.is_cell_active(*new_grid, cur))
+			 new_changed_cells.push_back(cur);
+		}*/
+		new_changed_cells.push_back(p);
+
+		initialize_first();
+	}
+
+	u_coord_t border_width() const {
+		return ca_calc.border_width();
 	}
 };
 

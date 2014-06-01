@@ -24,7 +24,6 @@
 #include <iostream>
 #include <QLabel>
 #include <QTimer>
-//#include <QTableWidget>
 #include <QGridLayout>
 
 #include "geometry.h"
@@ -32,12 +31,15 @@
 #include "labeled_widget.h"
 #include "image.h"
 
-namespace sandpile
+#include "ca.h" // TODO: -> cpp?
+
+/*namespace sandpile
 {
 	template<class T>
 	class _array_queue_no_file;
-}
+}*/
 
+//! This will be hold for every cell
 class ImgContainer : public QLabel
 {
 	Q_OBJECT
@@ -53,7 +55,8 @@ class ImgContainer : public QLabel
 		emit clicked(coords);
 	}
 public:
-	ImgContainer(QWidget* parent, const point& coords) : QLabel(parent), coords(coords) {}
+	ImgContainer(QWidget* parent, const point& coords) :
+		QLabel(parent), coords(coords) {}
 	void setPixmap ( const QPixmap * _pixmap ) {
 		pixmap = _pixmap;
 		update_pixmap();
@@ -65,24 +68,22 @@ signals:
 	void clicked(point);
 };
 
+//! This widget displays the grid
 class DrawArea : public QWidget
 {
 	Q_OBJECT
 
 	StateMachine& state_machine;
 
-//	QImage* grid_image;
 	int pixel_factor;
 	int TIMER_INTERVAL;
 
-/*	dimension dim;
-	std::vector<int> sim_grid;
-	std::vector<int> calc_grid;*/
-	grid_t sim_grid, calc_grid;
 	rgb min_color, max_color;
 
-	QRgb color_table[8]; // 0 to 7
-	inline QRgb color_of(int grains) const { return color_table[grains]; }
+	QRgb color_table[9]; // 0 to 7 + sentinel
+	inline const QPixmap& pixmap_of(int state) const {
+		return pixmap_table[std::min((unsigned)state, 8u)];
+	}
 
 	QVector<QPixmap> pixmap_table;
 	QVector<ImgContainer*> labels;
@@ -90,67 +91,41 @@ class DrawArea : public QWidget
 	void increase_cell(const point& coord, int steps);
 	void fire_cell(int coords);
 
-	unsigned int next_cell;
+//	unsigned int next_cell;
 //	int current_hint;
-	point current_hint;
-	sandpile::_array_queue_no_file<int*>* container;
+//	point current_hint;
+//	sandpile::_array_queue_no_file<int*>* container;
 	QTimer next_fire_timer;
+	sca::ca::input_ca* ca = nullptr;
 
-//	QTableWidget& table_widget;
+	std::vector<point> recent_active_cells;
 
 	QGridLayout grid_layout;
 	//QVector<QImage> imgs;
 
 private slots:
 	void slot_timeout();
-	inline void update_pixmap() { // TODO -> cpp
-	/*	int colc = calc_grid.internal_dim().width();
-		int rowc = calc_grid.internal_dim().height();
-		for(int col = 0; col < colc; ++col)
-		for(int row = 0; row < rowc; ++row)
-		{
-			int coord = row * colc + col;
-			labels[coord]->setPixmap(pixmap_table[sim_grid.at_internal(coord)]);
-		}*/
-		for(const point& p : sim_grid.points())
-		{
-			int coord = p.y * calc_grid.human_dim().width() + p.x;
-		//	std::cout << coord << ", " << labels.size() << ", value: " << sim_grid[p] << std::endl;
-			labels[coord]->setPixmap(&pixmap_table[sim_grid[p]]);
-		}
 
-
-		/*setPixmap(QPixmap::fromImage(*grid_image).scaled(
-			sim_grid.internal_dim().width()*pixel_factor,
-			sim_grid.internal_dim().height()*pixel_factor));*/
-	}
+	//! updates the whole pixmaps from the whole grid
+	void update_pixmap();
 	void state_updated(StateMachine::STATE new_state);
 
 	void onMousePressed(point coords);
 
 public:
-	explicit DrawArea(StateMachine& _state_machine, QWidget *parent = 0);
-	inline ~DrawArea() {
-	//	delete grid_image;
-		for(int i = 0; i < labels.size(); ++i)
-		 delete labels[i];
-		std::cout << calc_grid;
-	}
-	inline void set_pixel_size(int pixel_size) {
-		pixel_factor = pixel_size;
-		update_pixmap();
-	}
+	explicit DrawArea(StateMachine& _state_machine,
+		const char* ca_eq,
+		const char* input_eq,
+		QWidget *parent = 0);
+	~DrawArea();
+
+	void set_pixel_size(int pixel_size);
 	void fill_grid(std::istream& inf = std::cin);
+	void reset_ca(sca::ca::input_ca* new_ca);
 
 signals:
 public slots:
-	inline void set_timeout_interval(int msecs) {
-		TIMER_INTERVAL = msecs;
-		next_fire_timer.setInterval(TIMER_INTERVAL);
-	}
-
-protected:
-	void mousePressEvent(QMouseEvent *event);
+	void set_timeout_interval(int msecs);
 };
 
 #endif // DRAWAREA_H

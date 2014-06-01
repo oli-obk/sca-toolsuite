@@ -33,13 +33,15 @@ class MenuBar : public QMenuBar
 	Q_OBJECT
 
 	enum MENU {
-		MENU_FILE, MENU_TRANSFORM, MENU_MORE, MENU_HELP, MENU_SIZE
+		MENU_FILE, /*MENU_TRANSFORM, MENU_MORE,*/
+			MENU_VIEW, MENU_HELP, MENU_SIZE
 	};
 
 	enum ACTION {
 		FILE_LOAD, FILE_CREATE, FILE_SAVE, FILE_EXPORT, FILE_QUIT,
 		TRANSFORM_SUPER, TRANSFORM_BURNING,
 		MORE_RECURRENCE,
+		VIEW_FULLSCREEN,
 		HELP_ABOUT, HELP_ABOUTQT,
 		ACTION_SIZE
 	};
@@ -53,14 +55,15 @@ class MenuBar : public QMenuBar
 	QAction* append(enum MENU menu_no, enum ACTION action_no, const char* slot_name,
 		const QKeySequence& short_key_sequence = QKeySequence());
 
+private slots:
+	inline void slot_fullscreen() { emit toggle_fullscreen(); }
+
 public:
 	void state_updated(StateMachine::STATE new_state);
 	explicit MenuBar(MainWindow *parent = 0);
 
 signals:
-
-public slots:
-
+	void toggle_fullscreen();
 };
 
 #endif // MENUBAR_H

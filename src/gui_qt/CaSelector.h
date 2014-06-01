@@ -25,16 +25,16 @@
 
 #include <QVBoxLayout>
 #include <QTextEdit>
+#include <QLineEdit>
 #include <QRadioButton>
 #include <QComboBox>
 class QDialogButtonBox;
 
 #include "labeled_widget.h"
 
-namespace ca
-{
-	class input_array;
-}
+namespace sca { namespace ca {
+	class input_ca;
+}}
 
 enum class ca_type_t
 {
@@ -55,15 +55,19 @@ class CaSelector : public QDialog
 	QVBoxLayout vbox_main;
 	LabeledWidget<QComboBox> ca_type_edit;
 	LabeledWidget<QTextEdit> formula_edit;
+	LabeledWidget<QLineEdit> input_edit;
 	QDialogButtonBox* button_box;
 
-	ca::input_array* ca_obj;
+	//sca::ca::input_array* ca_obj;
 	void get_ca_id();
 private slots:
 	void try_accept();
 
 public:
 	explicit CaSelector(QWidget *parent = nullptr);
+
+	//! returns new allocated pointer. you need to delete it yourself
+	sca::ca::input_ca* instantiate_ca();
 };
 
 #endif // CASELECTOR_H

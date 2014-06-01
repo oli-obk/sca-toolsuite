@@ -23,6 +23,7 @@
 
 #include "CaSelector.h"
 #include "ca.h"
+#include "equation_solver.h"
 
 enum ca_source
 {
@@ -42,16 +43,31 @@ void CaSelector::try_accept()
 
 	}*/
 
+	try
+	{
+		eqsolver::expression_ast ast;
+		// TODO: parse only, not phrase?
+		eqsolver::build_tree(input_edit.widget().text().toAscii().data(), &ast);
+		eqsolver::build_tree(formula_edit.widget().toPlainText().toAscii().data(), &ast);
+	}
+	catch(std::string err)
+	{
+		QMessageBox::critical(this, "Invalid ca.", QString::fromStdString(err));
+		ok = false;
+	}
+
+
 	if(ok)
 		accept();
-	else
-	 QMessageBox::critical(this, "Invalid ca.", "Is your formula wrong?");
+//	else
+//	 QMessageBox::critical(this, "Invalid ca.", "Is your formula wrong?");
 }
 
 CaSelector::CaSelector(QWidget *parent) :
 	QDialog(parent),
 	ca_type_edit("ca type"),
-	formula_edit(""),
+	formula_edit("ca formula:"),
+	input_edit("input formula:"),
 	button_box( new QDialogButtonBox(
 		QDialogButtonBox::Ok |
 		QDialogButtonBox::Cancel,
@@ -62,12 +78,22 @@ CaSelector::CaSelector(QWidget *parent) :
 	ca_type_edit.widget().addItem("formula");
 	ca_type_edit.widget().addItem("file");
 	ca_type_edit.widget().addItem("custom name");
+	ca_type_edit.widget().setDisabled(true);
 
 	vbox_main.addLayout(&ca_type_edit.layout());
 	vbox_main.addLayout(&formula_edit.layout());
+	vbox_main.addLayout(&input_edit.layout());
 	vbox_main.addWidget(button_box);
 	setLayout(&vbox_main);
 
 	connect(button_box, SIGNAL(accepted()), this, SLOT(try_accept()));
 	connect(button_box, SIGNAL(rejected()), this, SLOT(reject()));
+}
+
+sca::ca::input_ca* CaSelector::instantiate_ca()
+{
+	return new sca::ca::ca_simulator_t<sca::ca::ca_eqsolver_t>(
+		formula_edit.widget().toPlainText().toAscii().data(),
+		input_edit.widget().text().toAscii().data()
+		);
 }

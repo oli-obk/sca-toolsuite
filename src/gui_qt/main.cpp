@@ -26,10 +26,25 @@ class MyProgram : public Program
 {
 	int main()
 	{
-		assert_usage(argc==1);
+		const char *ca_eq =
+			"v+(-4*(v>=4))"
+			"+(a[-1,0]>=4)+(a[0,-1]>=4)+(a[1,0]>=4)+(a[0,1]>=4)",
+			*input_eq = "v+1";
+
+		switch(argc)
+		{
+			case 3:
+				input_eq = argv[2];
+			case 2:
+				ca_eq = argv[1];
+			case 1:
+				break;
+			default:
+				exit_usage();
+		}
 
 		QApplication app(argc, argv);
-		MainWindow mainwindow;
+		MainWindow mainwindow(ca_eq, input_eq);
 		mainwindow.show();
 
 		return app.exec();
@@ -39,17 +54,15 @@ class MyProgram : public Program
 int main(int argc, char** argv)
 {
 	HelpStruct help;
-	help.syntax = "gui_qt/gui_qt";
+	help.syntax = "gui_qt/gui_qt [<ca_formula> [<input_formula>]]";
 	help.description = "GUI to simulate sandpiles.";
 	help.input = "start grid for simulation";
 	help.output = "end grid of simulation";
+	help.add_param("ca_equation", "formula for the ca, default is ASM");
+	help.add_param("input_formula", "formula for mouse click input"
+		"default is `v+1'");
 
 	MyProgram p;
 	return p.run(argc, argv, &help);
 }
-
-
-
-
-
 

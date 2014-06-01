@@ -69,9 +69,11 @@ private slots:
 	void state_updated(StateMachine::STATE new_state);
 	void change_pixel_size(int new_size);
 	void change_ca_type();
+	void slot_fullscreen();
 
 public:
-	explicit MainWindow(QWidget *parent = 0);
+	explicit MainWindow(const char* ca_eq, const char* input_eq,
+		QWidget *parent = 0);
 
 public slots:
 	void slot_help_about ();
