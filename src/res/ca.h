@@ -788,7 +788,7 @@ public:
 	{
 		ca_calc = _ca_calculator_t<Solver>(equation);
 		ca_input = _ca_calculator_t<Solver>(input_equation);
-		grid.resize_borders(ca_calc.border_width());
+		grid().resize_borders(ca_calc.border_width());
 		neighbours = ca_calc.get_neighbourhood();
 	}
 
