@@ -595,6 +595,10 @@ public:
 			; ++citr, ++cpos ) ;
 		data.insert(citr, value);
 	}
+
+	std::vector<int>::const_iterator cbegin() const { return data.cbegin(); }
+	std::vector<int>::const_iterator cend() const { return data.cend(); }
+	using const_iterator = std::vector<int>::const_iterator;
 };
 
 template<class C1, class C2, class Selector>
@@ -731,13 +735,19 @@ public:
 template<template<class...> class Type, class C1, class C2, class ...Functor> // TODO: make union a template
 bool for_each_points(const C1& cont1, const C2& cont2, const Functor&... func)
 {
-	return for_each_selection(cont1, cont2, Type<Functor..., decltype(cont1.begin()), decltype(cont2.begin())>(func...));
+	return for_each_selection(cont1, cont2, Type<Functor..., decltype(cont1.cbegin()), decltype(cont2.cbegin())>(func...));
 }
 
 template<class C1, class C2, class Functor> // TODO: make union a template
 bool for_ints_points(const C1& cont1, const C2& cont2, const Functor& func)
 {
 	return for_each_points<selector_intersection>(cont1, cont2, func);
+}
+
+template<class C1, class C2, class Functor> // TODO: make union a template
+bool for_union_points(const C1& cont1, const C2& cont2, const Functor& func)
+{
+	return for_each_points<selector_union>(cont1, cont2, func);
 }
 
 #if 0
