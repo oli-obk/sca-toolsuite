@@ -290,7 +290,8 @@ public:
 		return false;
 	}
 
-	typedef std::vector<point>::const_iterator const_iterator;
+
+	typedef typename Container::const_iterator const_iterator;
 	const_iterator begin() const { return neighbours.begin(); }
 	const_iterator end() const { return neighbours.end(); }
 	const_iterator cbegin() const { return begin(); }
@@ -463,12 +464,33 @@ public:
 		}
 	}
 
-	public:
+public:
 	//! assumes that no borders exist
 	template<std::size_t N>
 	constexpr _n_t(const std::array<point, N>& arr)
 		: neighbours(arr)
 	{
+	}
+
+	// TODO: maybe simply return the n_t instead of the array?
+	// TODO: cpp-file?
+	// TODO: more common neighbourhoods
+	static constexpr std::array<point, 9> moore_1_2d()
+	{
+		return std::array<point, 9> {{
+			{-1, -1}, {0, -1}, {1, -1},
+			{-1, 0}, {0, 0}, {1, 0},
+			{-1, 1}, {0, 1}, {1, 1}
+		}};
+	}
+
+	static constexpr std::array<point, 5> neumann_1_2d()
+	{
+		return std::array<point, 5> {{
+			{0, -1},
+			{-1, 0}, {0, 0}, {1, 0},
+			{0, 1},
+		}};
 	}
 };
 
@@ -575,6 +597,11 @@ public:
 		return (data == rhs.data);
 	}
 
+	bool operator!=(const conf_t& rhs) const
+	{
+		return !operator==(rhs);
+	}
+
 	friend std::ostream& operator<< (std::ostream& stream,
 		const conf_t& c) {
 		stream << "conf_tiguration: (";
@@ -584,7 +611,8 @@ public:
 	}
 
 	std::size_t size() const { return data.size(); }
-	cell_t operator[](unsigned id) const { return data[id]; }
+	const cell_t& operator[](unsigned id) const { return data[id]; }
+	cell_t& operator[](unsigned id) { return data[id]; }
 
 	//! @param pos position *before* which we should insert
 	void insert_at_position(std::size_t pos, const cell_t& value)
@@ -595,6 +623,10 @@ public:
 			; ++citr, ++cpos ) ;
 		data.insert(citr, value);
 	}
+
+	std::vector<int>::iterator begin() { return data.begin(); }
+	std::vector<int>::iterator end() { return data.end(); }
+	using iterator = std::vector<int>::iterator;
 
 	std::vector<int>::const_iterator cbegin() const { return data.cbegin(); }
 	std::vector<int>::const_iterator cend() const { return data.cend(); }
