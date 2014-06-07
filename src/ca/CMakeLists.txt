@@ -8,6 +8,14 @@ add_executable(ca "${src_dir}/ca.cpp"
 	${ca}
 )
 
+add_executable(dump "${src_dir}/dump.cpp"
+	${general}
+	${geometry}
+	${eq_solver}
+	${ca_basics}
+	${ca}
+)
+
 add_executable(transf_by_grids "${src_dir}/transf_by_grids.cpp"
 	${general}
 	${geometry}

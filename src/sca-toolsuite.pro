@@ -69,7 +69,8 @@ SOURCES += algo/relax.cpp \
 	res/eqs_functions.cpp \
 	test/test.cpp \
 	gui_qt/CaSelector.cpp \
-	img/transform.cpp
+	img/transform.cpp \
+    ca/dump.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL.txt \
 	../README.txt \

@@ -342,11 +342,8 @@ public:
 };
 
 
-class ca_table_t : public ca_eqsolver_t
+class ca_table_t : private ca_eqsolver_t // TODO: only for reading?
 {
-	unsigned n_w, size_each;
-	point center;
-
 	class size_check
 	{
 		size_check(int size)
@@ -358,46 +355,94 @@ class ca_table_t : public ca_eqsolver_t
 		}
 	};
 
-	std::vector<uint64_t> table;
+	struct header_t
+	{
+		header_t(std::istream& stream)
+		{
+			char buf[9];
+			buf[8] = 0;
+			stream.read(buf, 8);
+			std::cout << buf << std::endl;
+			if(strcmp(buf, "ca_table"))
+			 throw "Error: This file has no ca_table header.";
+		}
+		static void dump(std::ostream &stream)
+		{
+			stream.write("ca_table", 8);
+		}
+		header_t() {}
+	};
+
+	const header_t header;
+	const unsigned n_w, own_num_states, size_each;
+	const point center;
+
+	const std::vector<uint64_t> table;
 
 	using storage_t = uint64_t;
 
-//protected: // TODO
-public:
-	// TODO: single funcs to initialize and make const?
-	// aka: : ast(private_build_ast), ...
-	ca_table_t(const char* equation, cell_t num_states = 0) :
-		ca_eqsolver_t(equation, num_states),
-		n_w((border_width()<<1) + 1),
-		size_each((int)ceil(log(num_states))), // TODO: use int arithm
-		center(border_width(), border_width()),
-		table(1 << (size_each * n_w * n_w))
+// data for outside:
+	const unsigned bw;
+	const n_t neighbourhood;
+
+	unsigned compute_bw() const
 	{
+		return (n_w - 1)>>1;
+	}
+
+	n_t compute_neighbourhood() const
+	{
+		int bw = border_width();
+		unsigned n_width = (bw<<1) + 1;
+		dimension moore = { n_width, n_width };
+		return n_t(moore, point(bw, bw));
+	}
+public:
+	const u_coord_t& border_width() const { return bw; }
+	const n_t& get_neighbourhood() const { return neighbourhood; }
+
+private:
+
+//protected: // TODO
+	static unsigned fetch_32(std::istream& stream)
+	{
+		uint32_t res;
+		stream.read((char*)&res, 4);
+		return res;
+	}
+
+	static std::vector<uint64_t> fetch_tbl(std::istream& stream, unsigned size_each, unsigned n_w)
+	{
+		std::vector<uint64_t> res(1 << (size_each * n_w * n_w));
+		stream.read((char*)res.data(), res.size() * 8);
+		return res;
+	}
+
+	// TODO : static?
+	std::vector<uint64_t> calculate_table() const
+	{
+		std::vector<uint64_t> tbl(1 << (size_each * n_w * n_w));
+
 		bitgrid_t grid(size_each, dimension(n_w, n_w), 0, 0);
 		const dimension& dim = grid.internal_dim();
 		const std::size_t max = (int)pow(num_states, (n_w * n_w));
-	//	std::cout << "max: " << max << std::endl;
-	//	std::cout << "table size: " << table.size() << std::endl;
-	//	std::cout << "size each: " << size_each << std::endl;
 
 		std::size_t percent = 0, cur;
 
-		std::cout << "Precalculating table, please wait..." << std::endl;
+		std::cerr << "Precalculating table, please wait..." << std::endl;
 		// odometer
 		for(std::size_t i = 0; i < max; ++i)
 		{
 			// evaluate
-			// std::cout << "at " << grid.raw_value() ;
-			table.at(grid.raw_value()) = ca_eqsolver_t::
+			tbl.at(grid.raw_value()) = ca_eqsolver_t::
 				ca_eqsolver_t::
 				calculate_next_state(grid.raw_value(), size_each, center, dim);
-			// std::cout << ": " << table.at(grid.raw_value()) << std::endl;
 
 			cur = (i * 100) / max; // max can never be 0
 			if(percent < cur)
 			{
 				percent = cur;
-				std::cout << "..." << percent << " percent" << std::endl;
+				std::cerr << "..." << percent << " percent" << std::endl;
 			}
 
 			// increase
@@ -409,10 +454,49 @@ public:
 				}
 			}
 		}
+
+		return tbl;
 	}
 
-	//int calculate_next_state(const grid_t& grid_ptr,
-	//	const point& p) const
+public:
+
+	void dump(std::ostream& stream) const
+	{
+		header_t::dump(stream);
+		uint32_t tmp = n_w;
+		stream.write((char*)&tmp, 4);
+		tmp = own_num_states;
+		stream.write((char*)&tmp, 4);
+		stream.write((char*)table.data(), table.size() * 8);
+	}
+
+	ca_table_t(std::istream& stream) :
+		ca_eqsolver_t("v", 0), // not reliable
+		header(stream),
+		n_w(fetch_32(stream)),
+		own_num_states(fetch_32(stream)),
+		size_each((unsigned)ceil(log(own_num_states))), // TODO: use int arithm
+		center((n_w - 1)>>1, (n_w - 1)>>1),
+		table(fetch_tbl(stream, size_each, n_w)),
+		bw(compute_bw()),
+		neighbourhood(compute_neighbourhood())
+	{
+	}
+
+	// TODO: single funcs to initialize and make const?
+	// aka: : ast(private_build_ast), ...
+	ca_table_t(const char* equation, cell_t num_states = 0) :
+		ca_eqsolver_t(equation, num_states),
+		n_w((border_width()<<1) + 1),
+		own_num_states(ca_eqsolver_t::num_states),
+		size_each((unsigned)ceil(log(own_num_states))), // TODO: use int arithm
+		center(border_width(), border_width()),
+		table(calculate_table()),
+		bw(compute_bw()),
+		neighbourhood(compute_neighbourhood())
+	{
+	}
+
 	int calculate_next_state(const int *cell_ptr,
 		const point& p, const dimension& dim) const
 	{
@@ -424,18 +508,15 @@ public:
 		int min = INT_MAX, max = INT_MIN; // any better alternative?
 		for(const point p2 : bitgrid.points())
 		{
-			//bitgrid[p2] = grid_ptr[p+p2-center];
 			const point offs = p2 - center;
 			const int* ptr = cell_ptr + offs.y * (coord_t)dim.width() + offs.x;
 			bitgrid[p2] = *ptr;
 			min = std::min(min, *ptr);
 			max = std::max(max, *ptr);
 		}
-	//	std::cout << bitgrid << std::endl;
-	//	std::cout << bitgrid.raw_value() << std::endl;
 
 		// todo: better hashing function for not exactly n bits?
-		const bool in_range = (min >= 0 && max < num_states);
+		const bool in_range = (min >= 0 && max < (int)own_num_states);
 		return in_range
 			? table[bitgrid.raw_value()]
 			: *cell_ptr; // can not happen, except for border -> don't change
@@ -620,6 +701,12 @@ public:
 	// aka: : ast(private_build_ast), ...
 	_ca_calculator_t(const char* equation, unsigned num_states = 0) :
 		Solver(equation, num_states)
+	{
+	}
+
+	//! tries to synch (TODO: better word) the CA from a file
+	_ca_calculator_t(std::istream& stream) :
+		Solver(stream)
 	{
 	}
 

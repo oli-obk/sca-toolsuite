@@ -299,7 +299,13 @@ public:
 
 
 public:
-	// TODO: operator*
+	_n_t operator*(const _n_t& rhs) const
+	{
+		_n_t tmp(*this);
+		tmp *= rhs;
+		return tmp;
+	}
+
 	_n_t& operator*=(const _n_t& rhs)
 	{
 		std::set<point> neighbour_set;
@@ -311,12 +317,6 @@ public:
 				neighbour_set.insert( p + rhs.neighbours[i] );
 			}
 		}
-
-	/*	for( const point& np : neighbours ) // but erase points that are in our own cell
-		 neighbour_set.erase(np);
-
-		for( const point& p : neighbour_set )
-		 neighbours.push_back(p);*/
 
 		neighbours.assign(neighbour_set.begin(), neighbour_set.end());
 
@@ -348,6 +348,25 @@ public:
 		//return _n_t(*this) += rhs;
 		_n_t tmp(*this);
 		return tmp += rhs;
+	}
+
+	std::vector<point> operator()(const point& rhs) const
+	{
+		std::vector<point> result;
+		result.reserve(neighbours.size());
+		for(const point& np : neighbours)
+		 result.push_back(np + rhs);
+		return result;
+	}
+
+	template<class Cont>
+	std::set<point> operator()(const Cont& rhs) const
+	{
+		std::set<point> result;
+		for(const point& p : rhs)
+		 for(const point& np : neighbours)
+		  result.insert(np + p);
+		return result;
 	}
 
 	friend std::ostream& operator<< (std::ostream& stream,
