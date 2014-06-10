@@ -517,7 +517,7 @@ public:
 		bw(border_width),
 		bw_2(bw << 1)
 	{}*/
-	grid_t(u_coord_t border_width) :
+	grid_t(u_coord_t border_width = 0) :
 		grid_alignment_t(border_width)
 	{}
 
@@ -532,7 +532,7 @@ public:
 		bw(border_width),
 		bw_2(bw << 1)*/
 		grid_alignment_t(dim, border_width),
-		_data(storage_area(), fill)
+		_data(storage_area(), fill) // TODO: segfaults if area = 0
 	{
 		u_coord_t linewidth = dim.width(),
 			storage_lw = linewidth + bw_2;
@@ -543,6 +543,10 @@ public:
 		std::fill(_data.end() - top, _data.end(), border_fill);
 	//	data.assign(data.begin(), data.begin() + top, border_fill);
 	}
+
+	//! borderless version
+	grid_t(const dimension& dim, cell_t fill = 0)
+		: grid_t(dim, 0, fill) {}
 
 	//! constructor which reads a grid immediatelly
 	grid_t(FILE* fp, u_coord_t border_width) :
