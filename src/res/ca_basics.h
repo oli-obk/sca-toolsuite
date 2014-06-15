@@ -556,6 +556,38 @@ public:
 	}
 };*/
 
+//! container which redirects assignment to calling a functor
+template<class T, class Functor>
+class fun_itr : public std::iterator<std::output_iterator_tag, T>
+{
+	class fun_functor
+	{
+		const Functor& ftor;
+	public:
+		using self = fun_functor;
+		const self& operator=(const T& elem) const { ftor(elem); return *this; }
+		fun_functor(const Functor& ftor) : ftor(ftor) {}
+	};
+
+	fun_functor fn;
+
+public:
+	using self = fun_itr<T, Functor>;
+	using value_type = T;
+	const self& operator++() const { return *this; }
+	const fun_functor& operator*() { return fn; }
+
+	fun_itr(const Functor& ftor)
+	: fn(ftor)
+	{}
+};
+
+template<class T, class Functor>
+fun_itr<T, Functor>
+make_fun_itr(Functor&& ftor) {
+	return fun_itr<T, Functor>(std::forward<Functor>(ftor));
+}
+
 class conf_t
 {
 	std::vector<cell_t> data; // TODO: list?
@@ -577,6 +609,79 @@ public:
 		for(const point &p2 : points)
 		 data.push_back(grid[p + p2]);
 	}*/
+public:
+	conf_t(std::vector<cell_t>&& data) : data(data) {} // TODO: public?
+
+	//! Construct merged c
+	//! Complexity: O(conf1) + O(conf2)
+	template<class OrdCont1, class OrdCont2>
+	static conf_t
+	merge(const OrdCont1& coords1, const conf_t& conf1, const OrdCont2& coords2, const conf_t& conf2)
+	{
+		std::size_t new_size = 0;
+		std::set_union(coords1.begin(), coords1.end(), coords2.begin(), coords2.end(),
+			make_fun_itr<point>([&](const point&){ ++new_size; }));
+		std::vector<cell_t> new_data(new_size);
+
+		auto itr1 = coords1.begin();
+		auto itr2 = coords2.begin();
+		auto vec1 = conf1.data.begin();
+		auto vec2 = conf2.data.begin();
+		auto itr_res = new_data.begin();
+
+		const auto& cb_union = [&](const point& p)
+		{
+			const cell_t* new_val = nullptr;
+			if(itr1 != coords1.end() && *itr1 == p) {
+				++itr1;
+				new_val = &*(vec1++);
+			}
+			if(itr2 != coords2.end() && *itr2 == p) {
+				if(new_val != nullptr && *new_val != *vec2)
+				 throw "Can not merge: different values on same point.";
+				++itr2;
+				new_val = &*(vec2++);
+			}
+			*(itr_res++) = (*new_val);
+		};
+		std::set_union(coords1.begin(), coords1.end(), coords2.begin(), coords2.end(),
+			make_fun_itr<point>(cb_union));
+
+		return conf_t(std::move(new_data));
+	}
+
+#if 0
+	//! Construct substracted c, with points which are not in coords2, but in coords 1
+	//! Complexity: O(conf1) + O(conf2)
+	template<class OrdCont1, class OrdCont2>
+	static conf_t
+	substract(const OrdCont1& coords1, const conf_t& conf1, const OrdCont2& coords2, const conf_t& conf2)
+	{
+		std::size_t new_size = 0;
+		std::set_difference(coords1.begin(), coords1.end(), coords2.begin(), coords2.end(),
+			make_fun_itr<point>([&](const point&){ ++new_size; }));
+		std::vector<cell_t> new_data(new_size);
+
+		auto itr1 = coords1.begin();
+		auto vec1 = conf1.data.begin();
+		auto itr_res = new_data.begin();
+
+		const auto& cb_diff = [&](const point& p)
+		{
+			const cell_t* new_val = nullptr;
+			while(itr1 != coords1.end() && *itr1 != p) {
+				++itr1; ++vec1;
+			}
+			if(itr1 != coords1.end())
+			 *(itr_res++) = *vec1;
+		};
+		std::set_difference(coords1.begin(), coords1.end(), coords2.begin(), coords2.end(),
+			make_fun_itr<point>(cb_diff));
+
+		return conf_t(std::move(new_data));
+	}
+#endif
+
 	template<class Container>
 	conf_t(const Container& points, const grid_t& grid, point p = {0, 0})
 	{

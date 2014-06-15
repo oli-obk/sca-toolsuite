@@ -545,8 +545,8 @@ public:
 	}
 
 	//! borderless version
-	grid_t(const dimension& dim, cell_t fill = 0)
-		: grid_t(dim, 0, fill) {}
+	grid_t(const dimension& dim)
+		: grid_t(dim, 0, 0) {}
 
 	//! constructor which reads a grid immediatelly
 	grid_t(FILE* fp, u_coord_t border_width) :

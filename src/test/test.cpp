@@ -26,27 +26,21 @@ class MyProgram : public Program
 {
 	int main()
 	{
-		/*const char* fname = nullptr;
-		switch(argc)
-		{
-			case 2:
-				fname = argv[1];
-			case 1:
-				break;
-			default:
-				exit_usage();
-		}*/
-		assert(argc == 2);
-	/*	sca::ca::bitgrid_t grid(2, dimension(4, 2), 1, 2, 1);
-		std::cout << grid;
+		sca::ca::conf_t c1({1, 5, 3});
+		sca::ca::conf_t c2({4, 5, 6});
+		std::set<point> s1{{0, 0}, {2, 0}, {4,0}};
+		std::set<point> s2{{1, 0}, {2, 0}, {3,0}};
+		sca::ca::conf_t c3 =
+			sca::ca::conf_t::merge(s1, c1, s2, c2);
+		std::cout << c3 << std::endl;
+		assert_always(c3[0]==1, "0");
+		assert_always(c3[1]==4, "1");
+		assert_always(c3[2]==5, "2");
+		assert_always(c3[3]==6, "3");
+		assert_always(c3[4]==3, "4");
 
-		for(const point p : grid.points())
-		 std::cout << p << ": " << grid[p] << std::endl;*/
-
-		sca::ca::_ca_calculator_t<sca::ca::ca_table_t> ca(argv[1], 3);
-		grid_t grid(std::cin, 0);
-
-		std::cout << ca.next_state(grid, point(1,1)) << std::endl;
+		//std::set<point> s4{{0, 0}, {2, 0}};
+		//sca::ca::conf_t c5 = sca::ca::conf_t::substract(s1, c1, s4, )
 
 		return 0;
 	}

@@ -109,6 +109,8 @@ protected:
 		return (int)solver(ast);
 	}
 
+	//! Runtime: depends on formula.
+	// TODO: bit storage grids?
 	int calculate_next_state(uint64_t grid_int, uint64_t size_each,
 		const point& p, const dimension& dim) const
 	{
@@ -497,6 +499,7 @@ public:
 	{
 	}
 
+	//! Runtime: O(N)
 	int calculate_next_state(const int *cell_ptr,
 		const point& p, const dimension& dim) const
 	{
