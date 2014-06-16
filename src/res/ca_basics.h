@@ -24,6 +24,7 @@
 #include <set>
 #include <algorithm>
 #include <array>
+#include <type_traits>
 #include "geometry.h"
 
 namespace sca { namespace ca {
@@ -590,7 +591,7 @@ make_fun_itr(Functor&& ftor) {
 
 class conf_t
 {
-	std::vector<cell_t> data; // TODO: list?
+	std::vector<cell_t> _data; // TODO: list?
 public:
 /*	conf_t(const n_t& n, const grid_t& grid, point p = {0, 0})
 	{
@@ -610,7 +611,7 @@ public:
 		 data.push_back(grid[p + p2]);
 	}*/
 public:
-	conf_t(std::vector<cell_t>&& data) : data(data) {} // TODO: public?
+	conf_t(std::vector<cell_t>&& _data) : _data(_data) {} // TODO: public?
 
 	//! Construct merged c
 	//! Complexity: O(conf1) + O(conf2)
@@ -625,8 +626,8 @@ public:
 
 		auto itr1 = coords1.begin();
 		auto itr2 = coords2.begin();
-		auto vec1 = conf1.data.begin();
-		auto vec2 = conf2.data.begin();
+		auto vec1 = conf1._data.begin();
+		auto vec2 = conf2._data.begin();
 		auto itr_res = new_data.begin();
 
 		const auto& cb_union = [&](const point& p)
@@ -686,14 +687,14 @@ public:
 	conf_t(const Container& points, const grid_t& grid, point p = {0, 0})
 	{
 		for(const point& p2 : points)
-		 data.push_back(grid[p + p2]);
+		 _data.push_back(grid[p + p2]);
 	}
 
 	conf_t() {}
 
 	bool equals_grid(const std::set<point>& points, const grid_t& grid) const
 	{
-		auto vitr = data.begin();
+		auto vitr = _data.begin();
 		for(auto itr = points.begin();
 			itr != points.end();
 			++itr, vitr++)
@@ -704,21 +705,21 @@ public:
 
 	bool operator<(const conf_t& rhs) const
 	{
-		unsigned size = data.size();
-		assert(size == rhs.data.size());
-		return data < rhs.data;
+		unsigned size = _data.size();
+		assert(size == rhs._data.size());
+		return _data < rhs._data;
 	}
 
 	bool operator==(const conf_t& rhs) const
 	{
-		unsigned size = data.size();
-		if(size != rhs.data.size()) // TODO: remove for debug
+		unsigned size = _data.size();
+		if(size != rhs._data.size()) // TODO: remove for debug
 		{
-			std::cout << "sizes: " << size << ", " << rhs.data.size() << std::endl;
+			std::cout << "sizes: " << size << ", " << rhs._data.size() << std::endl;
 		}
-		assert(size == rhs.data.size());
+		assert(size == rhs._data.size());
 
-		return (data == rhs.data);
+		return (_data == rhs._data);
 	}
 
 	bool operator!=(const conf_t& rhs) const
@@ -729,58 +730,130 @@ public:
 	friend std::ostream& operator<< (std::ostream& stream,
 		const conf_t& c) {
 		stream << "conf_tiguration: (";
-		for( const cell_t& i : c.data) { stream << i << ", "; }
+		for( const cell_t& i : c._data) { stream << i << ", "; }
 		stream << ")";
 		return stream;
 	}
 
-	std::size_t size() const { return data.size(); }
-	const cell_t& operator[](unsigned id) const { return data[id]; }
-	cell_t& operator[](unsigned id) { return data[id]; }
+	std::size_t size() const { return _data.size(); }
+	const cell_t& operator[](unsigned id) const { return _data[id]; }
+	cell_t& operator[](unsigned id) { return _data[id]; }
+
+	const std::vector<cell_t>& data() const { return _data; }
+	std::vector<cell_t>& data() { return _data; }
 
 	//! @param pos position *before* which we should insert
 	void insert_at_position(std::size_t pos, const cell_t& value)
 	{
-		assert(pos <= data.size());
-		auto citr = data.begin();
-		for( std::size_t cpos = 0; cpos != pos && citr != data.end()
+		assert(pos <= _data.size());
+		auto citr = _data.begin();
+		for( std::size_t cpos = 0; cpos != pos && citr != _data.end()
 			; ++citr, ++cpos ) ;
-		data.insert(citr, value);
+		_data.insert(citr, value);
 	}
 
-	std::vector<int>::iterator begin() { return data.begin(); }
-	std::vector<int>::iterator end() { return data.end(); }
+	std::vector<int>::iterator begin() { return _data.begin(); }
+	std::vector<int>::iterator end() { return _data.end(); }
 	using iterator = std::vector<int>::iterator;
 
-	std::vector<int>::const_iterator cbegin() const { return data.cbegin(); }
-	std::vector<int>::const_iterator cend() const { return data.cend(); }
+	std::vector<int>::const_iterator cbegin() const { return _data.cbegin(); }
+	std::vector<int>::const_iterator cend() const { return _data.cend(); }
 	using const_iterator = std::vector<int>::const_iterator;
 };
 
+template<class Itr>
+struct count_elem
+{
+	int _id;
+	Itr _itr;
+	template<class SomeItr> friend class counted_itr;
+public:
+	using value_type = typename Itr::value_type;
+
+	count_elem() {}
+	count_elem(Itr _itr, int id) : _id(id), _itr(_itr) {}
+
+	int id() const { return _id; }
+	operator const value_type&() const { return *_itr; }
+//	operator ValueType&() { return _elem; }
+};
+
+template<class Itr>
+class counted_itr
+{
+	count_elem<Itr> elem;
+public:
+	counted_itr(Itr _itr, int _idx) : elem(_itr, _idx) {}
+	counted_itr() {}
+
+//	int idx() const { return idx; }
+//	const Itr& itr() const { return _itr; }
+//	Itr& itr() { return _itr; }
+
+	counted_itr& operator++() { ++(elem._itr); ++elem._id; return *this; }
+	counted_itr operator++(int) { counted_itr old = *this; operator++(); return old; }
+
+	count_elem<Itr> operator*() const { return elem; }
+//	count_elem<Itr> operator*() { return elem; }
+	const count_elem<Itr>* operator->() const { return &elem; }
+//	count_elem<Itr>* operator->() { return &elem; }
+
+	bool operator==(const counted_itr& rhs) const { return elem._itr == rhs.elem._itr; }
+	bool operator!=(const counted_itr& rhs) const { return !operator==(rhs); }
+};
+
+template<class Cont>
+class _counted
+{
+	Cont& cont;
+	using cont_itr = typename std::remove_reference<Cont>::type::iterator;
+	using cont_citr = typename std::remove_reference<Cont>::type::const_iterator;
+public:
+	_counted(Cont& c) : cont(c) {}
+
+	using const_iterator = counted_itr<cont_citr>;
+	using iterator = counted_itr<cont_itr>;
+	using value_type = typename cont_itr::value_type;
+
+	iterator begin() { return counted_itr<cont_itr>(cont.begin(), 0); }
+	iterator end() { return counted_itr<cont_itr>(cont.end(), cont.size()); }
+	const_iterator cbegin() const { return counted_itr<cont_citr>(cont.cbegin(), 0); }
+	const_iterator cend() const { return counted_itr<cont_citr>(cont.cend(), cont.size()); }
+};
+
+template<class Cont>
+_counted<Cont> counted(Cont&& cont) {
+	return _counted<Cont>(std::forward<Cont>(cont));
+}
+
+
 template<class C1, class C2, class Selector>
-bool for_each_selection(const C1& cont1, const C2& cont2, const Selector& sel)
+bool zip(const C1& cont1, const C2& cont2, const Selector& sel)
 {
 	using itr1_t = typename C1::const_iterator;
 	using itr2_t = typename C2::const_iterator;
+	using vt = typename C1::value_type;
+	static_assert(std::is_same<vt, typename C1::value_type>(),
+		"Need equal types in both containers.");
 	itr1_t itr1 = cont1.cbegin(), itr1_cp;
 	itr2_t itr2 = cont2.cbegin(), itr2_cp;
 	bool cont = true;
 	for(; itr1 != cont1.cend() && itr2 != cont2.cend() && cont;)
 	{
-		if(*itr1 < *itr2)
+		if((vt)*itr1 < (vt)*itr2)
 		{
 			itr1_cp = itr1++;
 			cont = sel.first(itr1_cp);
 		}
-		else if(*itr2 < *itr1)
+		else if((vt)*itr2 < (vt)*itr1)
 		{
 			itr2_cp = itr2++;
 			cont = sel.second(itr2_cp);
 		}
-		else {
+		else { // TODO: better if-else-structure?
 			itr1_cp = itr1++;
-			cont = sel.both(itr1_cp);
-			++itr2;
+			itr2_cp = itr2++;
+			cont = sel.both(itr1_cp, itr2_cp);
 		}
 	}
 
@@ -818,6 +891,127 @@ public:
 	bool second(const T2& ) const { return true; }
 	base_selector(const Functor& f) : f(f) {}
 };
+
+struct nop
+{
+	void operator()(...) const {}
+};
+
+template<class Functor1, class Functor2, class Functor3, class T1, class T2>
+class fun_selector
+{
+protected:
+	const Functor1& f1;
+	const Functor2& f2;
+	const Functor3& f3;
+public:
+	template<class Itr> bool first(const Itr& elem) const { return f1(elem); }
+	template<class Itr> bool second(const Itr& elem) const { return f2(elem); }
+	template<class Itr1, class Itr2>
+	bool both(const Itr1& itr1, const Itr2& itr2) const { return f3(itr1, itr2); }
+	fun_selector(const Functor1& f1, const Functor2& f2, const Functor3& f3) :
+		f1(f1), f2(f2), f3(f3) {}
+};
+
+template<class F1, class F2, class F3, class T1, class T2>
+class fun_selector_symm : public fun_selector<F1, F2, F3, T1, T2>
+{
+	using base = fun_selector<F1, F2, F3, T1, T2>;
+public:
+	template<class Itr1, class Itr2>
+	bool both(const Itr1& itr1, const Itr2&) const { return base::f3(itr1); }
+	using base::fun_selector;
+};
+
+template<class Functor>
+class _true_func
+{
+public:
+	const Functor& ftor;
+	template<class ...Args>
+	bool operator()(Args&... elems) const { ftor(elems...); return true; }
+	_true_func(const Functor& ftor) : ftor(ftor) {}
+};
+
+template<class Functor>
+_true_func<Functor> true_func(Functor&& ftor) {
+	return _true_func<Functor>(std::forward<Functor>(ftor));
+}
+
+// TODO: source: http://stackoverflow.com/questions/6512019/can-we-get-the-type-of-a-lambda-argument
+
+template<typename F, typename Ret, typename A, typename... Rest>
+A helper(Ret (F::*)(A, Rest...));
+
+template<typename F, typename Ret, typename A, typename... Rest>
+A helper(Ret (F::*)(A, Rest...) const);
+
+template<typename F>
+struct first_argument {
+	typedef decltype( helper(&F::operator()) ) type;
+};
+
+template<class F>
+struct first_argument<_true_func<F>> {
+	using type = typename first_argument<typename std::remove_reference<F>::type>::type;
+};
+
+
+/*
+template<class Functor1, class Functor2, class Functor3,
+	class T1, class T2>() {
+		assert(false);
+	}
+
+fun_selector<class Functor1, class Functor2, class Functor3>() {
+		assert(false);
+	}
+*/
+
+/*template<class Functor1, class Functor2, class Functor3>,
+	decltype(typename first_argument<Functor1>::type),
+	decltype(typename first_argument<Functor2>::type)>
+make_fun_selector(Functor1&& ftor1, Functor2&& ftor2, Functor3&& ftor3) {
+	return fun_selector<Functor1, Functor2, Functor3,
+		decltype(typename first_argument<Functor1>::type),
+		decltype(typename first_argument<Functor2>::type) >(
+			std::forward<Functor1>(ftor1),
+			std::forward<Functor2>(ftor2),
+			std::forward<Functor3>(ftor3));
+}*/
+
+template<typename F>
+using _first_argument = typename first_argument<typename std::remove_reference<F>::type>::type;
+
+// TODO: auto bool deduction by decltype(Functor1)...
+
+template<class Functor1, class Functor2, class Functor3>
+fun_selector<Functor1, Functor2, Functor3,
+	_first_argument<Functor1>,
+	_first_argument<Functor2>>
+zipper(Functor1&& ftor1, Functor2&& ftor2, Functor3&& ftor3) {
+	return fun_selector<Functor1, Functor2, Functor3,
+		_first_argument<Functor1>,
+		_first_argument<Functor2>>(
+			std::forward<Functor1>(ftor1),
+			std::forward<Functor2>(ftor2),
+			std::forward<Functor3>(ftor3));
+}
+
+template<class Functor1>
+fun_selector_symm<Functor1, Functor1, Functor1,
+	_first_argument<Functor1>,
+	_first_argument<Functor1>
+>
+zipper(Functor1&& ftor1) {
+	return fun_selector_symm<Functor1, Functor1, Functor1,
+		_first_argument<Functor1>,
+		_first_argument<Functor1>>(
+			std::forward<Functor1>(ftor1),
+			std::forward<Functor1>(ftor1),
+			std::forward<Functor1>(ftor1));
+}
+
 
 template<class Functor, class T1, class T2>
 struct selector_intersection : base_selector<Functor, T1, T2>
