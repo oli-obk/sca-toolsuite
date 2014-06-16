@@ -499,6 +499,10 @@ class grid_t : public grid_alignment_t
 	std::vector<cell_t> _data;
 
 public:
+	bool operator<(const grid_t& rhs) const { return _data < rhs._data; }
+	bool operator==(const grid_t& rhs) const {
+		return _data == rhs._data; }
+
 	const std::vector<cell_t>& data() const { return _data; }
 	std::vector<cell_t>& data() { return _data; } // TODO: remove this soon
 
