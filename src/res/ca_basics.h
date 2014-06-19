@@ -729,7 +729,7 @@ public:
 
 	friend std::ostream& operator<< (std::ostream& stream,
 		const conf_t& c) {
-		stream << "conf_tiguration: (";
+		stream << "conf: (";
 		for( const cell_t& i : c._data) { stream << i << ", "; }
 		stream << ")";
 		return stream;
