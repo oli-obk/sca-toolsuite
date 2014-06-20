@@ -55,7 +55,7 @@ class MyProgram : public Program
 		 exit("Different dimensions in both grids are not allowed.");
 
 		grid0.resize(dim.area());
-		register unsigned int idx;
+		unsigned int idx;
 		for(unsigned int i=0; i<dim.area_without_border(); i++)
 		{
 			idx = human2internal(i,dim.width());

@@ -489,7 +489,7 @@ public:
 	// aka: : ast(private_build_ast), ...
 	ca_table_t(const char* equation, cell_t num_states = 0) :
 		ca_eqsolver_t(equation, num_states),
-		n_w((border_width()<<1) + 1),
+		n_w((ca_eqsolver_t::border_width()<<1) + 1),
 		own_num_states(ca_eqsolver_t::num_states),
 		size_each((unsigned)ceil(log(own_num_states))), // TODO: use int arithm
 		center(border_width(), border_width()),

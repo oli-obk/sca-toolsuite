@@ -1,2 +1,2 @@
 #!/bin/sh
-algo/relax s $1 $2
+algo/fix s $1

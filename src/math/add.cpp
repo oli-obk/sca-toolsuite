@@ -32,7 +32,7 @@ class MyProgram : public Program
 		dimension dim;
 		read_grid(stdin, &grid, &dim);
 		const int grid_size = dim.area_without_border();
-		register int idx;
+		int idx;
 		for(int i = 1; i < argc; i++)
 		{
 			idx = atoi(argv[i]);
