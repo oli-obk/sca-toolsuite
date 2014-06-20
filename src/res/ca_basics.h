@@ -729,8 +729,30 @@ public:
 
 	friend std::ostream& operator<< (std::ostream& stream,
 		const conf_t& c) {
+		std::size_t skipped = 0;
 		stream << "conf: (";
-		for( const cell_t& i : c._data) { stream << i << ", "; }
+		for(auto itr = c.cbegin(); itr != c.cend(); ++itr)
+		{
+			// TODO: more general?
+			auto itr2 = itr;
+			++itr2;
+			if(itr2 != c.cend() && *itr2 == *itr)
+			 ++skipped;
+			else
+			{
+				if(skipped == 0)
+					stream << *itr;
+				else
+				{
+					stream << *itr
+					       << "[" << skipped << "x]";
+					skipped = 0;
+				}
+
+				if(itr2 != c.cend())
+				 stream << ", ";
+			}
+		}
 		stream << ")";
 		return stream;
 	}
