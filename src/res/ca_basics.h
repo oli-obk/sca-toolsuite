@@ -745,7 +745,7 @@ public:
 				else
 				{
 					stream << *itr
-					       << "[" << skipped << "x]";
+					       << "[" << (1+skipped) << "x]";
 					skipped = 0;
 				}
 
