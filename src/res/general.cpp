@@ -115,7 +115,7 @@ void HelpStruct::print_help() const
 
 	if(return_value) std::cerr << "Return value: " << return_value << std::endl;
 	std::cerr << std::endl <<
-		"Syntax rules are explained"
+		"Syntax rules are explained "
 		"in the file DOCUMENTATION." << std::endl;
 }
 

@@ -55,7 +55,7 @@ int main(int argc, char** argv)
 {
 	HelpStruct help;
 	help.syntax = "gui_qt/gui_qt [<ca_formula> [<input_formula>]]";
-	help.description = "GUI to simulate sandpiles.";
+	help.description = "GUI to simulate CA.";
 	help.input = "start grid for simulation";
 	help.output = "end grid of simulation";
 	help.add_param("ca_equation", "formula for the ca, default is ASM");

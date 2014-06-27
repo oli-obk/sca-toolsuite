@@ -184,9 +184,6 @@ protected:
 	Container neighbours;
 	//! positive offset of center cell
 	//! this cell is obviously needed
-//	point center_cell = point(-1, -1);
-//	dimension dim; 	//! < dimension of neighbours
-//	bounding_box bb;
 
 	point idx(int idx, int symm)
 	{
@@ -808,10 +805,6 @@ public:
 	counted_itr(Itr _itr, int _idx) : elem(_itr, _idx) {}
 	counted_itr() {}
 
-//	int idx() const { return idx; }
-//	const Itr& itr() const { return _itr; }
-//	Itr& itr() { return _itr; }
-
 	counted_itr& operator++() { ++(elem._itr); ++elem._id; return *this; }
 	counted_itr operator++(int) { counted_itr old = *this; operator++(); return old; }
 
@@ -990,18 +983,6 @@ fun_selector<class Functor1, class Functor2, class Functor3>() {
 	}
 */
 
-/*template<class Functor1, class Functor2, class Functor3>,
-	decltype(typename first_argument<Functor1>::type),
-	decltype(typename first_argument<Functor2>::type)>
-make_fun_selector(Functor1&& ftor1, Functor2&& ftor2, Functor3&& ftor3) {
-	return fun_selector<Functor1, Functor2, Functor3,
-		decltype(typename first_argument<Functor1>::type),
-		decltype(typename first_argument<Functor2>::type) >(
-			std::forward<Functor1>(ftor1),
-			std::forward<Functor2>(ftor2),
-			std::forward<Functor3>(ftor3));
-}*/
-
 template<typename F>
 using _first_argument = typename first_argument<typename std::remove_reference<F>::type>::type;
 
@@ -1075,12 +1056,6 @@ public:
 	selector_zip_base(const Functor1& f1, const Functor2& f2) :
 		f1(f1), f2(f2) {}
 };
-/*
-template<class C1, class C2>
-void zip_to_vector(C1 cont1, C2 cont2)
-{
-
-}*/
 
 template<class T>
 class idx_iter

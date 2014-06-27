@@ -267,11 +267,6 @@ public:
 
 class bitgrid_t : public grid_alignment_t
 {
-/*	std::vector<cell_t> _data;
-	dimension _dim; //! dimension of data, including borders
-	u_coord_t bw, bw_2;*/
-
-
 	using storage_t = uint64_t;
 	const storage_t each, bitmask;
 	storage_t grid;
