@@ -608,6 +608,7 @@ public:
 		 data.push_back(grid[p + p2]);
 	}*/
 public:
+	conf_t(cell_t single_val) : _data{single_val} {}
 	conf_t(std::vector<cell_t>&& _data) : _data(_data) {} // TODO: public?
 
 	//! Construct merged c
@@ -824,7 +825,7 @@ class _counted
 	using cont_itr = typename std::remove_reference<Cont>::type::iterator;
 	using cont_citr = typename std::remove_reference<Cont>::type::const_iterator;
 public:
-	_counted(Cont& c) : cont(c) {}
+	_counted(Cont& c) : cont(std::forward<Cont>(c)) {}
 
 	using const_iterator = counted_itr<cont_citr>;
 	using iterator = counted_itr<cont_itr>;

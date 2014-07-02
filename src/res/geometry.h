@@ -82,13 +82,13 @@ struct point
 
 struct point_itr
 {
-	const point min, max;
+	point min, max;
 	point position;
 public:
 	point_itr& operator=(const point_itr& other)
 	{
-		assert(other.min == min);
-		assert(other.max == max);
+		min = other.min;
+		max = other.max;
 		position = other.position;
 		return *this;
 	}
@@ -102,6 +102,8 @@ public:
 		point_itr(max, min, min)
 	{
 	}
+
+	point_itr() {}
 
 	point& operator*() { return position; }
 	const point& operator*() const { return position; }
@@ -136,12 +138,17 @@ public:
 
 	explicit operator bool() const { return position.y < max.y; }
 
+	bool operator==(const point_itr& rhs) const {
+		return position == rhs.position; }
+
 	bool operator!=(const point_itr& rhs) const {
-		return position != rhs.position; }
+		return !operator==(rhs); }
 
 	static point_itr from_end(point max, point min = {0,0}) {
 		return point_itr(max, min, {min.x, max.y});
 	}
+
+	using value_type = point;
 };
 
 // TODO: which ctors/functions can be made constexpr? everywhere...
@@ -200,6 +207,13 @@ struct dimension_container
 			{(coord_t)(w-(bw<<1)), (coord_t)(h-(bw<<1))}
 			);
 	}
+
+	point_itr cbegin(const point& pos = point::zero) const { return begin(pos); }
+	point_itr cend() const { return end(); }
+	area_t size() const { return h * w; }
+
+	using iterator = point_itr;
+	using const_iterator = point_itr;
 };
 
 // TODO: protected members
