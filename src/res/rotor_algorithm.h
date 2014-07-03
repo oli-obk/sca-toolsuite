@@ -25,6 +25,9 @@
 
 namespace rotor
 {
+
+using coord_t = def_traits::coord_t;
+
 namespace helpers
 {
 

@@ -25,7 +25,7 @@
 #include <cstdint>
 #include <vector>
 #include <type_traits>
-#include "geometry.h"
+#include "grid.h"
 
 namespace sandpile
 {

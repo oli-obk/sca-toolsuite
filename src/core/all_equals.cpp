@@ -21,7 +21,7 @@
 #include <cstdlib>
 #include <cassert>
 
-#include "geometry.h"
+#include "grid.h"
 #include "general.h"
 
 class MyProgram : public Program

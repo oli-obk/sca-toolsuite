@@ -77,7 +77,7 @@ class MyProgram : public Program
 	/*	for(unsigned int i=0;i<dim.area();i++)
 		 if(!is_border(dim, i))
 		  grid[i]&=3;*/
-		for(cell_t& c : grid)
+		for(def_traits::cell_t& c : grid)
 		 c&=3;
 
 		/*std::vector<int> chips;

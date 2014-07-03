@@ -19,13 +19,15 @@
 /*************************************************************************/
 
 #include <algorithm>
+#include <climits>
 
-#include "geometry.h"
+#include "grid.h"
 
-const point point::zero = point(0, 0);
+//const point point::zero = point(0, 0);
 const matrix matrix::id = matrix(1, 0, 0, 1);
-constexpr point rect_storage_origin::ul;
+//constexpr point rect_storage_origin::ul;
 
+template<>
 void grid_t::resize_borders(u_coord_t new_border_width)
 {
 	if(new_border_width != bw)
@@ -95,6 +97,7 @@ void grid_t::resize_borders(u_coord_t new_border_width)
 	}
 }
 
+template<>
 void grid_t::insert_stripe_vert(u_coord_t pos, u_coord_t ins_len)
 {
 	// update vector, keep _dim
@@ -129,6 +132,7 @@ void grid_t::insert_stripe_vert(u_coord_t pos, u_coord_t ins_len)
 	_dim = dimension(_dim.width() + ins_len, ht);
 }
 
+template<>
 void grid_t::insert_stripe_hor(u_coord_t pos, u_coord_t ins_len)
 {
 	u_coord_t mv_amt = _dim.width() * ins_len;

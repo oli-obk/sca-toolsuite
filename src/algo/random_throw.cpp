@@ -23,6 +23,7 @@
 #include <cstring>
 #include <cstdio>
 #include <vector>
+#include <climits>
 
 #include "random.h"
 #include "general.h"

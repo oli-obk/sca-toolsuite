@@ -18,14 +18,13 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#include <climits>
-
 // for get_input:
 #include <cstring>
 #include <cstdlib>
 #include <fcntl.h>
 #include <unistd.h>
 #include <cassert>
+#include <climits>
 
 #include "io.h"
 #include "geometry.h"
@@ -116,74 +115,6 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	//assert(dim->area() == grid->size());
 }
 
-// TODO: cell_t
-void read_grid(const base_grid* grid_class, std::istream& is, dimension& dim, grid_storage_r &storage_class,
-	/*void (*SCANFUNC)(const char *&, int *),*/ int border)
-{
-	assert(grid_class);
-
-	int read_symbol;
-	int line_width = -1, col_count = 0, line_count = 0; // all excl. border
-
-	while(true)
-	{
-	/*	const char* ptr = fgets(read_buffer, buffer_size, fp);
-		if(ptr == nullptr // eof
-			|| *ptr == '\n') // empty line = abort
-			break;*/
-
-
-		is.getline(buffer, buffer_size);
-		if(!is.good() || !*buffer)
-		 break; // eof or empty line (both means abort) or overflow
-		const char* ptr = buffer;
-
-		do
-		{
-			// scan symbol
-			grid_class->read(ptr, &read_symbol);
-			if(!col_count) // (TODO: move this somewhere else?)
-			 storage_class.insert_vertical_border_end(border); // TODO: ref instead of ptr
-			storage_class.append(read_symbol);
-			col_count++;
-
-			// read separating whitespace
-			read_symbol=*ptr++;
-			if(read_symbol == '\0')
-			{
-				// first newline => determine line length
-				if(! line_count) {
-					line_width = col_count;
-					storage_class.insert_horizontal_border_begin(line_width, border);
-				}
-				else
-				 assert(line_width == col_count);
-
-				line_count++;
-				col_count = 0;
-
-				storage_class.insert_vertical_border_end(border);
-			}
-			else
-			 assert(read_symbol == ' ');
-
-		} while(read_symbol != '\0' && read_symbol != EOF);
-	}
-
-	if(is.gcount() > 0 && is.fail())
-	{
-		// a bad error or a buffer overflow - we can not handle this
-		throw "Read IO error (buffer overflow?)";
-	} // otherwise, we have just reached the end of the grid
-
-	storage_class.insert_horizontal_border_end(line_width, border);
-
-	dim = dimension(line_width + (((int)(border))<<1),
-		line_count + (((int)(border))<<1));
-
-	//assert(dim.area() == grid.size());
-}
-
 void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
 	void (*PRINTFUNC)(FILE*, int), int border)
 {
@@ -197,27 +128,6 @@ void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
 			fputc((x == last_symbol) ? '\n':' ', fp);
 		}
 
-	}
-}
-
-void write_grid(const base_grid* grid_class, std::ostream& os, const dimension &dim,
-	int border, const grid_storage_w &storage_class)
-{
-	assert(grid_class);
-	unsigned int last_symbol = dim.width() - 1 - border;
-
-
-	for(unsigned int y = border; y < dim.height() - border; y++)
-	{
-		char* ptr = buffer;
-		for(unsigned int x = border; x < dim.width() - border; x++) {
-		//	PRINTFUNC(fp, (*grid)[x + (dim->width())*y]); // TODO: two [] operators
-		//	fputc((x == last_symbol) ? '\n':' ', fp);
-			grid_class->write(ptr, storage_class[x + (dim.width())*y]);
-			*(ptr++) = (x == last_symbol) ? '\n' : ' ';
-		}
-		*ptr = 0;
-		os << buffer;
 	}
 }
 

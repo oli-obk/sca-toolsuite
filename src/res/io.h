@@ -26,11 +26,18 @@
 #include <vector>
 #include <cctype> // isdigit()
 #include <iostream>
-#include <cstring>
-#include <cstdint>
-#include <climits>
+//#include <cstdint>
+#include <limits>
 
-struct dimension;
+#include "geometry.h"
+
+template<class>
+struct _dimension;
+template<class, class, class> // TODO: def for area
+struct traits;
+using def_traits = traits<int, unsigned, int>;
+
+using dimension = _dimension<def_traits>;
 
 // TODO: remove? or move to cpp file?
 //! Converts internal coordinates into human coordinats.
@@ -183,18 +190,19 @@ public:
 };
 
 // TODO: only forward, and include from io.cpp?
+template<class T>
 class vector_storage_r : public grid_storage_r
 {
-	std::vector<int>& grid;
+	std::vector<T>& grid;
 
 	inline void insert_horizontal_border(
-		std::vector<int>::iterator itr,
+		typename std::vector<T>::iterator itr,
 		int human_linewidth,
 		int border_width)
 	{
 		grid.insert(itr,
 			(human_linewidth + (border_width<<1))*border_width,
-			INT_MIN);
+			std::numeric_limits<T>::min());
 	}
 public:
 	inline void insert_horizontal_border_begin(
@@ -214,20 +222,21 @@ public:
 	inline void insert_vertical_border_end(
 		int border_width)
 	{
-		grid.insert(grid.end(), border_width, INT_MIN);
+		grid.insert(grid.end(), border_width, std::numeric_limits<T>::min());
 	}
 
 	void append(const int val) { grid.push_back(val); }
 
-	vector_storage_r(std::vector<int>& grid) : grid(grid) {}
+	vector_storage_r(std::vector<T>& grid) : grid(grid) {}
 };
 
+template<class T>
 class vector_storage_w : public grid_storage_w
 {
-	const std::vector<int>& grid;
+	const std::vector<T>& grid;
 public:
 	int operator[](std::size_t pos) const { return grid[pos]; }
-	vector_storage_w(const std::vector<int>& grid) : grid(grid) {}
+	vector_storage_w(const std::vector<T>& grid) : grid(grid) {}
 };
 
 class bit_storage_w : public grid_storage_w
@@ -285,7 +294,7 @@ class arrow_grid : public base_grid
 			case '<': return 3;
 			default: {
 				char error[] = "Invalid arrow sign read:  ";
-				error[strlen(error-3)] = read_char;
+				error[sizeof(error)-3] = read_char;
 				throw error;
 			}
 		}
@@ -357,9 +366,6 @@ inline static void read_number(const char*& ptr, int* read_symbol) {
 	@param SCANFUNC function which converts chars to numbers for internal handling
 	@param border how thick the internal border shall be - internal use only
 */
-
-
-
 void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	void (*SCANFUNC)(const char*&, int*) = &read_number,
 	int border = 1);
@@ -373,13 +379,82 @@ inline void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	read_grid(fp, grid, dim, &read_number, border);
 }
 
-void read_grid(const base_grid* grid_class, std::istream& is, dimension& dim,
-	grid_storage_r &storage_class, int border = -1);
+// TODO: cell_t
+template<class Traits>
+inline void read_grid(const base_grid* grid_class, std::istream& is, _dimension<Traits>& dim,
+	grid_storage_r &storage_class, int border = -1)
+{
+	assert(grid_class);
 
-template<class GridType = number_grid>
-void read_grid(std::istream& is, std::vector<int>& grid, dimension& dim, int border = -1) {
+	constexpr size_t buffer_size = 4096; // TODO: cmake
+	char buffer[buffer_size];
+
+	int read_symbol;
+	int line_width = -1, col_count = 0, line_count = 0; // all excl. border
+
+	while(true)
+	{
+	/*	const char* ptr = fgets(read_buffer, buffer_size, fp);
+		if(ptr == nullptr // eof
+			|| *ptr == '\n') // empty line = abort
+			break;*/
+
+
+		is.getline(buffer, buffer_size);
+		if(!is.good() || !*buffer)
+		 break; // eof or empty line (both means abort) or overflow
+		const char* ptr = buffer;
+
+		do
+		{
+			// scan symbol
+			grid_class->read(ptr, &read_symbol);
+			if(!col_count) // (TODO: move this somewhere else?)
+			 storage_class.insert_vertical_border_end(border); // TODO: ref instead of ptr
+			storage_class.append(read_symbol);
+			col_count++;
+
+			// read separating whitespace
+			read_symbol=*ptr++;
+			if(read_symbol == '\0')
+			{
+				// first newline => determine line length
+				if(! line_count) {
+					line_width = col_count;
+					storage_class.insert_horizontal_border_begin(line_width, border);
+				}
+				else
+				 assert(line_width == col_count);
+
+				line_count++;
+				col_count = 0;
+
+				storage_class.insert_vertical_border_end(border);
+			}
+			else
+			 assert(read_symbol == ' ');
+
+		} while(read_symbol != '\0' && read_symbol != EOF);
+	}
+
+	if(is.gcount() > 0 && is.fail())
+	{
+		// a bad error or a buffer overflow - we can not handle this
+		throw "Read IO error (buffer overflow?)";
+	} // otherwise, we have just reached the end of the grid
+
+	storage_class.insert_horizontal_border_end(line_width, border);
+
+	dim = _dimension<Traits>(line_width + (((int)(border))<<1),
+		line_count + (((int)(border))<<1));
+
+	//assert(dim.area() == grid.size());
+}
+
+template<class Dimension, class T, class GridType = number_grid>
+void read_grid(std::istream& is, std::vector<T>& grid, Dimension& dim, int border = -1) {
 	GridType grid_class;
-	vector_storage_r storage(grid);
+	vector_storage_r<T> storage(grid);
 	read_grid(&grid_class, is, dim, storage, border);
 }
 
@@ -404,20 +479,42 @@ void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
 //void write_grid(std::ostream& os, const std::vector<int>& grid, const dimension& dim,
 //	void (*PRINTFUNC)(char*&, int), int border);
 
-void write_grid(const base_grid* grid_class, std::ostream& os, const dimension& dim,
-	int border, const grid_storage_w &storage_class);
+template<class Traits>
+inline void write_grid(const base_grid* grid_class, std::ostream& os, const _dimension<Traits>& dim,
+	int border, const grid_storage_w &storage_class)
+{
+	assert(grid_class);
+	unsigned int last_symbol = dim.width() - 1 - border;
 
-inline void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
+	constexpr size_t buffer_size = 4096; // TODO: cmake
+	char buffer[buffer_size];
+
+	for(unsigned y = border; y < (unsigned)dim.height() - border; y++)
+	{
+		char* ptr = buffer;
+		for(unsigned x = border; x < (unsigned)dim.width() - border; x++) {
+		//	PRINTFUNC(fp, (*grid)[x + (dim->width())*y]); // TODO: two [] operators
+		//	fputc((x == last_symbol) ? '\n':' ', fp);
+			grid_class->write(ptr, storage_class[x + (dim.width())*y]);
+			*(ptr++) = (x == last_symbol) ? '\n' : ' ';
+		}
+		*ptr = 0;
+		os << buffer;
+	}
+}
+
+template<class Dimension>
+inline void write_grid(FILE* fp, const std::vector<int>* grid, const Dimension* dim,
 	int border) {
 	write_grid(fp, grid, dim, &_write_number, border);
 }
 
-template<class GridType = number_grid>
-void write_grid(std::ostream& os, const std::vector<int>& grid, const dimension& dim,
+template<class Dimension, class T, class GridType = number_grid>
+void write_grid(std::ostream& os, const std::vector<T>& grid, const Dimension& dim,
 	int border)
 {
 	GridType grid_class;
-	const vector_storage_w storage(grid);
+	const vector_storage_w<T> storage(grid);
 	write_grid(&grid_class, os, dim, border, storage);
 }
 

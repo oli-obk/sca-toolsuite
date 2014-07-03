@@ -19,13 +19,16 @@
 /*************************************************************************/
 
 #include "general.h"
-#include "io.h"
+#include "grid.h"
 #include "stack_algorithm.h"
 
 class MyProgram : public Program
 {
 	int main()
 	{
+		using cell_t = def_traits::cell_t;
+		using coord_t = def_traits::coord_t;
+
 		assert_usage(argc==1);
 
 		std::istream& read_fp = std::cin;

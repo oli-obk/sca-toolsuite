@@ -18,6 +18,7 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
+#include <cstring>
 #include "general.h"
 #include "io.h"
 #include "ca_basics.h" // TODO: -> cmake deps
@@ -69,6 +70,7 @@ class MyProgram : public Program
 			default:
 				exit_usage();
 		}*/
+
 		assert_usage(argc == 1);
 
 		// read neighbour grid
@@ -85,7 +87,7 @@ class MyProgram : public Program
 			grid_t out_grid(std::cin, 0);
 			assert(out_grid.human_dim().area() == 1);
 
-			cell_t out_cell = out_grid[point::zero];
+			def_traits::cell_t out_cell = out_grid[point::zero()];
 
 			neighbours.add_transition_functions(
 					table, center_cell, cur_grid, out_cell

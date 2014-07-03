@@ -24,7 +24,7 @@
 #include <vector>
 
 #include "general.h"
-#include "geometry.h"
+#include "grid.h"
 
 class MyProgram : public Program
 {

@@ -24,6 +24,7 @@
 
 #include "general.h"
 #include "image.h"
+#include "grid.h"
 
 class MyProgram : public Program
 {

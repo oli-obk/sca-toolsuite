@@ -18,12 +18,14 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
+#include <cstring>
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
+#include <climits>
 
 #include "general.h"
-#include "geometry.h"
+#include "grid.h"
 
 class MyProgram : public Program
 {

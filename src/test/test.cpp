@@ -19,7 +19,7 @@
 /*************************************************************************/
 
 #include "general.h"
-#include "geometry.h"
+#include "grid.h"
 #include "ca.h"
 
 class MyProgram : public Program

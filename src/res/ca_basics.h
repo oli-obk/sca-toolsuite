@@ -25,7 +25,7 @@
 #include <algorithm>
 #include <array>
 #include <type_traits>
-#include "geometry.h"
+#include "grid.h" // TODO: make grid a template?
 
 namespace sca { namespace ca {
 
@@ -168,9 +168,12 @@ inline bool compare_by_input(const trans_t& lhs,
 	return _compare_by_input(lhs, rhs);
 }
 
-template<class Container>
+template<class Traits, class Container>
 class _n_t
 {
+	using point = _point<typename Traits::coord_t>;
+	using grid = _grid_t<Traits>;
+	using dimension = _dimension<Traits>;
 protected:
 #if 0
 	_n_t() {} // TODO: bad coding style
@@ -257,7 +260,7 @@ public:
 		  tf_vector.push_back(tfs[i]);
 	}
 
-	/*neighbourhood(const dimension_container& _dim, point _center_cell = {0,0})
+	/*neighbourhood(const dim_cont& _dim, point _center_cell = {0,0})
 		: center_cell(_center_cell),
 		dim({_dim.h, _dim.w})
 	{
@@ -473,7 +476,7 @@ public:
 		//dim(_dim)
 	{
 		neighbours.reserve(_dim.area());
-		dimension_container cont(_dim.height(), _dim.width(), 0);
+		_dim_cont<Traits> cont(_dim.height(), _dim.width(), 0);
 		for( const point& p : cont )
 		{
 			neighbours.push_back(p - _center_cell);
@@ -511,9 +514,9 @@ public:
 	}
 };
 
-using n_t = _n_t<std::vector<point>>;
+using n_t = _n_t<def_traits, std::vector<point>>;
 template<std::size_t N>
-using n_t_constexpr = _n_t<std::array<point, N>>;
+using n_t_constexpr = _n_t<def_traits, std::array<point, N>>;
 
 #if 0
 template<class T>
@@ -586,8 +589,12 @@ make_fun_itr(Functor&& ftor) {
 	return fun_itr<T, Functor>(std::forward<Functor>(ftor));
 }
 
-class conf_t
+template<class Traits>
+class _conf_t
 {
+	using cell_t = typename Traits::cell_t;
+	using grid_t = _grid_t<Traits>;
+	using point = _point<typename Traits::coord_t>;
 	std::vector<cell_t> _data; // TODO: list?
 public:
 /*	conf_t(const n_t& n, const grid_t& grid, point p = {0, 0})
@@ -608,14 +615,14 @@ public:
 		 data.push_back(grid[p + p2]);
 	}*/
 public:
-	conf_t(cell_t single_val) : _data{single_val} {}
-	conf_t(std::vector<cell_t>&& _data) : _data(_data) {} // TODO: public?
+	_conf_t(cell_t single_val) : _data{single_val} {}
+	_conf_t(std::vector<cell_t>&& _data) : _data(_data) {} // TODO: public?
 
 	//! Construct merged c
 	//! Complexity: O(conf1) + O(conf2)
 	template<class OrdCont1, class OrdCont2>
-	static conf_t
-	merge(const OrdCont1& coords1, const conf_t& conf1, const OrdCont2& coords2, const conf_t& conf2)
+	static _conf_t
+	merge(const OrdCont1& coords1, const _conf_t& conf1, const OrdCont2& coords2, const _conf_t& conf2)
 	{
 		std::size_t new_size = 0;
 		std::set_union(coords1.begin(), coords1.end(), coords2.begin(), coords2.end(),
@@ -646,15 +653,15 @@ public:
 		std::set_union(coords1.begin(), coords1.end(), coords2.begin(), coords2.end(),
 			make_fun_itr<point>(cb_union));
 
-		return conf_t(std::move(new_data));
+		return _conf_t(std::move(new_data));
 	}
 
 #if 0
 	//! Construct substracted c, with points which are not in coords2, but in coords 1
 	//! Complexity: O(conf1) + O(conf2)
 	template<class OrdCont1, class OrdCont2>
-	static conf_t
-	substract(const OrdCont1& coords1, const conf_t& conf1, const OrdCont2& coords2, const conf_t& conf2)
+	static _conf_t
+	substract(const OrdCont1& coords1, const _conf_t& conf1, const OrdCont2& coords2, const _conf_t& conf2)
 	{
 		std::size_t new_size = 0;
 		std::set_difference(coords1.begin(), coords1.end(), coords2.begin(), coords2.end(),
@@ -677,18 +684,18 @@ public:
 		std::set_difference(coords1.begin(), coords1.end(), coords2.begin(), coords2.end(),
 			make_fun_itr<point>(cb_diff));
 
-		return conf_t(std::move(new_data));
+		return _conf_t(std::move(new_data));
 	}
 #endif
 
 	template<class Container>
-	conf_t(const Container& points, const grid_t& grid, point p = {0, 0})
+	_conf_t(const Container& points, const grid_t& grid, point p = {0, 0})
 	{
 		for(const point& p2 : points)
 		 _data.push_back(grid[p + p2]);
 	}
 
-	conf_t() {}
+	_conf_t() {}
 
 	bool equals_grid(const std::set<point>& points, const grid_t& grid) const
 	{
@@ -701,14 +708,14 @@ public:
 		return true;
 	}
 
-	bool operator<(const conf_t& rhs) const
+	bool operator<(const _conf_t& rhs) const
 	{
 		unsigned size = _data.size();
 		assert(size == rhs._data.size());
 		return _data < rhs._data;
 	}
 
-	bool operator==(const conf_t& rhs) const
+	bool operator==(const _conf_t& rhs) const
 	{
 		unsigned size = _data.size();
 		if(size != rhs._data.size()) // TODO: remove for debug
@@ -720,13 +727,13 @@ public:
 		return (_data == rhs._data);
 	}
 
-	bool operator!=(const conf_t& rhs) const
+	bool operator!=(const _conf_t& rhs) const
 	{
 		return !operator==(rhs);
 	}
 
 	friend std::ostream& operator<< (std::ostream& stream,
-		const conf_t& c) {
+		const _conf_t& c) {
 		std::size_t skipped = 0;
 		stream << "conf: (";
 		for(auto itr = c.cbegin(); itr != c.cend(); ++itr)
@@ -739,10 +746,10 @@ public:
 			else
 			{
 				if(skipped == 0)
-					stream << *itr;
+					stream << (int)*itr;
 				else
 				{
-					stream << *itr
+					stream << (int)*itr
 					       << "[" << (1+skipped) << "x]";
 					skipped = 0;
 				}
@@ -772,14 +779,14 @@ public:
 		_data.insert(citr, value);
 	}
 
-	std::vector<int>::iterator begin() { return _data.begin(); }
-	std::vector<int>::iterator end() { return _data.end(); }
-	using iterator = std::vector<int>::iterator;
-
-	std::vector<int>::const_iterator cbegin() const { return _data.cbegin(); }
-	std::vector<int>::const_iterator cend() const { return _data.cend(); }
-	using const_iterator = std::vector<int>::const_iterator;
+	using iterator = typename std::vector<cell_t>::iterator;
+	using const_iterator = typename std::vector<cell_t>::const_iterator;
+	iterator begin() { return _data.begin(); }
+	iterator end() { return _data.end(); }
+	const_iterator cbegin() const { return _data.cbegin(); }
+	const_iterator cend() const { return _data.cend(); }
 };
+using conf_t = _conf_t<def_traits>;
 
 template<class Itr>
 struct count_elem
