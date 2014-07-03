@@ -82,6 +82,8 @@ struct point
 
 struct point_itr
 {
+	//! max should have x and y behind the last column and row
+	//! like STL iterators
 	point min, max;
 	point position;
 public:
@@ -254,8 +256,15 @@ public:
 	bool is_inside(const point& p) const {
 		return p.x < s::lr.x && p.y < s::lr.y && s::ul.x <= p.x && s::ul.y <= p.y; }
 
-	point_itr begin() const { return point_itr(s::lr, s::ul); }
-	point_itr end() const { return point_itr::from_end(s::lr, s::ul); }
+	using iterator = point_itr;
+	using const_iterator = point_itr;
+	iterator begin() const { return point_itr(s::lr + point(1, 1), s::ul); }
+	iterator end() const { return point_itr::from_end(s::lr + point(1, 1), s::ul); }
+	iterator cbegin() const { return begin(); }
+	iterator cend() const { return end(); }
+	inline area_t size() const { return area(); }
+
+	// TODO: this makes only sense for dim?
 	dimension_container points(u_coord_t border_width) const {
 		return dimension_container(height(), width(), border_width); }
 
