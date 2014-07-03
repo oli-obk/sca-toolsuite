@@ -243,6 +243,7 @@ protected:
 	_rect() {} // TODO... this should never be allowed
 	using s = storage;
 public:
+	//! @param lr point *past* lowest right point
 	_rect(const point& ul, const point& lr) : storage(ul, lr) {}
 	//! constructs the rect from the inner part of a dim,
 	//! i.e. dim - border
@@ -258,8 +259,8 @@ public:
 
 	using iterator = point_itr;
 	using const_iterator = point_itr;
-	iterator begin() const { return point_itr(s::lr + point(1, 1), s::ul); }
-	iterator end() const { return point_itr::from_end(s::lr + point(1, 1), s::ul); }
+	iterator begin() const { return point_itr(s::lr, s::ul); }
+	iterator end() const { return point_itr::from_end(s::lr, s::ul); }
 	iterator cbegin() const { return begin(); }
 	iterator cend() const { return end(); }
 	inline area_t size() const { return area(); }
@@ -343,27 +344,30 @@ class bounding_box
 {
 	point _ul, _lr;
 public:
-	constexpr bounding_box() : _ul(1,1), _lr(0,0) {}
+	constexpr bounding_box() : _ul(point::zero), _lr(point::zero) {}
 
 	void add_point(const point& p)
 	{
-		if(_lr.x < _ul.x) // no point...
-			_lr = _ul = p;
+		if(_lr.x == _ul.x) { // bb was empty
+			_ul = p;
+			_lr.x = p.x + 1;
+			_lr.y = p.y + 1;
+		}
 		else
 		{
 			if(p.x < _ul.x)
 			 _ul.x = p.x;
-			else if(p.x > _lr.x)
-			 _lr.x = p.x;
+			else if(p.x >= _lr.x)
+			 _lr.x = p.x + 1;
 			if(p.y < _ul.y)
 			 _ul.y = p.y;
-			else if(p.y > _lr.y)
-			 _lr.y = p.y;
+			else if(p.y >= _lr.y)
+			 _lr.y = p.y + 1;
 		}
 	}
 	// TODO: for those 3 cases: cover lr > ul
-	u_coord_t y_size() const { return _lr.y - _ul.y + 1; }
-	u_coord_t x_size() const { return _lr.x - _ul.x + 1; }
+	u_coord_t y_size() const { return _lr.y - _ul.y; }
+	u_coord_t x_size() const { return _lr.x - _ul.x; }
 	point ul() const { return _ul; }
 	point lr() const { return _lr; }
 	dimension dim() const {
