@@ -107,7 +107,7 @@ class MyProgram : public Program
 
 //#define CA_TABLE_OPTIMIZATION
 #ifndef CA_TABLE_OPTIMIZATION
-		using ca_sim_t = ca::ca_simulator_t<ca::ca_eqsolver_t, def_traits>;
+		using ca_sim_t = ca::ca_simulator_t<ca::ca_eqsolver_t, def_coord_traits, def_cell_traits>;
 		ca_sim_t simulator(equation, async);
 
 		simulator.grid().read(in_fp);

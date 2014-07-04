@@ -171,8 +171,7 @@ inline bool compare_by_input(const trans_t& lhs,
 template<class Traits, class Container>
 class _n_t
 {
-	using point = _point<typename Traits::coord_t>;
-	using grid = _grid_t<Traits>;
+	using point = _point<Traits>;
 	using dimension = _dimension<Traits>;
 protected:
 #if 0
@@ -205,11 +204,11 @@ protected:
 		return new_point;
 	}
 
-
+	template<class CellTraits>
 	void add_single_tf(
 		trans_t* tfs,
 		const point& center_cell,
-		const grid_t& input_grid,
+		const _grid_t<Traits, CellTraits>& input_grid,
 		int output_val,
 		int symm)
 	{
@@ -236,11 +235,11 @@ public:
 	point operator[](unsigned i) const { return neighbours[i]; }
 	unsigned size() const { return neighbours.size(); }
 
-
+	template<class CellTraits>
 	void add_transition_functions(
 		std::vector<trans_t>& tf_vector,
 		const point& center_cell,
-		const grid_t& input_grid,
+		const _grid_t<Traits, CellTraits>& input_grid,
 		int output_val)
 	{
 		// family of 8 trans functions, subgroup of D4
@@ -336,7 +335,8 @@ public:
 		return *this;
 	}
 
-	_n_t& operator+=(const point& rhs)
+	template<class Point>
+	_n_t& operator+=(const Point& rhs)
 	{
 		for(point& p : neighbours)
 		 p += rhs;
@@ -351,22 +351,24 @@ public:
 		return tmp += rhs;
 	}
 
-	std::vector<point> operator()(const point& rhs) const
+	template<class T>
+	std::vector<_point<T>> operator()(const _point<T>& rhs) const
 	{
-		std::vector<point> result;
+		std::vector<_point<T>> result;
 		result.reserve(neighbours.size());
 		for(const point& np : neighbours)
-		 result.push_back(np + rhs);
+		 result.push_back(rhs + _point<T>(np.x, np.y));
 		return result;
 	}
 
 	template<class Cont>
-	std::set<point> operator()(const Cont& rhs) const
+	std::set<typename Cont::value_type> operator()(const Cont& rhs) const
 	{
-		std::set<point> result;
-		for(const point& p : rhs)
-		 for(const point& np : neighbours)
-		  result.insert(np + p);
+		using point_type = typename Cont::value_type;
+		std::set<point_type> result;
+		for(const point_type& p : rhs)
+		for(const point& np : neighbours)
+		 result.insert(p + point_type(np.x, np.y));
 		return result;
 	}
 
@@ -514,9 +516,9 @@ public:
 	}
 };
 
-using n_t = _n_t<def_traits, std::vector<point>>;
+using n_t = _n_t<def_coord_traits, std::vector<point>>;
 template<std::size_t N>
-using n_t_constexpr = _n_t<def_traits, std::array<point, N>>;
+using n_t_constexpr = _n_t<def_coord_traits, std::array<point, N>>;
 
 #if 0
 template<class T>
@@ -589,12 +591,12 @@ make_fun_itr(Functor&& ftor) {
 	return fun_itr<T, Functor>(std::forward<Functor>(ftor));
 }
 
-template<class Traits>
+template<class CellTraits> // TODO: traits is not needed
 class _conf_t
 {
-	using cell_t = typename Traits::cell_t;
-	using grid_t = _grid_t<Traits>;
-	using point = _point<typename Traits::coord_t>;
+	using cell_t = typename CellTraits::cell_t;
+//	using grid_t = _grid_t<Traits>;
+//	using point = _point<Traits>;
 	std::vector<cell_t> _data; // TODO: list?
 public:
 /*	conf_t(const n_t& n, const grid_t& grid, point p = {0, 0})
@@ -618,6 +620,8 @@ public:
 	_conf_t(cell_t single_val) : _data{single_val} {}
 	_conf_t(std::vector<cell_t>&& _data) : _data(_data) {} // TODO: public?
 
+// TODO: re-enable
+#if 0
 	//! Construct merged c
 	//! Complexity: O(conf1) + O(conf2)
 	template<class OrdCont1, class OrdCont2>
@@ -655,7 +659,9 @@ public:
 
 		return _conf_t(std::move(new_data));
 	}
+#endif
 
+// TODO erase?
 #if 0
 	//! Construct substracted c, with points which are not in coords2, but in coords 1
 	//! Complexity: O(conf1) + O(conf2)
@@ -688,16 +694,20 @@ public:
 	}
 #endif
 
-	template<class Container>
-	_conf_t(const Container& points, const grid_t& grid, point p = {0, 0})
+	template<class Container, class Traits>
+	_conf_t(const Container& points,
+		const _grid_t<Traits, CellTraits>& grid,
+		_point<Traits> p = {0, 0})
 	{
-		for(const point& p2 : points)
+		for(const _point<Traits>& p2 : points)
 		 _data.push_back(grid[p + p2]);
 	}
 
 	_conf_t() {}
 
-	bool equals_grid(const std::set<point>& points, const grid_t& grid) const
+	template<class Traits>
+	bool equals_grid(const std::set<_point<Traits>>& points,
+		const _grid_t<Traits, CellTraits>& grid) const
 	{
 		auto vitr = _data.begin();
 		for(auto itr = points.begin();
@@ -786,7 +796,7 @@ public:
 	const_iterator cbegin() const { return _data.cbegin(); }
 	const_iterator cend() const { return _data.cend(); }
 };
-using conf_t = _conf_t<def_traits>;
+using conf_t = _conf_t<def_cell_traits>;
 
 template<class Itr>
 struct count_elem
@@ -918,6 +928,11 @@ public:
 struct nop
 {
 	void operator()(...) const {}
+};
+
+struct true_nop
+{
+	bool operator()(...) const { return true; }
 };
 
 template<class Functor1, class Functor2, class Functor3, class T1, class T2>

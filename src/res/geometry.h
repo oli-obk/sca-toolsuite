@@ -28,17 +28,35 @@
 #include <type_traits>
 #include <limits>
 #include <iostream>
+#include <cstdint>
 
-template<class Coord, class Area, class Cell> // TODO: def for area
-struct traits
+template<class T>
+struct area_class { using type = unsigned int; };
+template<>
+struct area_class<char> { using type = unsigned short; };
+template<>
+struct area_class<int8_t> { using type = unsigned short; };
+template<>
+struct area_class<uint8_t> { using type = unsigned short; };
+
+//! @arg Coord The type for using coords. signed or unsigned
+template<class Coord, class Area = typename area_class<Coord>::type> // TODO: def for area
+struct coord_traits
 {
 	using coord_t = Coord;
 	using u_coord_t = typename std::make_unsigned<coord_t>::type; // TODO...
 	using area_t = typename std::make_unsigned<Area>::type;
+};
+
+template<class Cell>
+struct cell_traits
+{
 	using cell_t = Cell;
 };
 
-using def_traits = traits<int, unsigned, int>;
+using def_coord_traits = coord_traits<int>;
+using def_cell_traits = cell_traits<int>;
+using def_cell_const_traits = cell_traits<const int>;
 
 enum class storage_t
 {
@@ -47,9 +65,10 @@ enum class storage_t
 };
 
 //! Generic structure to store 2D coordinates
-template<class coord_t>
+template<class Traits>
 struct _point
 {
+	using coord_t = typename Traits::coord_t;
 	coord_t x, y;
 	constexpr _point(coord_t _x, coord_t _y) : x(_x), y(_y) {}
 	_point() {}
@@ -86,12 +105,13 @@ struct _point
 		return stream;
 	}
 };
-using point = _point<def_traits::coord_t>;
+using point = _point<def_coord_traits>;
 
-template<class coord_t>
+template<class Traits>
 struct _point_itr
 {
-	using point = _point<coord_t>;
+	using coord_t = typename Traits::coord_t;
+	using point = _point<Traits>;
 
 	//! max should have x and y behind the last column and row
 	//! like STL iterators
@@ -163,7 +183,7 @@ public:
 
 	using value_type = point;
 };
-using point_itr = _point_itr<def_traits::coord_t>;
+using point_itr = _point_itr<def_coord_traits>;
 
 // TODO: which ctors/functions can be made constexpr? everywhere...
 
@@ -199,8 +219,8 @@ public:
 template<class Traits>
 struct _dim_cont
 {
-	using point = _point<typename Traits::coord_t>;
-	using const_iterator = _point_itr<typename Traits::coord_t>;
+	using point = _point<Traits>;
+	using const_iterator = _point_itr<Traits>;
 	using iterator = const_iterator;
 	using coord_t = typename Traits::coord_t;
 	using area_t = typename Traits::area_t;
@@ -234,13 +254,13 @@ struct _dim_cont
 	area_t size() const { return h * w; }
 };
 
-using dim_cont = _dim_cont<def_traits>;
+using dim_cont = _dim_cont<def_coord_traits>;
 
 // TODO: protected members
 template<class Traits>
 class _rect_storage_default
 {
-	using point = _point<typename Traits::coord_t>;
+	using point = _point<Traits>;
 protected:
 	point _ul, lr;
 	const point& ul() const { return _ul; }
@@ -250,7 +270,7 @@ protected:
 template<class Traits>
 class _rect_storage_origin
 {
-	using point = _point<typename Traits::coord_t>;
+	using point = _point<Traits>;
 protected:
 	//static constexpr point ul = {0, 0};
 	static constexpr point ul() { return {0, 0}; }
@@ -261,10 +281,10 @@ protected:
 };
 
 // TODO: storage should be a template: template<class T> class storage
-template<class Traits, class storage>
+template<class Traits, class storage = _rect_storage_default<Traits>>
 struct _rect : public storage
 {
-	using point = _point<typename Traits::coord_t>;
+	using point = _point<Traits>;
 	using coord_t = typename Traits::coord_t;
 	using area_t = typename Traits::area_t;
 	using u_coord_t = typename Traits::u_coord_t;
@@ -286,7 +306,7 @@ public:
 	bool is_inside(const point& p) const {
 		return p.x < s::lr.x && p.y < s::lr.y && s::ul().x <= p.x && s::ul().y <= p.y; }
 
-	using const_iterator = _point_itr<typename Traits::coord_t>;
+	using const_iterator = _point_itr<Traits>;
 	using iterator = const_iterator;
 	iterator begin() const { return iterator(s::lr, s::ul()); }
 	iterator end() const { return iterator::from_end(s::lr, s::ul()); }
@@ -310,7 +330,7 @@ public:
 		return (height()-bs_2)*(width()-bs_2);
 	}
 
-	_rect<Traits, _rect_storage_default<Traits>> operator+(const point& rhs) const {
+	_rect<Traits> operator+(const point& rhs) const {
 		return _rect<Traits, _rect_storage_default<Traits>>(s::ul() + rhs, s::lr + rhs);
 	}
 
@@ -358,25 +378,25 @@ public:
 		return true;
 	}
 };
-using rect = _rect<def_traits, _rect_storage_default<def_traits>>;
+using rect = _rect<def_coord_traits, _rect_storage_default<def_coord_traits>>;
 
 template<class Traits>
 struct _dimension : public _rect<Traits, _rect_storage_origin<Traits>>
 {
 	using coord_t = typename Traits::coord_t;
 	using u_coord_t = typename Traits::u_coord_t;
-	using point = _point<typename Traits::coord_t>;
+	using point = _point<Traits>;
 	_dimension(u_coord_t width, u_coord_t height) :
 		_rect<Traits, _rect_storage_origin<Traits>>({0,0}, {(coord_t)width, (coord_t)height}) {}
 	_dimension() {}
 };
-using dimension = _dimension<def_traits>;
+using dimension = _dimension<def_coord_traits>;
 
 // TODO: inherit from bounding box
 template<class Traits>
 class _bounding_box
 {
-	using point = _point<typename Traits::coord_t>;
+	using point = _point<Traits>;
 	using u_coord_t = typename Traits::u_coord_t;
 	point _ul, _lr;
 public:
@@ -414,6 +434,6 @@ public:
 		return (p.y - _ul.y) * y_size() + (p.x - _ul.x);
 	}
 };
-using bounding_box = _bounding_box<def_traits>;
+using bounding_box = _bounding_box<def_coord_traits>;
 
 #endif // GEOMETRY_H

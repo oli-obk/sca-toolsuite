@@ -26,8 +26,8 @@ class MyProgram : public Program
 {
 	int main()
 	{
-		using cell_t = def_traits::cell_t;
-		using coord_t = def_traits::coord_t;
+		using cell_t = def_cell_traits::cell_t;
+		using coord_t = def_coord_traits::coord_t;
 
 		assert_usage(argc==1);
 

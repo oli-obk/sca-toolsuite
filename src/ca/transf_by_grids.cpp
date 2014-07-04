@@ -87,7 +87,7 @@ class MyProgram : public Program
 			grid_t out_grid(std::cin, 0);
 			assert(out_grid.human_dim().area() == 1);
 
-			def_traits::cell_t out_cell = out_grid[point::zero()];
+			def_cell_traits::cell_t out_cell = out_grid[point::zero()];
 
 			neighbours.add_transition_functions(
 					table, center_cell, cur_grid, out_cell

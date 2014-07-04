@@ -94,9 +94,9 @@ protected:
 		//num_states = 0;
 	}
 
-	template<class Point, class Dimension>
-	int calculate_next_state(const int *cell_ptr,
-		const Point& p, const Dimension& dim) const
+	template<class T, class CT>
+	int calculate_next_state(const typename CT::cell_t *cell_ptr,
+		const _point<T>& p, const _dimension<T>& dim) const
 	{
 		// TODO: replace &((*old_grid)[internal]) by old_value
 		// and make old_value a ptr/ref?
@@ -112,9 +112,9 @@ protected:
 
 	//! Runtime: depends on formula.
 	// TODO: bit storage grids?
-	template<class Point, class Dimension>
+	template<class T, class = void>
 	int calculate_next_state(uint64_t grid_int, uint64_t size_each,
-		const Point& p, const Dimension& dim) const
+		const _point<T>& p, const _dimension<T>& dim) const
 	{
 		int eval_idx = dim.width() * p.y + p.x; // TODO: bw?
 		eqsolver::grid_storage_bits arr(grid_int, size_each, dim.width(), eval_idx);
@@ -129,6 +129,7 @@ protected:
 
 public:
 	int border_width() const { return _border_width; }
+	using n_t_type = n_t;
 	n_t get_neighbourhood() const
 	{
 		int bw = border_width();
@@ -139,17 +140,17 @@ public:
 	//bool can_optimize_table() const { return num_states }
 };
 
-using bitgrid_traits = traits<char, char, char>;
+using bitgrid_traits = coord_traits<char>;
+using bitgrid_cell_traits = cell_traits<char>;
 
 class bit_reference_base
 {
 protected:
-	using cell_t = int;
 	uint64_t minbit, bitmask;
 	bit_reference_base(uint64_t minbit, uint64_t bitmask) :
 		minbit(minbit),
 		bitmask(bitmask) {}
-	cell_t bits_in(const uint64_t& grid) const {
+	uint64_t bits_in(const uint64_t& grid) const {
 		return (grid >> minbit) & bitmask;
 	}
 };
@@ -165,7 +166,7 @@ public:
 	}
 
 public:
-	operator cell_t () const { return bits_in(grid); }
+	operator uint64_t () const { return bits_in(grid); }
 };
 
 class bit_reference : public bit_reference_base
@@ -183,12 +184,12 @@ public:
 	{
 	}
 public:
-	operator cell_t () const { return bits_in(grid); }
+	operator uint64_t () const { return bits_in(grid); }
 
 	//! TODO: faster ops for ++ etc.
-	bit_reference& operator= (const cell_t c) {
+	bit_reference& operator= (const uint64_t c) {
 		grid = grid & (~(bitmask << minbit));
-		grid = grid | ((uint64_t)c << minbit);
+		grid = grid | (c << minbit);
 		return *this;
 	}
 	bit_reference& operator++() {
@@ -274,8 +275,8 @@ public:
 
 class bitgrid_t : public grid_alignment_t<bitgrid_traits>
 {
-	using cell_t = typename bitgrid_traits::cell_t;
-	using point = _point<typename bitgrid_traits::coord_t>;
+	using cell_t = typename bitgrid_cell_traits::cell_t;
+	using point = _point<bitgrid_traits>;
 
 	using storage_t = uint64_t;
 	const storage_t each, bitmask;
@@ -356,11 +357,12 @@ class ca_table_t : private ca_eqsolver_t // TODO: only for reading?
 {
 	using coord_t = typename bitgrid_traits::coord_t;
 	using u_coord_t = typename bitgrid_traits::u_coord_t;
-	using cell_t = typename bitgrid_traits::cell_t;
-	using point = _point<typename bitgrid_traits::coord_t>;
+	using cell_t = typename bitgrid_cell_traits::cell_t;
+	using point = _point<bitgrid_traits>;
 	using dimension = _dimension<bitgrid_traits>;
-	using n_t_t = _n_t<bitgrid_traits, std::vector<point>>;
-
+public:
+	using n_t_type = _n_t<bitgrid_traits, std::vector<point>>;
+private:
 	class size_check
 	{
 		size_check(int size)
@@ -401,23 +403,23 @@ class ca_table_t : private ca_eqsolver_t // TODO: only for reading?
 
 // data for outside:
 	const u_coord_t bw; // TODO: u_coord_t
-	const n_t_t neighbourhood;
+	const n_t_type neighbourhood;
 
 	u_coord_t compute_bw() const
 	{
 		return (n_w - 1)>>1;
 	}
 
-	n_t_t compute_neighbourhood() const
+	n_t_type compute_neighbourhood() const
 	{
 		u_coord_t bw = border_width();
 		u_coord_t n_width = (bw<<1) + 1;
 		dimension moore = { n_width, n_width };
-		return n_t_t(moore, point(bw, bw));
+		return n_t_type(moore, point(bw, bw));
 	}
 public:
 	unsigned border_width() const { return bw; } // TODO: should ret reference
-	const n_t_t& get_neighbourhood() const { return neighbourhood; }
+	const n_t_type& get_neighbourhood() const { return neighbourhood; }
 
 private:
 
@@ -518,26 +520,25 @@ public:
 	{
 	}
 
-	template<class T>
-	using dim_tp = _dimension<traits<coord_t, T, cell_t>>;
-
+	//! Note: the type traits here can be different than ours
 	//! Runtime: O(N)
-	template<class T>
-	int calculate_next_state(const cell_t *cell_ptr,
-		const point& p, const dim_tp<T>& dim) const
+	template<class GT, class GCT>
+	int calculate_next_state(const typename GCT::cell_t* const cell_ptr,
+		const _point<GT>& p, const _dimension<GT>& dim) const
 	{
 		// TODO: class member?
+		using grid_cell_t = typename GCT::cell_t;
 
 		(void)p; // for a ca, the coordinates are no cell input
 		bitgrid_t bitgrid(size_each, dimension(n_w, n_w), 0);
 
-		cell_t min = std::numeric_limits<cell_t>::max(),
-			max = std::numeric_limits<cell_t>::min(); // any better alternative?
+		grid_cell_t min = std::numeric_limits<grid_cell_t>::max(),
+			max = std::numeric_limits<grid_cell_t>::min(); // any better alternative?
 
 		for(const point p2 : bitgrid.points())
 		{
 			const point offs = p2 - center;
-			const cell_t* const ptr = cell_ptr + offs.y * dim.width() + offs.x;
+			const grid_cell_t* const ptr = cell_ptr + (grid_cell_t)(offs.y * dim.width() + offs.x);
 			bitgrid[p2] = *ptr;
 			min = std::min(min, *ptr);
 			max = std::max(max, *ptr);
@@ -636,8 +637,8 @@ public:
 class input_ca
 {
 protected:
-	using cell_t = typename def_traits::cell_t;
-	using u_coord_t = typename def_traits::u_coord_t;
+	using cell_t = typename def_cell_traits::cell_t;
+	using u_coord_t = typename def_coord_traits::u_coord_t;
 public:
 	//! calculates next state at (human) position (x,y)
 	//! if the ca is asynchronous, the function returns the next state
@@ -723,14 +724,16 @@ public:
  *
  * Thus it contains no grid.
  */
-template<class Solver, class Traits>
+template<class Solver>
 class _ca_calculator_t : public Solver
 {
 	using _base = Solver;
-	using cell_t = typename Traits::cell_t;
+/*	using cell_t = typename Traits::cell_t;
 	using grid_t = _grid_t<Traits>;
-	using point = _point<typename Traits::coord_t>;
-	using dimension = _dimension<Traits>;
+	using point = _point<Traits>;
+	using dimension = _dimension<Traits>;*/
+	template<class CellTraits>
+	using m_cell = typename CellTraits::cell_t;
 public:
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
@@ -747,38 +750,42 @@ public:
 
 	//! calculates next state at (human) position (x,y)
 	//! @param dim the grids internal dimension
-	int next_state(const cell_t *cell_ptr, const point& p, const dimension& dim) const
+	template<class T, class CT>
+	int next_state(const m_cell<CT> *cell_ptr, const _point<T>& p, const _dimension<T>& dim) const
 	{
-		return _base::calculate_next_state(cell_ptr, p, dim);
+		return _base::template calculate_next_state<T, CT>(cell_ptr, p, dim);
 	}
 
 	//! overload, with x and y in internal format. slower.
-	int next_state_realxy(const cell_t *cell_ptr, const point& p, const dimension& dim) const
+	template<class T, class CT>
+	int next_state_realxy(const m_cell<CT> *cell_ptr, const  _point<T>& p, const _dimension<T>& dim) const
 	{
 		int bw = _base::border_width();
-		return next_state(cell_ptr, p - point { bw, bw }, dim);
+		return next_state<T, CT>(cell_ptr, p - point { bw, bw }, dim);
 	}
 
 	//! overload with human coordinates and reference to grid. slower.
-	int next_state(const grid_t &grid, const point& p) const
+	template<class T, class CT>
+	int next_state(const _grid_t<T, CT> &grid, const _point<T>& p) const
 	{
-		return next_state(&grid[p], p, grid.internal_dim());
+		return next_state<T, CT>(&grid[p], p, grid.internal_dim());
 	}
 
 	//! returns whether cell at point @a p is active.
 	//! @a result is set to the result in all cases, if it is not nullptr
 	// TODO: overloads
-	bool is_cell_active(const grid_t& grid, const point& p, cell_t* result = nullptr) const
+	template<class T, class CT>
+	bool is_cell_active(const _grid_t<T, CT>& grid, const _point<T>& p, m_cell<CT>* result = nullptr) const
 	{
-		const cell_t* const cell_ptr = &grid[p];
-		const cell_t next = next_state(cell_ptr, p, grid.internal_dim());
+		const m_cell<CT>* const cell_ptr = &grid[p];
+		const m_cell<CT> next = next_state<T, CT>(cell_ptr, p, grid.internal_dim());
 		if(result)
 		 *result = next;
 		return next != *cell_ptr;
 	}
 };
 
-using ca_calculator_t = _ca_calculator_t<ca_eqsolver_t, def_traits>;
+using ca_calculator_t = _ca_calculator_t<ca_eqsolver_t>;
 
 #if 0 // TODO: clang forbids this for some strange reason
 class asm_synch_calculator_t
@@ -862,18 +869,19 @@ public:
 /**
  * Defines sequence: (stabilisation)((input)(stabilisation))*
  */
-template<class Solver, class Traits>
+template<class Solver, class Traits, class CellTraits>
 class ca_simulator_t : /*private _ca_calculator_t<Solver>,*/ public input_ca
 {
-	using point = _point<typename Traits::coord_t>;
-	using calc_class = _ca_calculator_t<Solver, Traits>;
+	using point = _point<Traits>;
+	using calc_class = _ca_calculator_t<Solver>;
+	using grid_t = _grid_t<Traits, CellTraits>;
 	calc_class ca_calc;
 	using input_class = calc_class; //!< TODO: Solver class is enough
 	input_class ca_input;
 
 	grid_t _grid[2];
 	grid_t *old_grid = _grid, *new_grid = _grid;
-	n_t neighbours; // TODO: const?
+	typename calc_class::n_t_type neighbours; // TODO: const?
 	std::vector<point> //recent_active_cells(old_grid->size()),
 			new_changed_cells; // TODO: this vector will shrink :/
 	//! temporary variable
@@ -939,7 +947,7 @@ public:
 	//! @a result is set to the result in all cases, if it is not nullptr
 	// TODO: overloads
 	// TODO: faster than scanning the vector?
-	bool is_cell_active(const point& p, cell_t* result = nullptr) const
+	bool is_cell_active(const point& p, typename grid_t::value_type* result = nullptr) const
 	{
 		//return ca_calc.is_cell_active(grid(), p, result);
 		//return ca_calc.is_cell_active(old_grid, p, result);
@@ -952,7 +960,7 @@ public:
 	const grid_t& grid() const { return *old_grid; }
 
 	//! prepares the ca to run only on cells from @a sim_rect
-	void finalize(const rect& sim_rect)
+	void finalize(const _rect<Traits>& sim_rect)
 	{
 		// incorrect if we finalize later? (what is 0 and 1?)
 		_grid[1] = _grid[0]; // fit borders
@@ -1004,8 +1012,9 @@ public:
 			int new_value;
 			const int old_value = (*old_grid)[p];
 			(*new_grid)[p] = (new_value
-				= ca_calc.next_state(&((*old_grid)[p]),
-					p, _grid->internal_dim()));
+				= ca_calc.template next_state<Traits, CellTraits>
+					(&((*old_grid)[p]),
+						p, _grid->internal_dim()));
 
 		//	std::cout << "at " << p << ": " << new_value
 		//		<< ", " << old_value << std::endl;
@@ -1089,7 +1098,8 @@ public:
 	{
 		//if(has_)
 		// TODO: for now, we assume that the ca is always stable
-		(*old_grid)[p] = (*new_grid)[p] = ca_input.next_state(*new_grid, p);
+		(*old_grid)[p] = (*new_grid)[p] = ca_input.template
+			next_state<Traits, CellTraits>(*new_grid, p);
 		/*for(const point np : neighbours)
 		{
 			point cur = p + np;
@@ -1102,7 +1112,7 @@ public:
 		initialize_first();
 	}
 
-	u_coord_t border_width() const {
+	typename Traits::u_coord_t border_width() const {
 		return ca_calc.border_width();
 	}
 };

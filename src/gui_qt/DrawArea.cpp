@@ -25,6 +25,9 @@
 //#include "asm_basic.h"
 #include "DrawArea.h"
 
+using eq_sim_t = sca::ca::ca_simulator_t<sca::ca::ca_eqsolver_t,
+	def_coord_traits, def_cell_traits>;
+
 DrawArea::DrawArea(StateMachine& _state_machine, const char *ca_eq,
 	const char *input_eq, QWidget *parent) :
 	QWidget(parent),
@@ -33,8 +36,7 @@ DrawArea::DrawArea(StateMachine& _state_machine, const char *ca_eq,
 	TIMER_INTERVAL(250),
 	min_color(0,255,0),
 	max_color(255,0,0),
-	ca(new sca::ca::ca_simulator_t<sca::ca::ca_eqsolver_t, def_traits>(
-		ca_eq, input_eq)),
+	ca(new eq_sim_t(ca_eq, input_eq)),
 	grid_layout(this)
 {
 	connect(&next_fire_timer, SIGNAL(timeout()),

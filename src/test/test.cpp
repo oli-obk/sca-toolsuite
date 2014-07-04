@@ -26,6 +26,8 @@ class MyProgram : public Program
 {
 	int main()
 	{
+		// TODO: re-enable?
+#if 0
 		sca::ca::conf_t c1({1, 5, 3});
 		sca::ca::conf_t c2({4, 5, 6});
 		std::set<point> s1{{0, 0}, {2, 0}, {4,0}};
@@ -38,7 +40,7 @@ class MyProgram : public Program
 		assert_always(c3[2]==5, "2");
 		assert_always(c3[3]==6, "3");
 		assert_always(c3[4]==3, "4");
-
+#endif
 		//std::set<point> s4{{0, 0}, {2, 0}};
 		//sca::ca::conf_t c5 = sca::ca::conf_t::substract(s1, c1, s4, )
 

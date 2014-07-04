@@ -42,7 +42,7 @@ inline grid_t get_identity(const dimension& dim)
 {
 	grid_t grid(dim, 1, 6); // grid with every cell = 6
 	stabilize(grid);
-	for(def_traits::cell_t& c : grid)
+	for(def_cell_traits::cell_t& c : grid)
 	 c = 6 - c;
 	stabilize(grid);
 	return grid;

@@ -6,11 +6,11 @@
 #ifndef GRID_H
 #define GRID_H
 
-template<class Traits>
+template<class Traits, class CellTraits>
 class _const_cell_itr
 {
-	using point = _point<typename Traits::coord_t>;
-	using cell_t = typename Traits::cell_t;
+	using point = _point<Traits>;
+	using cell_t = typename CellTraits::cell_t;
 	using coord_t = typename Traits::coord_t;
 	using dimension = _dimension<Traits>;
 protected:
@@ -52,17 +52,18 @@ public:
 	bool operator!=(const _const_cell_itr& rhs) const {
 		return !operator==(rhs); }
 };
-using const_cell_itr = _const_cell_itr<def_traits>;
+using const_cell_itr = _const_cell_itr<def_coord_traits, def_cell_const_traits>;
 
-template<class Traits>
-class _cell_itr : public _const_cell_itr<Traits>
+template<class Traits, class CellTraits>
+class _cell_itr : public _const_cell_itr<Traits, CellTraits>
 {
-	using cell_t = typename Traits::cell_t;
+	using base = _const_cell_itr<Traits, CellTraits>;
+	using cell_t = typename CellTraits::cell_t;
 public:
-	using _const_cell_itr<Traits>::_const_cell_itr;
-	cell_t& operator*() { return *_const_cell_itr<Traits>::ptr; }
+	using base::_const_cell_itr;
+	cell_t& operator*() { return *base::ptr; }
 };
-using cell_itr = _cell_itr<def_traits>;
+using cell_itr = _cell_itr<def_coord_traits, def_cell_traits>;
 
 template<class Traits>
 class grid_alignment_t
@@ -71,7 +72,7 @@ protected:
 	using coord_t = typename Traits::coord_t;
 	using u_coord_t = typename Traits::u_coord_t;
 	using area_t = typename Traits::area_t;
-	using point = _point<typename Traits::coord_t>;
+	using point = _point<Traits>;
 	using dimension = _dimension<Traits>;
 
 // TODO: all protected?
@@ -165,10 +166,10 @@ public:
 
 //! class representing a grid, i.e. an array with h/w + border
 //! public functions always take human h/w/dim, if not denoted otherwise
-template<class Traits>
+template<class Traits, class CellTraits>
 class _grid_t : public grid_alignment_t<Traits>
 {
-	using cell_t = typename Traits::cell_t;
+	using cell_t = typename CellTraits::cell_t;
 	using base = grid_alignment_t<Traits>;
 
 	std::vector<cell_t> _data;
@@ -308,13 +309,14 @@ public:
 		return _data[idx];
 	}
 
-	using iterator = _cell_itr<Traits>;
-	using const_iterator = _const_cell_itr<Traits>;
+	using iterator = _cell_itr<Traits, CellTraits>;
+	using const_iterator = _const_cell_itr<Traits, cell_traits<const cell_t>>;
+	using value_type = cell_t;
 
 	iterator begin() { return iterator(_data.data(), _dim, bw); }
 	iterator end() { return iterator(_data.data(), _dim, bw, false); }
-	const_iterator cbegin() { return const_iterator(_data.data(), _dim, bw); }
-	const_iterator cend() { return const_iterator(_data.data(), _dim, bw, false); }
+	const_iterator cbegin() const { return const_iterator(_data.data(), _dim, bw); }
+	const_iterator cend() const { return const_iterator(_data.data(), _dim, bw, false); }
 	// TODO: the last two funcs should have cv qualifier
 
 	//! @param point point in human (TODO?!?!) format
@@ -394,7 +396,7 @@ public:
 
 };
 
-using grid_t = _grid_t<def_traits>;
+using grid_t = _grid_t<def_coord_traits, def_cell_traits>;
 
 //! Returns true iff @a idx is on the border for given dimension @a dim
 inline bool is_border(const dimension& dim, unsigned int idx) {

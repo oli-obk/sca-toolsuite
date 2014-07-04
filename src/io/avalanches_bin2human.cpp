@@ -32,7 +32,7 @@ const unsigned int BUF_SIZE = 1024;
 // TODO: specialize for offset = 0 => runtime improvement
 template<typename size_each_t>
 void parse_avalanches(FILE* in_fp, FILE* out_fp,
-	def_traits::u_coord_t width, std::size_t div_size = 1, std::size_t offset = 0,
+	def_coord_traits::u_coord_t width, std::size_t div_size = 1, std::size_t offset = 0,
 	bool ids = false)
 {
 	size_each_t buffer[BUF_SIZE]; // TODO: was signed... important?
@@ -84,7 +84,7 @@ class MyProgram : public Program
 	int main()
 	{
 		bool ids = false;
-		def_traits::u_coord_t width;
+		def_coord_traits::u_coord_t width;
 		switch(argc)
 		{
 			case 3: assert_usage(!strcmp(argv[2],"ids")); ids = true;

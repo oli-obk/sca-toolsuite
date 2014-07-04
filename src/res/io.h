@@ -26,18 +26,9 @@
 #include <vector>
 #include <cctype> // isdigit()
 #include <iostream>
-//#include <cstdint>
 #include <limits>
 
 #include "geometry.h"
-
-template<class>
-struct _dimension;
-template<class, class, class> // TODO: def for area
-struct traits;
-using def_traits = traits<int, unsigned, int>;
-
-using dimension = _dimension<def_traits>;
 
 // TODO: remove? or move to cpp file?
 //! Converts internal coordinates into human coordinats.
