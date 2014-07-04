@@ -86,7 +86,7 @@ class MyProgram : public Program
 
 
 			using ca_sim_t = sca::ca::ca_simulator_t<
-				sca::ca::ca_eqsolver_t, def_traits>;
+				sca::ca::ca_eqsolver_t, def_coord_traits, def_cell_traits>;
 			ca_sim_t sim(equation);
 			sim.grid() = grid;
 			sim.finalize();
