@@ -28,7 +28,8 @@ HEADERS += res/io.h res/stack_algorithm.h \
 	res/eqs_functions.h \
     gui_qt/CaSelector.h \
     gui_qt/labeled_widget.h \
-    res/grid.h
+    res/grid.h \
+    res/patch.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \
