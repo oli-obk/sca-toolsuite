@@ -261,8 +261,8 @@ public:
 			{
 				std::cout << "Error applying: " << *this << " on "<< current << std::endl;
 			}
-			assert_always(current[p] == _conf_before[p.id()],
-				"This patch can not be applied on this grid.");
+			if(current[p] != _conf_before[p.id()])
+				throw "This patch can not be applied on this grid.";
 			current[p] = _conf[p.id()];
 		}
 	}
@@ -329,6 +329,14 @@ public:
 	const _patch_t& operator-=(const _patch_t& rhs)
 	{
 		return (*this = *this - rhs);
+	}
+
+	//! nothing special
+	bool operator==(const _patch_t& rhs) const
+	{
+		return (_area == rhs._area)
+			&& (_conf == rhs._conf)
+			&& (_conf_before == rhs._conf_before);
 	}
 
 	const std::set<point>& area() const { return _area; }
