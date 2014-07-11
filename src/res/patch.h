@@ -60,7 +60,8 @@ class _patch_t
 			res._area.insert(res._area.end(), *itr);
 		};
 
-		auto cb_init_both = [&](const ca::counted_itr<set_itr>& itr1, const ca::counted_itr<set_itr>& itr2) {
+		auto cb_init_both = [&](const ca::counted_itr<set_itr>& itr1, const ca::counted_itr<set_itr>& itr2)
+		{
 			if(_conf[itr1->id()] != rhs_old[itr2->id()])
 			{
 				std::cout << "Calculating " << *this
@@ -129,7 +130,10 @@ class _patch_t
 public:
 
 	_patch_t() {}
-	_patch_t(const std::set<point>& area, const conf_t& conf, const conf_t& old_conf)
+
+	//! @param area must be sorted
+	template<class Cont>
+	_patch_t(const Cont& area, const conf_t& conf, const conf_t& old_conf)
 	{
 		std::size_t reserve_size = 0;
 		for(const auto& elem : ca::counted(area))
@@ -158,6 +162,27 @@ public:
 		_conf((cell_new == cell_old)?conf_t{}:conf_t(cell_new)),
 		_conf_before((cell_new == cell_old)?conf_t{}:conf_t(cell_old))
 	{
+	}
+
+	//! maps all points to a single value
+	//! @param area must be sorted
+	template<class Cont>
+	_patch_t(const Cont& area, const grid_t& g, const cell_t& new_val)
+	{
+		std::size_t reserve_size = 0;
+		for(const auto& p : area)
+		if(g[p] != new_val)
+		 ++reserve_size;
+
+		_conf.data().resize(reserve_size, new_val);
+		_conf_before.data().reserve(reserve_size);
+
+		for(const auto& elem : area)
+		if(g[elem] != new_val)
+		{
+			_area.insert(_area.end(), elem);
+			_conf_before.data().push_back(g[elem]);
+		}
 	}
 
 	//! @param g1 new grid
@@ -189,6 +214,20 @@ public:
 			}
 		}
 	}
+
+/*	void add_single(const point& p, const cell_t& cur, const cell_t& old)
+	{
+		// TODO: unite code?
+		auto itr = _area.find(p);
+		if(itr == _area.end())
+		{
+			_area.insert(p);
+		}
+		else
+		{
+			assert_always(_conf[itr1->id()] == rhs_old[itr2->id()], "Confs can not be added");
+		}
+	}*/
 
 	friend std::ostream& operator<< (std::ostream& stream,
 		const _patch_t& c)
@@ -341,6 +380,60 @@ public:
 
 	const std::set<point>& area() const { return _area; }
 	const conf_t& conf() const { return _conf; }
+
+	void clear() { _area.clear(); _conf.clear(); _conf_before.clear(); }
+};
+
+template<bool ExtendedFormat, class Traits, class CellTraits>
+class _backed_up_grid
+{
+	using self = _backed_up_grid<ExtendedFormat, Traits, CellTraits>;
+	using cell_t = typename CellTraits::cell_t;
+	using patch_t = _patch_t<ExtendedFormat, Traits, CellTraits>;
+	using grid_t = _grid_t<Traits, CellTraits>;
+	using point = _point<Traits>;
+
+	template<class Cont>
+	class cell_ref
+	{
+		self& ref;
+		const Cont& p;
+
+		patch_t get_patch(const point& p, const cell_t& new_c) { return patch_t(p, new_c, ref._grid[p]); }
+		template<class _Cont>
+		patch_t get_patch(const _Cont& cont, const cell_t& new_c) {
+			return patch_t(cont, ref._grid, new_c);
+		}
+	public:
+		cell_ref& operator=(const cell_t& c)
+		{
+			ref._patch += get_patch(p, c);
+			ref._grid[p] = c;
+			return *this;
+		}
+		cell_ref(self& ref, const Cont& p) :
+			ref(ref), p(p)
+		{}
+	};
+
+	grid_t& _grid;
+	patch_t _patch;
+public:
+	template<class Cont>
+	cell_ref<Cont> operator[](const Cont& p)
+	{
+		return cell_ref<Cont>(*this, p);
+	}
+
+	grid_t& grid() { return _grid; }
+	const grid_t& grid() const { return _grid; }
+	const patch_t& patch() const { return _patch; }
+
+	void apply_backup() { _patch.apply_bwd(_grid); _patch.clear(); }
+	//patch_t apply_backup_move() { _patch.apply_bwd(_grid); return std::move(_patch); }
+
+	_backed_up_grid(grid_t& _grid) : _grid(_grid) {}
+	~_backed_up_grid() { apply_backup(); }
 };
 
 }

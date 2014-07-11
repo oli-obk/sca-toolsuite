@@ -171,12 +171,14 @@ class _grid_t : public grid_alignment_t<Traits>
 {
 	using cell_t = typename CellTraits::cell_t;
 	using base = grid_alignment_t<Traits>;
+	using self = _grid_t<Traits, CellTraits>;
 
 	std::vector<cell_t> _data;
 
 	using base::bw;
 	using base::bw_2;
 	using base::_dim;
+	using point = typename base::point;
 	using area_t = typename base::area_t;
 	using u_coord_t = typename base::u_coord_t;
 	using dimension = typename base::dimension;
@@ -277,14 +279,41 @@ public:
 	}
 	#endif
 
-	template<class Point>
-	cell_t& operator[](Point p)
+	template<class Cont>
+	class multi_cell_ref
+	{
+		const Cont& cont;
+		self& ref;
+	public:
+		multi_cell_ref(const Cont& cont, self& ref) :
+			cont(cont), ref(ref) {}
+		multi_cell_ref<Cont>& operator=(const cell_t& c) {
+			for(const point& p : cont) { ref[p] = c; }
+			return *this;
+		}
+		const Cont& get_cont() const { return cont; }
+		/*bool operator>=(const cell_t& c)
+		{
+			for(point& p : cont) { ref[p] = c; }
+		}*/
+	};
+
+	multi_cell_ref<std::vector<point>> operator[](const std::vector<point>& cont)
+	{
+		return multi_cell_ref<std::vector<point>>(cont, *this);
+	}
+
+	multi_cell_ref<std::set<point>> operator[](const std::set<point>& cont)
+	{
+		return multi_cell_ref<std::set<point>>(cont, *this);
+	}
+
+	cell_t& operator[](const point& p)
 	{
 		return _data[base::index(p)];
 	}
 
-	template<class Point>
-	const cell_t& operator[](Point p) const
+	const cell_t& operator[](const point& p) const
 	{
 		return _data[base::index(p)];
 	}

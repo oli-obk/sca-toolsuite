@@ -795,6 +795,8 @@ public:
 	iterator end() { return _data.end(); }
 	const_iterator cbegin() const { return _data.cbegin(); }
 	const_iterator cend() const { return _data.cend(); }
+
+	void clear() { _data.clear(); }
 };
 using conf_t = _conf_t<def_cell_traits>;
 
