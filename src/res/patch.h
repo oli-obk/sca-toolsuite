@@ -246,7 +246,7 @@ public:
 
 			auto cb_left = [](const ca::counted_itr<set_itr>&) {};
 			auto cb_right = [&](const ca::counted_itr<point_itr>& itr) {
-				if(((point)*itr).y - last_point.y) // TODO...
+				if(((point)*itr).y != last_point.y) // TODO...
 				 stream << std::endl;
 				stream << "  ";
 				last_point = (point)*itr;
@@ -254,7 +254,7 @@ public:
 
 			auto cb_both = [&](const ca::counted_itr<set_itr>& itr, const ca::counted_itr<point_itr>&)
 			{
-				if(((point)*itr).y - last_point.y) // TODO...
+				if(((point)*itr).y != last_point.y) // TODO...
 				 stream << std::endl;
 				//if(c._area.find(*itr) == c._area.end())
 				// stream << " X";
@@ -269,7 +269,7 @@ public:
 				true_func(cb_right),
 				true_func(cb_both)
 			));
-			return stream;
+			return stream << std::endl;
 		}
 		else return (c._area.empty())
 			? (stream << "patch( empty )")
@@ -399,7 +399,9 @@ class _backed_up_grid
 		self& ref;
 		const Cont& p;
 
-		patch_t get_patch(const point& p, const cell_t& new_c) { return patch_t(p, new_c, ref._grid[p]); }
+		patch_t get_patch(const point& p, const cell_t& new_c) {
+			return patch_t(p, new_c, ref._grid[p]);
+		}
 		template<class _Cont>
 		patch_t get_patch(const _Cont& cont, const cell_t& new_c) {
 			return patch_t(cont, ref._grid, new_c);
