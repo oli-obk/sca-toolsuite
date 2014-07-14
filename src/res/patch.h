@@ -67,7 +67,7 @@ class _patch_t
 				std::cout << "Calculating " << *this
 					<< " + (" << mk_print(rhs_area)
 					<< ", " << rhs_old << "-> " << rhs_new << ")..." << std::endl;
-				assert_always(_conf[itr1->id()] == rhs_old[itr2->id()], "Confs can not be added");
+				throw "Confs can not be added";
 			}
 			const bool can_optimize = (_conf_before[itr1->id()] == rhs_new[itr2->id()]);
 			if(!can_optimize)
@@ -420,6 +420,7 @@ class _backed_up_grid
 
 	grid_t& _grid;
 	patch_t _patch;
+	bool cleanup;
 public:
 	template<class Cont>
 	cell_ref<Cont> operator[](const Cont& p)
@@ -434,8 +435,10 @@ public:
 	void apply_backup() { _patch.apply_bwd(_grid); _patch.clear(); }
 	//patch_t apply_backup_move() { _patch.apply_bwd(_grid); return std::move(_patch); }
 
-	_backed_up_grid(grid_t& _grid) : _grid(_grid) {}
-	~_backed_up_grid() { apply_backup(); }
+	_backed_up_grid(grid_t& _grid, bool cleanup = true) :
+		_grid(_grid),
+		cleanup(cleanup) {}
+	~_backed_up_grid() { if(cleanup) apply_backup(); }
 };
 
 }
