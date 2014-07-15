@@ -18,7 +18,7 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-//! @ file routines for printing containers with ostream
+//! @file routines for printing containers with ostream
 
 #ifndef PRINT_H
 #define PRINT_H
@@ -43,7 +43,6 @@ public:
 template<class Cont>
 class print_cont
 {
-
 	template<class T, typename std::enable_if<!has_cbegin<T>::value>::type* = nullptr>
 	static std::ostream& _dump(std::ostream& stream, T& elem)
 	{
@@ -52,10 +51,15 @@ class print_cont
 	template<class T, typename std::enable_if<has_cbegin<T>::value>::type* = nullptr>
 	static std::ostream& _dump(std::ostream& stream, T& elem)
 	{
-		stream << "Container(";
-		for(const auto& x : elem)
-		 stream << print_cont<typename T::value_type>(x) << ", ";
-		stream << ")";
+		if(elem.empty())
+		 stream << "empty-container";
+		else
+		{
+			stream << "container(";
+			for(const auto& x : elem)
+			 stream << print_cont<typename T::value_type>(x) << ", ";
+			stream << ")";
+		}
 		return stream;
 	}
 	const Cont& c;
