@@ -122,8 +122,8 @@ class _patch_t
 		{
 			std::cout << "Error applying: " << *this << " on "<< current << std::endl;
 		}
-		assert_always(current[*p] == _conf_before[p->id()],
-			"This patch can not be applied on this grid.");
+		if(current[*p] != _conf_before[p->id()])
+			throw "This patch can not be applied on this grid.";
 		current[*p] = _conf[p->id()];
 	}
 
@@ -189,7 +189,8 @@ public:
 	//! @param g2 old grid
 	_patch_t(const grid_t& g1, const grid_t& g2)
 	{
-		assert_always(g1.size() == g2.size(), "grids have different sizes");
+		if(g1.size() != g2.size())
+		 throw "grids have different sizes";
 		// TODO: unify with the above code
 		std::size_t reserve_size = 0;
 		// TODO: better: double itr over g1 and g2
@@ -337,8 +338,8 @@ public:
 	{
 		for(const auto& p : ca::counted(_area))
 		{
-			assert_always(current[p] == _conf[p.id()],
-				"This patch can not be applied on this grid.");
+			if(current[p] != _conf[p.id()])
+			 throw "This patch can not be applied on this grid.";
 			current[p] = _conf_before[p.id()];
 		}
 	}
@@ -420,7 +421,7 @@ class _backed_up_grid
 
 	grid_t& _grid;
 	patch_t _patch;
-	bool cleanup;
+	const bool cleanup;
 public:
 	template<class Cont>
 	cell_ref<Cont> operator[](const Cont& p)
