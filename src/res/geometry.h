@@ -65,6 +65,7 @@ enum class storage_t
 };
 
 //! Generic structure to store 2D coordinates
+//! Comparison is defined as linewise.
 template<class Traits>
 struct _point
 {
@@ -74,9 +75,17 @@ struct _point
 	_point() {}
 	constexpr _point(const _point& other) : x(other.x), y(other.y) {}
 	void set(int _x, int _y) { x = _x; y = _y; }
-	//! one way to compare points: linewise
 	bool operator<(const _point& rhs) const {
 		return (y==rhs.y)?(x<rhs.x):(y<rhs.y);
+	}
+	bool operator>(const _point& rhs) const {
+		return (y==rhs.y)?(x>rhs.x):(y>rhs.y);
+	}
+	bool operator>=(const _point& rhs) const {
+		return !operator<(rhs);
+	}
+	bool operator<=(const _point& rhs) const {
+		return !operator>(rhs);
 	}
 	inline _point operator-(const _point& rhs) const {
 		return _point(x-rhs.x, y-rhs.y);

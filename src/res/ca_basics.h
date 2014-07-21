@@ -850,8 +850,11 @@ public:
 	using iterator = counted_itr<cont_itr>;
 	using value_type = typename cont_itr::value_type;
 
-	iterator begin() { return counted_itr<cont_itr>(cont.begin(), 0); }
-	iterator end() { return counted_itr<cont_itr>(cont.end(), cont.size()); }
+	// TODO!! (bug?)
+//	iterator begin() { return counted_itr<cont_itr>(cont.begin(), 0); }
+//	iterator end() { return counted_itr<cont_itr>(cont.end(), cont.size()); }
+	const_iterator begin() const { return cbegin(); }
+	const_iterator end() const { return cend(); }
 	const_iterator cbegin() const { return counted_itr<cont_citr>(cont.cbegin(), 0); }
 	const_iterator cend() const { return counted_itr<cont_citr>(cont.cend(), cont.size()); }
 };

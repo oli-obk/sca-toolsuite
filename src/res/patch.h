@@ -33,6 +33,7 @@ template<bool ExtendedFormat, class Traits, class CellTraits>
 class _patch_t
 {
 	using point = _point<Traits>;
+	using point_itr = _point_itr<Traits>;
 	using conf_t = ca::_conf_t<CellTraits>;
 	using grid_t = _grid_t<Traits, CellTraits>;
 	using cell_t = typename CellTraits::cell_t;
@@ -187,6 +188,7 @@ public:
 
 	//! @param g1 new grid
 	//! @param g2 old grid
+	// TODO: allow to specify area
 	_patch_t(const grid_t& g1, const grid_t& g2)
 	{
 		if(g1.size() != g2.size())
