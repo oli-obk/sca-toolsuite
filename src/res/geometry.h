@@ -107,6 +107,12 @@ struct _point
 	bool operator!=(const _point& rhs) const { return ! operator==(rhs); }
 
 	static constexpr _point zero() { return {0, 0}; }
+	static constexpr _point max() {
+		return {std::numeric_limits<coord_t>::max(),
+			std::numeric_limits<coord_t>::max()}; }
+	static constexpr _point min() {
+		return {std::numeric_limits<coord_t>::min(),
+			std::numeric_limits<coord_t>::min()}; }
 
 	friend std::ostream& operator<< (std::ostream& stream,
 		const _point& p) {

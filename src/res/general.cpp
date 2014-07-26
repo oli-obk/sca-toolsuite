@@ -132,7 +132,8 @@ void assert_always(bool assertion, const char *msg)
 {
 	if(!assertion)
 	{
-		std::cerr << "Error: " << msg << std::endl;
-		::exit(EXIT_FAILURE);
+		/*std::cerr << "Error: " << msg << std::endl;
+		::exit(EXIT_FAILURE);*/
+		throw msg;
 	}
 }
