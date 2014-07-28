@@ -412,6 +412,7 @@ template<class Traits>
 class _bounding_box
 {
 	using point = _point<Traits>;
+	using dimension = _dimension<Traits>;
 	using u_coord_t = typename Traits::u_coord_t;
 	point _ul, _lr;
 public:
