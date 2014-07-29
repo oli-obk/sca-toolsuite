@@ -74,12 +74,18 @@ class MyProgram : public Program
 		assert_usage(argc == 1);
 
 		// read neighbour grid
+#ifdef SCA_DEBUG
+		std::cerr << "Parsing first grid (neighbourhood)..." << std::endl;
+#endif
 		ca::n_t neighbours(stdin);
 		const point& center_cell = neighbours.get_center_cell();
 
 		std::vector<ca::trans_t> table;
 
 		// read other grids into table
+#ifdef SCA_DEBUG
+		std::cerr << "Parsing table..." << std::endl;
+#endif
 		bool eof = false;
 		while(!eof)
 		{

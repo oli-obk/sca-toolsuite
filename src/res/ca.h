@@ -461,6 +461,11 @@ private:
 				ca_eqsolver_t::
 				calculate_next_state(grid.raw_value(), size_each, center, dim);
 
+#ifdef SCA_DEBUG
+//			if(tbl.at(grid.raw_value()) != grid[center])
+//			 std::cerr << grid << " => " << tbl.at(grid.raw_value()) << std::endl;
+#endif
+
 			cur = (i * 100) / max; // max can never be 0
 			if(percent < cur)
 			{
@@ -482,7 +487,7 @@ private:
 	}
 
 public:
-
+	//! O(table)
 	void dump(std::ostream& stream) const
 	{
 		header_t::dump(stream);
@@ -513,7 +518,7 @@ public:
 		n_w((ca_eqsolver_t::border_width()<<1) + 1),
 		own_num_states(ca_eqsolver_t::num_states),
 		size_each((unsigned)ceil(log(own_num_states))), // TODO: use int arithm
-		center(border_width(), border_width()),
+		center(ca_eqsolver_t::border_width(), ca_eqsolver_t::border_width()),
 		table(calculate_table()),
 		bw(compute_bw()),
 		neighbourhood(compute_neighbourhood())
