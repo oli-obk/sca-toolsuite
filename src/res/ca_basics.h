@@ -756,11 +756,11 @@ public:
 			else
 			{
 				if(skipped == 0)
-					stream << (int)*itr;
+					stream << *itr;
 				else
 				{
-					stream << (int)*itr
-					       << "[" << (1+skipped) << "x]";
+					stream << *itr
+						<< "[" << (1+skipped) << "x]";
 					skipped = 0;
 				}
 

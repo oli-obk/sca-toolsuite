@@ -186,19 +186,17 @@ public:
 		}
 	}
 
-	//! @param g1 new grid
-	//! @param g2 old grid
 	// TODO: allow to specify area
-	_patch_t(const grid_t& g1, const grid_t& g2)
+	_patch_t(const grid_t& new_g, const grid_t& old_g)
 	{
-		if(g1.size() != g2.size())
+		if(new_g.size() != old_g.size())
 		 throw "grids have different sizes";
 		// TODO: unify with the above code
 		std::size_t reserve_size = 0;
-		// TODO: better: double itr over g1 and g2
-		for(const auto& elem : g1.points())
+		// TODO: better: double itr over new_g and old_g
+		for(const auto& elem : new_g.points())
 		{
-			if(g1[elem]!=g2[elem])
+			if(new_g[elem]!=old_g[elem])
 			{
 				++reserve_size;
 			}
@@ -207,13 +205,13 @@ public:
 		_conf.data().reserve(reserve_size);
 		_conf_before.data().reserve(reserve_size);
 
-		for(const auto& elem : g1.points())
+		for(const auto& elem : new_g.points())
 		{
-			if(g1[elem]!=g2[elem])
+			if(new_g[elem]!=old_g[elem])
 			{
 				_area.insert(elem);
-				_conf.data().push_back(g1[elem]);
-				_conf_before.data().push_back(g2[elem]);
+				_conf.data().push_back(new_g[elem]);
+				_conf_before.data().push_back(old_g[elem]);
 			}
 		}
 	}
@@ -262,7 +260,7 @@ public:
 				//if(c._area.find(*itr) == c._area.end())
 				// stream << " X";
 			//	else
-				 stream << (int)c._conf[itr->id()] << " ";
+				 stream << c._conf[itr->id()] << " ";
 				last_point = *itr;
 			};
 

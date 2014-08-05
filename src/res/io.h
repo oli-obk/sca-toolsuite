@@ -27,6 +27,7 @@
 #include <cctype> // isdigit()
 #include <iostream>
 #include <limits>
+#include <sstream>
 
 #include "geometry.h"
 
@@ -156,7 +157,7 @@ struct converter
 #endif
 
 
-
+template<class T>
 class grid_storage_r
 {
 public:
@@ -171,18 +172,19 @@ public:
 	virtual void insert_vertical_border_end(
 		int border_width) = 0;
 
-	virtual void append(const int val) = 0;
+	virtual void append(const T val) = 0;
 };
 
+template<class T>
 class grid_storage_w
 {
 public:
-	virtual int operator[](std::size_t pos) const = 0;
+	virtual T operator[](std::size_t pos) const = 0;
 };
 
 // TODO: only forward, and include from io.cpp?
 template<class T>
-class vector_storage_r : public grid_storage_r
+class vector_storage_r : public grid_storage_r<T>
 {
 	std::vector<T>& grid;
 
@@ -216,21 +218,21 @@ public:
 		grid.insert(grid.end(), border_width, std::numeric_limits<T>::min());
 	}
 
-	void append(const int val) { grid.push_back(val); }
+	void append(const T val) { grid.push_back(val); }
 
 	vector_storage_r(std::vector<T>& grid) : grid(grid) {}
 };
 
 template<class T>
-class vector_storage_w : public grid_storage_w
+class vector_storage_w : public grid_storage_w<T>
 {
 	const std::vector<T>& grid;
 public:
-	int operator[](std::size_t pos) const { return grid[pos]; }
+	T operator[](std::size_t pos) const { return grid[pos]; }
 	vector_storage_w(const std::vector<T>& grid) : grid(grid) {}
 };
 
-class bit_storage_w : public grid_storage_w
+class bit_storage_w : public grid_storage_w<int>
 {
 	uint64_t grid, each;
 	uint64_t bitmask;
@@ -361,9 +363,6 @@ void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	void (*SCANFUNC)(const char*&, int*) = &read_number,
 	int border = 1);
 
-//void read_grid(std::istream& is, std::vector<int>& grid, dimension& dim,
-//	void (*SCANFUNC)(const char *&, int *), int border = -1);
-
 inline void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 	int border)
 {
@@ -371,9 +370,9 @@ inline void read_grid(FILE* fp, std::vector<int>* grid, dimension* dim,
 }
 
 // TODO: cell_t
-template<class Traits>
+template<class Traits, class T>
 inline void read_grid(const base_grid* grid_class, std::istream& is, _dimension<Traits>& dim,
-	grid_storage_r &storage_class, int border = -1)
+	grid_storage_r<T> &storage_class, int border = -1)
 {
 	assert(grid_class);
 
@@ -467,30 +466,23 @@ inline void _write_number(FILE* fp, int int_to_write) {
 void write_grid(FILE* fp, const std::vector<int>* grid, const dimension* dim,
 	void (*PRINTFUNC)(FILE*, int) = &_write_number, int border = 1);
 
-//void write_grid(std::ostream& os, const std::vector<int>& grid, const dimension& dim,
-//	void (*PRINTFUNC)(char*&, int), int border);
-
-template<class Traits>
+template<class Traits, class T>
 inline void write_grid(const base_grid* grid_class, std::ostream& os, const _dimension<Traits>& dim,
-	int border, const grid_storage_w &storage_class)
+	int border, const grid_storage_w<T> &storage_class)
 {
 	assert(grid_class);
 	unsigned int last_symbol = dim.width() - 1 - border;
 
-	constexpr size_t buffer_size = 4096; // TODO: cmake
-	char buffer[buffer_size];
-
 	for(unsigned y = border; y < (unsigned)dim.height() - border; y++)
 	{
-		char* ptr = buffer;
+		std::ostringstream ss;
+		// TODO: reserve?
+
 		for(unsigned x = border; x < (unsigned)dim.width() - border; x++) {
-		//	PRINTFUNC(fp, (*grid)[x + (dim->width())*y]); // TODO: two [] operators
-		//	fputc((x == last_symbol) ? '\n':' ', fp);
-			grid_class->write(ptr, storage_class[x + (dim.width())*y]);
-			*(ptr++) = (x == last_symbol) ? '\n' : ' ';
+			ss << storage_class[x + (dim.width())*y]; // TODO: two [] operators
+			ss << ((x == last_symbol) ? '\n' : ' ');
 		}
-		*ptr = 0;
-		os << buffer;
+		os << ss.str();
 	}
 }
 

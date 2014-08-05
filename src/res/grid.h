@@ -263,6 +263,12 @@ public:
 		return *this;
 	}
 
+	void reset(const cell_t& /*new_value*/)
+	{
+	//	for(coord_t y = 0; y < human_dim().dy(); ++y)
+	//	 std::fill(_data.begin() + y * )
+	}
+
 	#if 0
 	cell_t direct_access(point p)
 	{
