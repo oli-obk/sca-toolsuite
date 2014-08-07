@@ -263,10 +263,19 @@ public:
 		return *this;
 	}
 
-	void reset(const cell_t& /*new_value*/)
+	//!< resets everything except the border to new_value
+	//!< @todo not tested yet
+	void reset(const cell_t& new_value)
 	{
-	//	for(coord_t y = 0; y < human_dim().dy(); ++y)
-	//	 std::fill(_data.begin() + y * )
+		const u_coord_t& dx = _dim.dx();
+		area_t max = _dim.area() - (dx + 1) * bw;
+		const u_coord_t linewidth = dx - bw_2;
+
+		for(area_t pos = (dx + 1) * bw; pos < max; pos += dx)
+		{
+			const auto first = _data.begin() + pos;
+			std::fill(first, first + linewidth, new_value);
+		}
 	}
 
 	#if 0

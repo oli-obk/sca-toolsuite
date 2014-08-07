@@ -29,6 +29,8 @@
 namespace sca
 {
 
+//! @invariant a patch is always compressed, i.e. does not contain points
+//!	without changes
 template<bool ExtendedFormat, class Traits, class CellTraits>
 class _patch_t
 {
@@ -381,6 +383,7 @@ public:
 
 	const std::set<point>& area() const { return _area; }
 	const conf_t& conf() const { return _conf; }
+	bool empty() const { return _area.empty(); }
 
 	void clear() { _area.clear(); _conf.clear(); _conf_before.clear(); }
 };

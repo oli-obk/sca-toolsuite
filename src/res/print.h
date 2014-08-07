@@ -25,7 +25,7 @@
 
 #include <iostream>
 #include <set>
-#include "geometry.h"
+#include "geometry.h" // TODO: not needed? forward declare point?
 
 template <class T>
 class has_cbegin
@@ -39,7 +39,6 @@ public:
 	enum { value = sizeof(test<T>(0)) == sizeof(char) };
 };
 
-// TODO: own h and cpp files
 template<class Cont>
 class print_cont
 {
@@ -101,30 +100,30 @@ public:
 		 stream << "(no points)";
 		else
 		{
-		int skipped = 0;
-		typename Cont::iterator itr2;
-		for(auto itr = pc.c.begin(); itr != pc.c.end(); ++itr)
-		{
-			itr2 = itr;
-			++itr2;
-			if(itr2 != pc.c.end() && itr2->y == itr->y && itr2->x == itr->x + 1)
-			 ++skipped;
-			else
+			int skipped = 0;
+			typename Cont::iterator itr2;
+			for(auto itr = pc.c.begin(); itr != pc.c.end(); ++itr)
 			{
-				if(skipped == 0)
-					stream << *itr;
+				itr2 = itr;
+				++itr2;
+				if(itr2 != pc.c.end() && itr2->y == itr->y && itr2->x == itr->x + 1)
+				 ++skipped;
 				else
 				{
-					stream << "(" << (int)itr->x-skipped
-					       << ".." << (int)itr->x
-					       << ", " << (int)itr->y << ")";
-					skipped = 0;
-				}
+					if(skipped == 0)
+					 stream << *itr;
+					else
+					{
+						stream << "(" << (int)itr->x-skipped
+						       << ".." << (int)itr->x
+						       << ", " << (int)itr->y << ")";
+						skipped = 0;
+					}
 
-				if(itr2 != pc.c.end())
-				 stream << ", ";
+					if(itr2 != pc.c.end())
+					 stream << ", ";
+				}
 			}
-		}
 		}
 		return stream;
 	}

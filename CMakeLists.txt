@@ -67,6 +67,7 @@ SET(eq_solver "${res_dir}/equation_solver.cpp" "${res_dir}/equation_solver.h" "$
 SET(ca "${res_dir}/ca.h")
 SET(ca_basics "${res_dir}/ca_basics.h")
 SET(image "${res_dir}/image.h" "${res_dir}/image.cpp")
+SET(print "${res_dir}/print.h")
 
 function(cp_script script_name)
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${script_name}
