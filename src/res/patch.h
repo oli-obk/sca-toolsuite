@@ -235,6 +235,9 @@ public:
 	friend std::ostream& operator<< (std::ostream& stream,
 		const _patch_t& c)
 	{
+		if(c._area.empty())
+		 return stream << "patch( empty )";
+		else
 		if(ExtendedFormat)
 		{
 			_bounding_box<Traits> bb;
@@ -274,9 +277,8 @@ public:
 			));
 			return stream << std::endl;
 		}
-		else return (c._area.empty())
-			? (stream << "patch( empty )")
-			: (stream << "patch( " << mk_print(c._area) << ", "
+		else return
+			(stream << "patch( " << mk_print(c._area) << ", "
 				<< c._conf_before << " -> "
 				<< c._conf << ")");
 	}
@@ -301,7 +303,8 @@ public:
 		{
 			if(current[p] != _conf_before[p.id()])
 			{
-				std::cout << "Error applying: " << *this << " on "<< current << std::endl;
+				std::cout << "Error applying: " << *this << " at " << p << " on " << current << std::endl;
+				std::cout << "Point is " << current[p] << ", but _conf_before is " << _conf_before[p.id()] << std::endl;
 			}
 			if(current[p] != _conf_before[p.id()])
 				throw "This patch can not be applied on this grid.";
@@ -340,6 +343,11 @@ public:
 	{
 		for(const auto& p : ca::counted(_area))
 		{
+			if(current[p] != _conf[p.id()])
+			{
+				std::cout << "Error applying: " << *this << " at " << p << " on " << current << std::endl;
+				std::cout << "Point is " << current[p] << ", but _conf is " << _conf[p.id()] << std::endl;
+			}
 			if(current[p] != _conf[p.id()])
 			 throw "This patch can not be applied on this grid.";
 			current[p] = _conf_before[p.id()];

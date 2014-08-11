@@ -116,8 +116,7 @@ struct _point
 
 	friend std::ostream& operator<< (std::ostream& stream,
 		const _point& p) {
-		stream << "(" << (int)p.x << ", " << (int)p.y << ")";
-		return stream;
+		return stream << "(" << (int)p.x << ", " << (int)p.y << ")";
 	}
 };
 using point = _point<def_coord_traits>;
@@ -237,6 +236,7 @@ struct _dim_cont
 	using point = _point<Traits>;
 	using const_iterator = _point_itr<Traits>;
 	using iterator = const_iterator;
+	using value_type = point;
 	using coord_t = typename Traits::coord_t;
 	using area_t = typename Traits::area_t;
 
@@ -267,6 +267,12 @@ struct _dim_cont
 	iterator cbegin(const point& pos = point::zero()) const { return begin(pos); }
 	iterator cend() const { return end(); }
 	area_t size() const { return h * w; }
+	bool empty() const { return (h | w) == 0; }
+
+	friend std::ostream& operator<< (std::ostream& stream,
+		const _dim_cont& d) {
+		return stream << "dim_cont (" << d.h << " x " << d.w << ")";
+	}
 };
 
 using dim_cont = _dim_cont<def_coord_traits>;
@@ -335,8 +341,7 @@ public:
 
 	friend std::ostream& operator<< (std::ostream& stream,
 		const _rect& r) {
-		stream << "rect (" << r.s::ul() << ", " << r.s::lr << ")";
-		return stream;
+		return stream << "rect (" << r.s::ul() << ", " << r.s::lr << ")";
 	}
 
 	inline area_t area_without_border(u_coord_t border_size = 1) const {
