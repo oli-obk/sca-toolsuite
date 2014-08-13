@@ -168,7 +168,8 @@ class MyProgram : public Program
 int main(int argc, char** argv)
 {
 	HelpStruct help;
-	help.syntax = "ca/transf_by_grids <number of states>";
+	help.syntax = "ca/transf_by_grids";
+	//help.syntax = "ca/transf_by_grids <number of states>";
 	help.description = "Builds a transition formula by transition grids";
 	help.input = "the transition grids, in some special format."
 		"The first grid marks the changing cell (0),"
@@ -178,7 +179,7 @@ int main(int argc, char** argv)
 		"where input grid gives the neighborhood.";
 	// TODO: describe?
 	help.output = "the formula, as `ca/ca' can read it";
-	help.add_param("number of states", "the ca's number of states");
+//	help.add_param("number of states", "the ca's number of states");
 
 	MyProgram p;
 	return p.run(argc, argv, &help);
