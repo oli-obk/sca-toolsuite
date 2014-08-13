@@ -177,7 +177,7 @@ endif()
 # the order of -Wall -Wno-unknown-pragmas is important
 # TODO: -Werror
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -Werror ${WARN_EXC} -std=c++11 -pipe")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -pg")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 ${FLTO_FLAGS}")
 
 MESSAGE("READING SUB-DIRECTORIES...")
