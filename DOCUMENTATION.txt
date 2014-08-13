@@ -59,3 +59,10 @@ There are three types:
 
 Switch to the `doc' directory and type `./generate.sh'. This will generate doxygen help.
 
+sca-toolsuite has Doxygen help. To generate it, go to your build and type
+
+  `make doc'.
+
+This will create multiple folders. For example, you can view
+doc/html/index.html to start browsing the html documentation.
+
