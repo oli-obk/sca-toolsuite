@@ -396,6 +396,9 @@ public:
 	void clear() { _area.clear(); _conf.clear(); _conf_before.clear(); }
 };
 
+//!
+//!
+//! @note Use this class only for writing, use the original grid for reading
 template<bool ExtendedFormat, class Traits, class CellTraits>
 class _backed_up_grid
 {
@@ -419,6 +422,10 @@ class _backed_up_grid
 			return patch_t(cont, ref._grid, new_c);
 		}
 	public:
+	/*	bool operator==(const cell_t& c) const
+		{ // TODO: check if _grid[p] makes always sense...
+			return ref._grid[p] == c;
+		}*/
 		cell_ref& operator=(const cell_t& c)
 		{
 			ref._patch += get_patch(p, c);

@@ -242,26 +242,30 @@ struct _dim_cont
 
 	// TODO: dimension as member?
 	const unsigned h, w, bw;
+	const iterator _begin, _end;
 	_dim_cont(unsigned h,
 		unsigned w,
-		unsigned bw)
-		: h(h), w(w), bw(bw)
+		unsigned bw) :
+		h(h), w(w), bw(bw),
+		_begin({(coord_t)(w-(bw<<1)), (coord_t)(h-(bw<<1))}),
+		_end(iterator::from_end(
+			{(coord_t)(w-(bw<<1)), (coord_t)(h-(bw<<1))}
+			)) // TODO: use _begin for this?
 	{}
 
-	iterator begin(const point& pos = point::zero()) const
+	iterator begin(/*const point& pos = point::zero()*/) const
 	 // TODO: argument deprecated?
 	{
-		return iterator(
+		/*return iterator(
 			{(coord_t)(w-(bw<<1)), (coord_t)(h-(bw<<1))},
 			point::zero(),
 			pos
-		);
+		);*/
+		return _begin;
 	}
 
-	iterator end() const {
-		return iterator::from_end(
-			{(coord_t)(w-(bw<<1)), (coord_t)(h-(bw<<1))}
-			);
+	iterator end() const { // TODO!! slow!! save temporary: (w-(bw<<1)), (h-(bw<<1))
+		return _end;
 	}
 
 	iterator cbegin(const point& pos = point::zero()) const { return begin(pos); }

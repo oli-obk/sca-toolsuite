@@ -353,8 +353,10 @@ public:
 	storage_t raw_value() const { return grid; }
 };
 
-class ca_table_t : private ca_eqsolver_t // TODO: only for reading?
+class ca_table_t : ca_eqsolver_t // TODO: only for reading?
 {
+	using base = ca_eqsolver_t;
+
 	using coord_t = typename bitgrid_traits::coord_t;
 	using u_coord_t = typename bitgrid_traits::u_coord_t;
 	using cell_t = typename bitgrid_cell_traits::cell_t;
@@ -457,8 +459,7 @@ private:
 		for(std::size_t i = 0; i < max; ++i)
 		{
 			// evaluate
-			tbl.at(grid.raw_value()) = ca_eqsolver_t::
-				ca_eqsolver_t::
+			tbl.at(grid.raw_value()) = base::
 				calculate_next_state(grid.raw_value(), size_each, center, dim);
 
 #ifdef SCA_DEBUG
@@ -499,7 +500,7 @@ public:
 	}
 
 	ca_table_t(std::istream& stream) :
-		ca_eqsolver_t("v", 0), // not reliable
+		base("v", 0), // not reliable
 		header(stream),
 		n_w(fetch_32(stream)),
 		own_num_states(fetch_32(stream)),
@@ -514,11 +515,11 @@ public:
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
 	ca_table_t(const char* equation, cell_t num_states = 0) :
-		ca_eqsolver_t(equation, num_states),
-		n_w((ca_eqsolver_t::border_width()<<1) + 1),
-		own_num_states(ca_eqsolver_t::num_states),
+		base(equation, num_states),
+		n_w((base::border_width()<<1) + 1),
+		own_num_states(base::num_states),
 		size_each((unsigned)ceil(log(own_num_states))), // TODO: use int arithm
-		center(ca_eqsolver_t::border_width(), ca_eqsolver_t::border_width()),
+		center(base::border_width(), base::border_width()),
 		table(calculate_table()),
 		bw(compute_bw()),
 		neighbourhood(compute_neighbourhood())
@@ -540,7 +541,7 @@ public:
 		grid_cell_t min = std::numeric_limits<grid_cell_t>::max(),
 			max = std::numeric_limits<grid_cell_t>::min(); // any better alternative?
 
-		for(const point p2 : bitgrid.points())
+		for(const point& p2 : bitgrid.points())
 		{
 			const point offs = p2 - center;
 			const grid_cell_t* const ptr = cell_ptr + (grid_cell_t)(offs.y * dim.width() + offs.x);
