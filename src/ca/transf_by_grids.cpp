@@ -41,16 +41,16 @@ class MyProgram : public Program
 		const char* str;
 	};
 
-	symm_wrapper wraps[4] = // TODO: why is 4 needed?
+	const symm_wrapper wraps[4] = // TODO: why is 4 needed?
 	{
 		{ symmetry_type::none, "none" },
 		{ symmetry_type::rotate, "rotate" },
 		{ symmetry_type::rotate_mirror, "rotate+mirror" },
 	};
 
-	symmetry_type type_by_str(const char* str)
+	symmetry_type type_by_str(const char* str) const
 	{
-		for(symm_wrapper& i : wraps)
+		for(const symm_wrapper& i : wraps)
 		 if(!strcmp(i.str, str))
 		  return i.t;
 		exitf("Invalid symmetry type %s", str);
@@ -77,7 +77,7 @@ class MyProgram : public Program
 #ifdef SCA_DEBUG
 		std::cerr << "Parsing first grid (neighbourhood)..." << std::endl;
 #endif
-		ca::n_t neighbours(stdin);
+		const ca::n_t neighbours(stdin);
 		const point& center_cell = neighbours.get_center_cell();
 
 		std::vector<ca::trans_t> table;
@@ -86,8 +86,7 @@ class MyProgram : public Program
 #ifdef SCA_DEBUG
 		std::cerr << "Parsing table..." << std::endl;
 #endif
-		bool eof = false;
-		while(!eof)
+		while(!feof(stdin))
 		{
 			grid_t cur_grid(std::cin, 0);
 			grid_t out_grid(std::cin, 0);
@@ -98,8 +97,6 @@ class MyProgram : public Program
 			neighbours.add_transition_functions(
 					table, center_cell, cur_grid, out_cell
 				);
-
-			eof = feof(stdin);
 		}
 
 		assert(table.size() > 0);
@@ -108,32 +105,30 @@ class MyProgram : public Program
 		std::sort(table.begin(), table.end(), ca::compare_by_input);
 		const ca::trans_t* recent = &(table[0]);
 
-		// TODO: I do not know why const tf&
-		// breaks the const here...
 		for(std::vector<ca::trans_t>::const_iterator itr
 			= (++table.begin()); itr != table.end(); ++itr)
 		{
 			assert(*itr != *recent);
-			recent = &(*itr);
+			recent = &*itr;
 		}
 
 		// write to out
 		std::sort(table.begin(), table.end());
 		{
-			unsigned braces = 0;
+			std::size_t braces = 0;
 
 			// print helper vars
-			for(unsigned i = 0; i < neighbours.size(); i++)
+			for(std::size_t i = 0; i < neighbours.size(); i++)
 			{
 				point p = neighbours[i];
-				printf("h[%d]:=a[%d,%d],\n",
+				printf("h[%lu]:=a[%d,%d],\n",
 					i, p.x, p.y);
 			}
 
 			int recent_output = table[0].get_output();
 			puts("(");
 			// print functions
-			for(auto& tf : table)
+			for(const auto& tf : table)
 			{
 				if(recent_output != tf.get_output())
 				{
@@ -146,7 +141,7 @@ class MyProgram : public Program
 				for(unsigned i = 0; i < neighbours.size(); i++)
 				{
 					int input_val;
-					bool is_set = tf.input(i, &input_val);
+					const bool is_set = tf.input(i, &input_val);
 					assert(is_set);
 					if(is_set)
 					 printf("(h[%d] == %d) && \n",
@@ -156,7 +151,7 @@ class MyProgram : public Program
 			}
 			// keep value as v if no matches
 			printf("0 ) ? %d : v", recent_output);
-			for(unsigned i = 0; i < braces; ++i)
+			for(std::size_t i = 0; i < braces; ++i)
 			 printf(")");
 			puts("");
 		}

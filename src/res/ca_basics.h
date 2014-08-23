@@ -88,7 +88,7 @@ public:
 		else assert(false);
 	}
 	int get_output() const { return output; }
-	bool input(int neighbour_id, int* result) {
+	bool input(int neighbour_id, int* result) const {
 		bool is_set = input_set[neighbour_id];
 		if(is_set) *result = input_vals[neighbour_id];
 		return is_set;
@@ -187,7 +187,7 @@ protected:
 	//! positive offset of center cell
 	//! this cell is obviously needed
 
-	point idx(int idx, int symm)
+	point idx(int idx, int symm) const
 	{
 		point p = operator[](idx);
 		const int rot = symm & 3;
@@ -210,25 +210,23 @@ protected:
 		const point& center_cell,
 		const _grid_t<Traits, CellTraits>& input_grid,
 		int output_val,
-		int symm)
+		int symm) const
 	{
 		trans_t tf(size(), output_val);
 		for(unsigned i = 0; i < size(); ++i) {
 
 			//tf.set_neighbour(i, input_grid[bb.coords_to_id(idx(i, symm)/*+center_cell*/)]);
-			tf.set_neighbour(i, input_grid[idx(i, symm) +center_cell/*- bb.ul()+center_cell*/]);
+			tf.set_neighbour(i, input_grid[idx(i, symm) + center_cell/*- bb.ul()+center_cell*/]);
 		}
 		*tfs = tf; // TODO: redundant
 	}
 
 public:
-	point get_center_cell()
+	point get_center_cell() const
 	{
 		bounding_box _bb;
-		for(point& p : neighbours)
-		{
-			_bb.add_point( p );
-		}
+		for(const point& p : neighbours)
+		 _bb.add_point( p );
 		return point(-_bb.ul().x, -_bb.ul().y);
 	}
 
@@ -240,7 +238,7 @@ public:
 		std::vector<trans_t>& tf_vector,
 		const point& center_cell,
 		const _grid_t<Traits, CellTraits>& input_grid,
-		int output_val)
+		int output_val) const
 	{
 		// family of 8 trans functions, subgroup of D4
 		static trans_t tfs[8]
