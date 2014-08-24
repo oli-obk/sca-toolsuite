@@ -18,6 +18,7 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
+#include "simulate.h"
 #include "general.h"
 #include "io.h"
 #include "ca.h"
@@ -25,40 +26,8 @@
 using namespace sca;
 
 // TODO: own sim type class, inherit
-class MyProgram : public Program
+class MyProgram : public Program, sim::ulator
 {
-	enum class sim_type
-	{
-		end,
-		role,
-		more,
-		anim,
-		undefined
-	};
-
-	struct sim_wrapper
-	{
-		sim_type t;
-		const char* str;
-	};
-
-	sim_wrapper wraps[4] = // TODO: why is 4 needed?
-	{
-		{ sim_type::end, "end" },
-		{ sim_type::role, "role" },
-		{ sim_type::more, "more" },
-		{ sim_type::anim, "anim" }
-	};
-
-	sim_type type_by_str(const char* str)
-	{
-		sim_type sim = sim_type::undefined;
-		for(sim_wrapper& i : wraps)
-		 if(!strcmp(i.str, str))
-		  sim = i.t;
-		return sim;
-	}
-
 	int main()
 	{
 		const char* equation = "v";

@@ -136,7 +136,7 @@ inline void rotor_fix(grid_t& grid, grid_t& chips,
 	}*/
 	for(const point& p : grid.points())
 	{
-		array.push(grid.index(p));
+		array.push(grid.index_h(p));
 		chips[p] |= INVERT_BIT;
 	}
 
@@ -158,7 +158,7 @@ inline void rotor_fix_naive(grid_t& grid, grid_t& chips,
 
 	for(const point& p : grid.points())
 	{
-		unsigned int coord = grid.index(p);
+		unsigned int coord = grid.index_h(p);
 		//if(is_border(dim, (y*dim.width())+x))
 		//	exit(99);
 		for(int nchips = chips[p]; nchips; --nchips)

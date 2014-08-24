@@ -134,8 +134,7 @@ public:
 	{
 		int bw = border_width();
 		unsigned n_width = (bw<<1) + 1;
-		dimension moore = { n_width, n_width };
-		return n_t(moore, point(bw, bw));
+		return n_t(dimension{ n_width, n_width }, point(bw, bw));
 	}
 	//bool can_optimize_table() const { return num_states }
 };
@@ -320,12 +319,12 @@ public:
 	bit_reference operator[](point p)
 	{
 		//return (grid >> (index(p)*each)) & bitmask;
-		return bit_reference(grid, index(p)*each, bitmask);
+		return bit_reference(grid, index_h(p)*each, bitmask);
 	}
 
 	const const_bit_reference operator[](point p) const
 	{
-		return const_bit_reference(grid, index(p)*each, bitmask);
+		return const_bit_reference(grid, index_h(p)*each, bitmask);
 		//return (grid >> (index(p)*each)) & bitmask;
 	}
 
@@ -353,7 +352,8 @@ public:
 	storage_t raw_value() const { return grid; }
 };
 
-class ca_table_t : ca_eqsolver_t // TODO: only for reading?
+template<template<class ...> class TblCont>
+class _ca_table_t : ca_eqsolver_t // TODO: only for reading?
 {
 	using base = ca_eqsolver_t;
 
@@ -399,7 +399,7 @@ private:
 	const u_coord_t size_each; // TODO: u_coord_t
 	const point center;
 
-	const std::vector<uint64_t> table;
+	const TblCont<uint64_t> table;
 
 	using storage_t = uint64_t;
 
@@ -436,17 +436,18 @@ private:
 		return res;
 	}
 
-	static std::vector<uint64_t> fetch_tbl(std::istream& stream, unsigned size_each, unsigned n_w)
+	static TblCont<uint64_t> fetch_tbl(std::istream& stream, unsigned size_each, unsigned n_w)
 	{
-		std::vector<uint64_t> res(1 << (size_each * n_w * n_w));
+		TblCont<uint64_t> res(1 << (size_each * n_w * n_w));
 		stream.read((char*)res.data(), res.size() * 8);
 		return res;
 	}
 
 	// TODO : static?
-	std::vector<uint64_t> calculate_table() const
+	TblCont<uint64_t> calculate_table() const
 	{
-		std::vector<uint64_t> tbl(1 << (size_each * n_w * n_w));
+		TblCont<uint64_t> tbl;
+		tbl.reserve(1 << (size_each * n_w * n_w)); // ctor can not reserve
 
 		bitgrid_t grid(size_each, dimension(n_w, n_w), 0, 0);
 		const dimension& dim = grid.internal_dim();
@@ -456,11 +457,14 @@ private:
 
 		std::cerr << "Precalculating table, please wait..." << std::endl;
 		// odometer
+		int last_val = -1;
 		for(std::size_t i = 0; i < max; ++i)
 		{
 			// evaluate
-			tbl.at(grid.raw_value()) = base::
-				calculate_next_state(grid.raw_value(), size_each, center, dim);
+			std::cout << grid.raw_value() << std::endl;
+			std::cout << last_val << std::endl;
+			tbl.push_back(base::
+				calculate_next_state(grid.raw_value(), size_each, center, dim));
 
 #ifdef SCA_DEBUG
 //			if(tbl.at(grid.raw_value()) != grid[center])
@@ -473,7 +477,8 @@ private:
 				percent = cur;
 				std::cerr << "..." << percent << " percent" << std::endl;
 			}
-
+			if((last_val != -1) && (last_val != (int)grid.raw_value() - 1)) exit(1);
+last_val = grid.raw_value();
 			// increase
 			{
 				bool go_on = true;
@@ -499,7 +504,7 @@ public:
 		stream.write((char*)table.data(), table.size() * 8);
 	}
 
-	ca_table_t(std::istream& stream) :
+	_ca_table_t(std::istream& stream) :
 		base("v", 0), // not reliable
 		header(stream),
 		n_w(fetch_32(stream)),
@@ -514,7 +519,7 @@ public:
 
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
-	ca_table_t(const char* equation, cell_t num_states = 0) :
+	_ca_table_t(const char* equation, cell_t num_states = 0) :
 		base(equation, num_states),
 		n_w((base::border_width()<<1) + 1),
 		own_num_states(base::num_states),
@@ -559,6 +564,22 @@ public:
 
 };
 
+template<class T>
+class table_vector
+{
+	std::vector<T>& vec;
+	using reference = typename std::vector<T>::reference;
+	using pointer = typename std::vector<T>::pointer;
+	using value_type = typename std::vector<T>::value_type;
+public:
+	table_vector(const std::size_t& sz) : vec(sz) {}
+	void reserve(const std::size_t& sz) { vec.reserve(sz); }
+	void push_back(value_type&& sz) { vec.push_back(sz); }
+	void dump(const std::ostream& stream) const {
+		stream.write((char*)vec.data(), vec.size() * 8); }
+};
+
+using ca_table_t = _ca_table_t<std::vector>;
 
 namespace calc_methods
 {

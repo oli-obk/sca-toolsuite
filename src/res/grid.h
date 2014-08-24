@@ -1,7 +1,25 @@
+/*************************************************************************/
+/* sca toolsuite - a toolsuite to simulate cellular automata.            */
+/* Copyright (C) 2011-2014                                               */
+/* Johannes Lorenz                                                       */
+/* https://github.com/JohannesLorenz/sca-toolsuite                       */
+/*                                                                       */
+/* This program is free software; you can redistribute it and/or modify  */
+/* it under the terms of the GNU General Public License as published by  */
+/* the Free Software Foundation; either version 3 of the License, or (at */
+/* your option) any later version.                                       */
+/* This program is distributed in the hope that it will be useful, but   */
+/* WITHOUT ANY WARRANTY; without even the implied warranty of            */
+/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      */
+/* General Public License for more details.                              */
+/*                                                                       */
+/* You should have received a copy of the GNU General Public License     */
+/* along with this program; if not, write to the Free Software           */
+/* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
+/*************************************************************************/
+
 #include "geometry.h"
 #include "io.h"
-
-// TODO: license
 
 #ifndef GRID_H
 #define GRID_H
@@ -88,7 +106,7 @@ protected:
 		const u_coord_t bw_2 = border_width << 1;
 		return (human_dim.width() + bw_2) * (human_dim.height() + bw_2);
 	}*/
-	area_t storage_area() {
+	area_t storage_area() const {
 		//const u_coord_t bw_2 = border_width << 1;
 		//return (human_dim.width() + bw_2) * (human_dim.height() + bw_2);
 		return _dim.area();
@@ -96,18 +114,23 @@ protected:
 public:
 
 	//! returns array index for a human point @a p
-	int index_internal(const point& p) const {
+/*	int index_internal(const point& p) const {
 		return (p.y + bw) * _dim.width() + p.x + bw;
-	}
+	}*/
 
 	/*
 	 * conversion
 	 */
 	// note: should those not be in the dim class?
 	//! returns array index for a human point @a p
-	int index(const point& p) const {
+	int index_h(const point& p) const {
 		const int& w = _dim.width(); // TODO: int
 		return ((p.y + bw) * w) + bw + p.x;
+	}
+
+	//! returns array index for an internal point @a p
+	int index_i(const point& p) const {
+		return p.y * _dim.width() + p.x;
 	}
 
 	point internal2human(const point& p) const {
@@ -183,7 +206,100 @@ class _grid_t : public grid_alignment_t<Traits>
 	using u_coord_t = typename base::u_coord_t;
 	using dimension = typename base::dimension;
 
+	class line
+	{ // TODO: private members?
+	public:
+		point begin;
+		u_coord_t length;
+		line(const point& begin, const u_coord_t& length) :
+			begin(begin), length(length) {}
+	};
+
+	// TODO: alignment class?
+	class line_itr : _point_itr<Traits>
+	{
+		u_coord_t dx;
+	public:
+		using base = _point_itr<Traits>;
+		line_itr(const point& max, const point& min, const point& pos) :
+			base(max, min, pos),
+			dx(max.x - min.x)
+			{}
+		line_itr(const point& max, const point& min) :
+			line_itr(max, min, min)
+			{}
+
+		line_itr& operator++()
+		{
+			return base::increase_y(), *this;
+		}
+		line_itr& operator--()
+		{
+			return base::decrease_y(), *this;
+		}
+
+		line_itr& operator=(const line_itr& other)
+		{
+			return operator=(other), *this;
+		}
+
+		line operator*() {
+			return line(base::position, dx); }
+		const point& operator*() const {
+			return line(base::position, dx); }
+
+			//	point* operator->() { return &position; }
+	//	const point* operator->() const { return &position; }
+
+		explicit operator bool() const {
+			return base::operator bool(); }
+
+		//! @note does currently not compare dx
+		bool operator==(const line_itr& rhs) const {
+			return base::operator ==(rhs); }
+
+		//! @note does currently not compare dx
+		bool operator!=(const line_itr& rhs) const {
+			return base::operator !=(rhs); }
+
+		static line_itr from_end(point max, point min) {
+			return line_itr(max, min, {min.x, max.y});
+		}
+	};
+
+	class line_cont_t
+	{
+		const rect rc;
+	public:
+		line_cont_t(const rect& rc) : rc(rc) {}
+		line_itr begin() const { return line_itr(rc.lr(), rc.ul()); }
+		line_itr end() const { return line_itr::from_end(rc.lr(), rc.ul()); }
+	};
+
 public:
+
+	line_cont_t lines(const rect& rc = base::internal_dim()) const {
+		return line_cont_t(rc); }
+
+
+	void copy_line_to(self& other, const line& m_line, const line& other_line) const {
+		const auto& m_begin = _data.begin()
+			+ base::index_i(m_line.begin);
+		std::copy(m_begin, m_begin + m_line.length,
+			other._data.begin()
+			+ other.index_i(other_line.begin));
+	}
+
+	// TODO: template for grids of other class
+	void copy_to_int(self& other, const rect& rc) const {
+		if(other.dx() != rc.dx()) throw "copy_to(): Incompatible dy";
+		if(other.dy() != rc.dy()) throw "copy_to(): Incompatible dy";
+		auto itr = lines(rc).begin();
+		auto itr_other = other.lines().begin();
+		for(; itr != lines(rc).end(); ++itr, ++itr_other)
+		 copy_line_to(other, *itr, *itr_other);
+	}
+
 	bool operator<(const _grid_t& rhs) const { return _data < rhs._data; }
 	bool operator==(const _grid_t& rhs) const {
 		return _data == rhs._data; }
@@ -325,12 +441,12 @@ public:
 
 	cell_t& operator[](const point& p)
 	{
-		return _data[base::index(p)];
+		return _data[base::index_h(p)];
 	}
 
 	const cell_t& operator[](const point& p) const
 	{
-		return _data[base::index(p)];
+		return _data[base::index_h(p)];
 	}
 
 	const cell_t& at_internal(const point& p) const

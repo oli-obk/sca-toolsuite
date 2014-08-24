@@ -6,6 +6,7 @@ add_executable(ca "${src_dir}/ca.cpp"
 	${eq_solver}
 	${ca_basics}
 	${ca}
+	${sim}
 )
 
 add_executable(dump "${src_dir}/dump.cpp"
@@ -14,6 +15,7 @@ add_executable(dump "${src_dir}/dump.cpp"
 	${eq_solver}
 	${ca_basics}
 	${ca}
+	${sim}
 )
 
 add_executable(transf_by_grids "${src_dir}/transf_by_grids.cpp"

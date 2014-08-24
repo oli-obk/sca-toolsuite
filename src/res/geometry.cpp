@@ -104,8 +104,7 @@ void grid_t::insert_stripe_vert(u_coord_t pos, u_coord_t ins_len)
 	// we can use _dim, since we always need the full h/w
 	u_coord_t ht = _dim.height();
 	u_coord_t mv_amt = ht * ins_len;
-	coord_t mv_start = index_internal(
-				point(bw + pos, ht-1));
+	coord_t mv_start = index_h(point(bw + pos, ht-1));
 
 	_data.resize(_data.size() + mv_amt, INT_MIN);
 
@@ -141,8 +140,7 @@ void grid_t::insert_stripe_hor(u_coord_t pos, u_coord_t ins_len)
 
 	_data.resize(_data.size() + mv_amt);
 
-	auto first = _data.begin() + index_internal(
-				point(0, bw + pos));
+	auto first = _data.begin() + index_h(point(0, bw + pos));
 	std::copy_backward(first, _data.end() - mv_amt, _data.end());
 
 	_dim = dimension(_dim.width(), _dim.height() + ins_len);

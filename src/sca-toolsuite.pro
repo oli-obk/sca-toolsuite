@@ -30,7 +30,8 @@ HEADERS += res/io.h res/stack_algorithm.h \
     gui_qt/labeled_widget.h \
     res/grid.h \
     res/patch.h \
-    res/print.h
+    res/print.h \
+    res/simulate.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \
@@ -73,7 +74,8 @@ SOURCES += algo/relax.cpp \
 	test/test.cpp \
 	gui_qt/CaSelector.cpp \
 	img/transform.cpp \
-    ca/dump.cpp
+    ca/dump.cpp \
+    res/simulate.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL.txt \
 	../README.txt \

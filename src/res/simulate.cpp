@@ -18,50 +18,29 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
+#include <cstring>
 #include "simulate.h"
-#include "general.h"
-#include "io.h"
-#include "ca.h"
 
-using namespace sca;
+namespace sca {
+namespace sim {
 
-// TODO: own sim type class, inherit
-class MyProgram : public Program, sim::ulator
+ulator::sim_wrapper ulator::wraps[4]
 {
-	int main()
-	{
-		switch(argc)
-		{
-			case 1:
-				break;
-			default:
-				exit_usage();
-		}
-
-		using it = std::istreambuf_iterator<char>;
-		const it eos;
-		const std::string s(it(std::cin), eos);
-
-		const ca::ca_table_t tbl(s.c_str(), 3); // TODO: 3
-		tbl.dump(std::cout);
-
-		return 0;
-	}
+	{ sim_type::end, "end" },
+	{ sim_type::role, "role" },
+	{ sim_type::more, "more" },
+	{ sim_type::anim, "anim" }
 };
 
-int main(int argc, char** argv)
+ulator::sim_type ulator::type_by_str(const char *str)
 {
-	HelpStruct help;
-	help.syntax = "ca/dump"
-		"";
-	help.description = "Dumps a cellular automaton (ca).\n"
-		"The number of states is always 3 (0-2).\n"
-		"This can be changed in the future.";
-	help.input = "equation string, describing the local tf";
-	help.output = "table for the local tf";
-
-	MyProgram p;
-	return p.run(argc, argv, &help);
+	sim_type sim = sim_type::undefined;
+	for(sim_wrapper& i : wraps)
+	if(!strcmp(i.str, str))
+	 sim = i.t;
+	return sim;
 }
 
+}
+}
 

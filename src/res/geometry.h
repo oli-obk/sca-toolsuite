@@ -71,7 +71,8 @@ struct _point
 {
 	using coord_t = typename Traits::coord_t;
 	coord_t x, y;
-	constexpr _point(coord_t _x, coord_t _y) : x(_x), y(_y) {}
+	constexpr _point(coord_t _x, coord_t _y) noexcept(coord_t(coord_t())) :
+		x(_x), y(_y) {}
 	_point() {}
 	constexpr _point(const _point& other) : x(other.x), y(other.y) {}
 	void set(int _x, int _y) { x = _x; y = _y; }
@@ -157,6 +158,20 @@ public:
 	point* operator->() { return &position; }
 	const point* operator->() const { return &position; }
 
+	//! increases the y coordinate of the point
+	//! @note There is currently not check for overstepping @a end()
+	_point_itr& increase_y()
+	{
+		return ++position.y, *this;
+	}
+
+	//! decreases the y coordinate of the point
+	//! @note There is currently not check for overstepping @a begin()
+	_point_itr& decrease_y()
+	{
+		return --position.y, *this;
+	}
+
 	_point_itr& operator++()
 	{
 		if(++position.x >= max.x)
@@ -166,6 +181,10 @@ public:
 		}
 		return *this;
 	}
+
+/*	_point_itr& operator+=(const coord_t& x_offset)
+	{
+	}*/
 
 	_point_itr& operator--()
 	{
@@ -253,25 +272,20 @@ struct _dim_cont
 			)) // TODO: use _begin for this?
 	{}
 
-	iterator begin(/*const point& pos = point::zero()*/) const
+	iterator begin(/*const point& pos = point::zero()*/) const noexcept
 	 // TODO: argument deprecated?
 	{
-		/*return iterator(
-			{(coord_t)(w-(bw<<1)), (coord_t)(h-(bw<<1))},
-			point::zero(),
-			pos
-		);*/
 		return _begin;
 	}
 
-	iterator end() const { // TODO!! slow!! save temporary: (w-(bw<<1)), (h-(bw<<1))
+	iterator end() const noexcept {
 		return _end;
 	}
 
 	iterator cbegin(const point& pos = point::zero()) const { return begin(pos); }
-	iterator cend() const { return end(); }
-	area_t size() const { return h * w; }
-	bool empty() const { return (h | w) == 0; }
+	iterator cend() const noexcept { return end(); }
+	area_t size() const noexcept { return h * w; }
+	bool empty() const noexcept { return (h | w) == 0; }
 
 	friend std::ostream& operator<< (std::ostream& stream,
 		const _dim_cont& d) {
@@ -287,9 +301,11 @@ class _rect_storage_default
 {
 	using point = _point<Traits>;
 protected:
-	point _ul, lr;
+	point _ul, _lr;
+	_rect_storage_default(const point& _ul, const point& lr) :
+		_ul(_ul), _lr(lr) {}
+public:
 	const point& ul() const { return _ul; }
-	_rect_storage_default(const point& _ul, const point& lr) : _ul(_ul), lr(lr) {}
 };
 
 template<class Traits>
@@ -298,11 +314,12 @@ class _rect_storage_origin
 	using point = _point<Traits>;
 protected:
 	//static constexpr point ul = {0, 0};
-	static constexpr point ul() { return {0, 0}; }
-	point lr;
-	_rect_storage_origin(const point& , const point& lr) : lr(lr) {}
+	point _lr;
+	_rect_storage_origin(const point& , const point& lr) : _lr(lr) {}
 	_rect_storage_origin(){} // TODO...
 	// TODO: remove first param?
+public:
+	static constexpr point ul() { return {0, 0}; }
 };
 
 // TODO: storage should be a template: template<class T> class storage
@@ -327,14 +344,16 @@ public:
 			{(coord_t)(d.width() - (border_size << 1)), // TODO: ?????
 			(coord_t)(d.height() - (border_size << 1))}) {}
 
-	inline area_t area() const { return (s::lr.x - s::ul().x) * (s::lr.y - s::ul().y); }
+	const point& lr() const { return s::_lr; }
+
+	inline area_t area() const { return (s::_lr.x - s::ul().x) * (s::_lr.y - s::ul().y); }
 	bool is_inside(const point& p) const {
-		return p.x < s::lr.x && p.y < s::lr.y && s::ul().x <= p.x && s::ul().y <= p.y; }
+		return p.x < s::_lr.x && p.y < s::_lr.y && s::ul().x <= p.x && s::ul().y <= p.y; }
 
 	using const_iterator = _point_itr<Traits>;
 	using iterator = const_iterator;
-	iterator begin() const { return iterator(s::lr, s::ul()); }
-	iterator end() const { return iterator::from_end(s::lr, s::ul()); }
+	iterator begin() const { return iterator(s::_lr, s::ul()); }
+	iterator end() const { return iterator::from_end(s::_lr, s::ul()); }
 	iterator cbegin() const { return begin(); }
 	iterator cend() const { return end(); }
 	inline area_t size() const { return area(); }
@@ -345,7 +364,7 @@ public:
 
 	friend std::ostream& operator<< (std::ostream& stream,
 		const _rect& r) {
-		return stream << "rect (" << r.s::ul() << ", " << r.s::lr << ")";
+		return stream << "rect (" << r.s::ul() << ", " << r.s::_lr << ")";
 	}
 
 	inline area_t area_without_border(u_coord_t border_size = 1) const {
@@ -355,34 +374,34 @@ public:
 	}
 
 	_rect<Traits> operator+(const point& rhs) const {
-		return _rect<Traits, _rect_storage_default<Traits>>(s::ul() + rhs, s::lr + rhs);
+		return _rect<Traits, _rect_storage_default<Traits>>(s::ul() + rhs, s::_lr + rhs);
 	}
 
 	// TODO: should we also allow borders in all our computations?
 	bool point_is_on_border(const point& p,
 		const u_coord_t border_size) const {
 		return p.x < s::ul().x + (coord_t) border_size
-		|| p.x >= s::lr.x - (coord_t) border_size
+		|| p.x >= s::_lr.x - (coord_t) border_size
 		|| p.y < s::ul().y + (coord_t) border_size
-		|| p.y >= s::lr.y - (coord_t) border_size;
+		|| p.y >= s::_lr.y - (coord_t) border_size;
 	}
 
-	inline u_coord_t dx() const { return s::lr.x - s::ul().x; }
-	inline u_coord_t dy() const { return s::lr.y - s::ul().y; }
+	inline u_coord_t dx() const { return s::_lr.x - s::ul().x; }
+	inline u_coord_t dy() const { return s::_lr.y - s::ul().y; }
 
 	inline u_coord_t width() const { return dx(); }
 	inline u_coord_t height() const { return dy(); }
 
 	inline bool operator==(const _rect& other) const {
-		return s::lr == other.s::lr && s::ul() == other.s::ul();
+		return s::_lr == other.s::_lr && s::ul() == other.s::ul();
 	}
 	inline bool operator!=(const _rect& other) const {
 		return !(operator ==(other));
 	}
 
 	bool point_is_contained(const point& p) const {
-		return p.x >= s::ul().x && p.x < s::lr.x
-			&& p.y >= s::ul().y && p.y < s::lr.y;
+		return p.x >= s::ul().x && p.x < s::_lr.x
+			&& p.y >= s::ul().y && p.y < s::_lr.y;
 	}
 	inline bool fits_points(const std::set<point>& points) const
 	{

@@ -86,17 +86,33 @@ class MyProgram : public Program
 #ifdef SCA_DEBUG
 		std::cerr << "Parsing table..." << std::endl;
 #endif
+
+		dimension n_dim = neighbours.get_dim();
+		grid_t _in_grid(n_dim, 0);
+
 		while(!feof(stdin))
 		{
-			grid_t cur_grid(std::cin, 0);
+			grid_t in_grid(std::cin, 0);
 			grid_t out_grid(std::cin, 0);
-			assert(out_grid.human_dim().area() == 1);
+			//assert(out_grid.human_dim().area() == 1);
+			assert((2 + out_grid.human_dim().dx())
+				== in_grid.human_dim().dx());
+			assert((2 + out_grid.human_dim().dy())
+				== in_grid.human_dim().dy());
 
-			def_cell_traits::cell_t out_cell = out_grid[point::zero()];
+			point ul = *in_grid.points().end();
+			dimension rc(ul.x-2, ul.y-2);
+			for(const point& p : rc)
+			{
+				in_grid.copy_to_int(_in_grid, n_dim + p);
 
-			neighbours.add_transition_functions(
-					table, center_cell, cur_grid, out_cell
-				);
+				const def_cell_traits::cell_t out_cell
+					= out_grid[p];
+
+				neighbours.add_transition_functions(
+						table, center_cell, _in_grid, out_cell
+					);
+			}
 		}
 
 		assert(table.size() > 0);

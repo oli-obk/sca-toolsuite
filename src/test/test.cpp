@@ -44,6 +44,24 @@ class MyProgram : public Program
 		//std::set<point> s4{{0, 0}, {2, 0}};
 		//sca::ca::conf_t c5 = sca::ca::conf_t::substract(s1, c1, s4, )
 
+		grid_t g1(dimension(4, 4), 1, 0, -1);
+		g1[point(1, 1)] = 1;
+		g1[point(1, 2)] = 2;
+		g1[point(2, 1)] = 3;
+		g1[point(2, 2)] = 4;
+
+		std::cout << g1 << std::endl;
+
+		grid_t g2(dimension(2, 2), 0);
+		g1.copy_to_int(g2, rect(point(2,2), point(4,4)));
+
+		std::cout << g2 << std::endl;
+
+		assert_always(g2[point(0, 0)] == 1, "1");
+		assert_always(g2[point(0, 1)] == 2, "2");
+		assert_always(g2[point(1, 0)] == 3, "3");
+		assert_always(g2[point(1, 1)] == 4, "4");
+
 		return 0;
 	}
 };

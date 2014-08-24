@@ -230,6 +230,14 @@ public:
 		return point(-_bb.ul().x, -_bb.ul().y);
 	}
 
+	dimension get_dim() const
+	{
+		bounding_box _bb;
+		for(const point& p : neighbours)
+		 _bb.add_point( p );
+		return _bb.dim();
+	}
+
 	point operator[](unsigned i) const { return neighbours[i]; }
 	unsigned size() const { return neighbours.size(); }
 

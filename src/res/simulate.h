@@ -18,50 +18,35 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#include "simulate.h"
-#include "general.h"
-#include "io.h"
-#include "ca.h"
+#ifndef SIMULATE_H
+#define SIMULATE_H
 
-using namespace sca;
+namespace sca {
+namespace sim {
 
-// TODO: own sim type class, inherit
-class MyProgram : public Program, sim::ulator
+class ulator
 {
-	int main()
+protected:
+	enum class sim_type
 	{
-		switch(argc)
-		{
-			case 1:
-				break;
-			default:
-				exit_usage();
-		}
+		end,
+		role,
+		more,
+		anim,
+		undefined
+	};
+	sim_type type_by_str(const char* str);
+private:
+	struct sim_wrapper
+	{
+		sim_type t;
+		const char* str;
+	};
 
-		using it = std::istreambuf_iterator<char>;
-		const it eos;
-		const std::string s(it(std::cin), eos);
-
-		const ca::ca_table_t tbl(s.c_str(), 3); // TODO: 3
-		tbl.dump(std::cout);
-
-		return 0;
-	}
+	static sim_wrapper wraps[4]; // TODO: why is 4 needed?
 };
 
-int main(int argc, char** argv)
-{
-	HelpStruct help;
-	help.syntax = "ca/dump"
-		"";
-	help.description = "Dumps a cellular automaton (ca).\n"
-		"The number of states is always 3 (0-2).\n"
-		"This can be changed in the future.";
-	help.input = "equation string, describing the local tf";
-	help.output = "table for the local tf";
-
-	MyProgram p;
-	return p.run(argc, argv, &help);
+}
 }
 
-
+#endif // SIMULATE_H
