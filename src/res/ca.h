@@ -447,7 +447,8 @@ private:
 	TblCont<uint64_t> calculate_table() const
 	{
 		TblCont<uint64_t> tbl;
-		tbl.reserve(1 << (size_each * n_w * n_w)); // ctor can not reserve
+	//	tbl.reserve(1 << (size_each * n_w * n_w)); // ctor can not reserve
+		tbl.resize(1 << (size_each * n_w * n_w));
 
 		bitgrid_t grid(size_each, dimension(n_w, n_w), 0, 0);
 		const dimension& dim = grid.internal_dim();
@@ -457,13 +458,11 @@ private:
 
 		std::cerr << "Precalculating table, please wait..." << std::endl;
 		// odometer
-		int last_val = -1;
+//		int last_val = -1;
 		for(std::size_t i = 0; i < max; ++i)
 		{
 			// evaluate
-			std::cout << grid.raw_value() << std::endl;
-			std::cout << last_val << std::endl;
-			tbl.push_back(base::
+			tbl.at(grid.raw_value()) = (base::
 				calculate_next_state(grid.raw_value(), size_each, center, dim));
 
 #ifdef SCA_DEBUG
@@ -477,8 +476,8 @@ private:
 				percent = cur;
 				std::cerr << "..." << percent << " percent" << std::endl;
 			}
-			if((last_val != -1) && (last_val != (int)grid.raw_value() - 1)) exit(1);
-last_val = grid.raw_value();
+//			if((last_val != -1) && (last_val != (int)grid.raw_value() - 1)) exit(1);
+//last_val = grid.raw_value();
 			// increase
 			{
 				bool go_on = true;
