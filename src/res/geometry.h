@@ -71,6 +71,7 @@ struct _point
 {
 	using coord_t = typename Traits::coord_t;
 	coord_t x, y;
+	// TODO: noexcept wrong?
 	constexpr _point(coord_t _x, coord_t _y) noexcept(coord_t(coord_t())) :
 		x(_x), y(_y) {}
 	_point() {}
@@ -260,7 +261,7 @@ struct _dim_cont
 	using area_t = typename Traits::area_t;
 
 	// TODO: dimension as member?
-	const unsigned h, w, bw;
+	const unsigned h, w, bw; // TODO: unsigned type? not u_coord_t ?
 	const iterator _begin, _end;
 	_dim_cont(unsigned h,
 		unsigned w,
@@ -272,18 +273,18 @@ struct _dim_cont
 			)) // TODO: use _begin for this?
 	{}
 
-	iterator begin(/*const point& pos = point::zero()*/) const noexcept
+	const iterator& begin(/*const point& pos = point::zero()*/) const noexcept
 	 // TODO: argument deprecated?
 	{
 		return _begin;
 	}
 
-	iterator end() const noexcept {
+	const iterator& end() const noexcept {
 		return _end;
 	}
 
 	iterator cbegin(const point& pos = point::zero()) const { return begin(pos); }
-	iterator cend() const noexcept { return end(); }
+	const iterator& cend() const noexcept { return end(); }
 	area_t size() const noexcept { return h * w; }
 	bool empty() const noexcept { return (h | w) == 0; }
 

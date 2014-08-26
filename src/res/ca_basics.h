@@ -168,6 +168,32 @@ inline bool compare_by_input(const trans_t& lhs,
 	return _compare_by_input(lhs, rhs);
 }
 
+template<typename ...>
+struct falsify : std::false_type
+{ };
+
+template<typename ...Args>
+class dont_instantiate_me {
+	static_assert(falsify<Args...>::value, "This should not be instantiated.");
+};
+
+
+// TODO: std::array
+template<class T>
+std::size_t get_pos(const T&, typename T::const_reference) {
+	dont_instantiate_me<T>();
+}
+
+template<class VT>
+std::size_t get_pos(const std::vector<VT>& cont, const VT& elem) {
+	const auto& itr = std::lower_bound(cont.begin(), cont.end(), elem);
+	if(itr == cont.end())
+	 throw "Point not found";
+	return std::distance(cont.begin(), itr);
+}
+
+
+
 template<class Traits, class Container>
 class _n_t
 {
@@ -222,6 +248,11 @@ protected:
 	}
 
 public:
+	std::size_t pos(const point& p) const
+	{
+		return get_pos(neighbours, p);
+	}
+
 	point get_center_cell() const
 	{
 		bounding_box _bb;
@@ -384,6 +415,11 @@ public:
 		for( const point& p : n.neighbours) { stream << p << ", "; }
 		stream << ")";
 		return stream;
+	}
+
+	bool is_neighbour_of(const point& p1, const point& p2) const
+	{
+		return std::binary_search(neighbours.begin(), neighbours.end(), p1-p2);
 	}
 
 /*	void shift(const point& p)
