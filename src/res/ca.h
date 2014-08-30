@@ -49,50 +49,11 @@ protected:
 //	n_t_const neighbourhood;
 
 protected:
-	~ca_eqsolver_t() { delete[] helper_vars; }
+	~ca_eqsolver_t() noexcept { delete[] helper_vars; }
 
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
-	ca_eqsolver_t(const char* equation, unsigned num_states = 0)
-		: num_states(num_states)
-	{
-	//	debug("Building AST from equation...\n");
-		eqsolver::build_tree(equation, &ast);
-
-		eqsolver::ast_area<eqsolver::variable_area_grid>
-			grid_solver;
-		_border_width = (int)grid_solver(ast);
-#ifdef CA_DEBUG
-		printf("Size of Moore Neighbourhood: %d\n", // TODO: use cout
-			_border_width);
-#endif
-		eqsolver::ast_area<eqsolver::variable_area_helpers>
-			helpers_solver;
-		helpers_size = (int)helpers_solver(ast) + 1;
-#ifdef CA_DEBUG
-		printf("Size of Helper Variable Array: %d\n",
-			helpers_size);
-#endif
-		if(helpers_size > 0)
-		 helper_vars = new int[helpers_size];
-
-#if 0
-		eqsolver::ast_minmax minmax_solver(helpers_size);
-		//std::pair<int, int> mm = (std::pair<int, int>)minmax_solver(ast);
-	/*	num_states = (mm.first == INT_MIN || mm.second == INT_MAX)
-			? INT_MAX
-			: (mm.second - mm.first + 1);*/
-		std::pair<eqsolver::expression_ast, eqsolver::expression_ast> mm
-			= (std::pair<eqsolver::expression_ast, eqsolver::expression_ast>)minmax_solver(ast);
-
-		eqsolver::ast_dump dumper;
-		std::cout << "original: " << dumper(ast) << std::endl;
-
-		std::cout << "mm first: " << (std::string)dumper(mm.first) << std::endl; // TODO: non return syntax
-		(void)mm;
-#endif
-		//num_states = 0;
-	}
+	ca_eqsolver_t(const char* equation, unsigned num_states = 0);
 
 	template<class T, class CT>
 	int calculate_next_state(const typename CT::cell_t *cell_ptr,
@@ -128,7 +89,7 @@ protected:
 	}
 
 public:
-	int border_width() const { return _border_width; }
+	int border_width() const noexcept { return _border_width; }
 	using n_t_type = n_t;
 	n_t get_neighbourhood() const
 	{
@@ -146,10 +107,10 @@ class bit_reference_base
 {
 protected:
 	uint64_t minbit, bitmask;
-	bit_reference_base(uint64_t minbit, uint64_t bitmask) :
+	bit_reference_base(uint64_t minbit, uint64_t bitmask) noexcept:
 		minbit(minbit),
 		bitmask(bitmask) {}
-	uint64_t bits_in(const uint64_t& grid) const {
+	uint64_t bits_in(const uint64_t& grid) const noexcept {
 		return (grid >> minbit) & bitmask;
 	}
 };
@@ -158,14 +119,14 @@ class const_bit_reference : public bit_reference_base
 {
 	const uint64_t& grid;
 public:
-	const_bit_reference(const uint64_t& grid, uint64_t minbit, uint64_t bitmask) :
+	const_bit_reference(const uint64_t& grid, uint64_t minbit, uint64_t bitmask) noexcept:
 		bit_reference_base(minbit, bitmask),
 		grid(grid)
 	{
 	}
 
 public:
-	operator uint64_t () const { return bits_in(grid); }
+	operator uint64_t () const noexcept { return bits_in(grid); }
 };
 
 class bit_reference : public bit_reference_base
@@ -177,21 +138,21 @@ class bit_reference : public bit_reference_base
 
 	uint64_t& grid;
 public:
-	bit_reference(uint64_t& grid, uint64_t minbit, uint64_t bitmask) :
+	bit_reference(uint64_t& grid, uint64_t minbit, uint64_t bitmask) noexcept:
 		bit_reference_base(minbit, bitmask),
 		grid(grid)
 	{
 	}
 public:
-	operator uint64_t () const { return bits_in(grid); }
+	operator uint64_t () const noexcept { return bits_in(grid); }
 
 	//! TODO: faster ops for ++ etc.
-	bit_reference& operator= (const uint64_t c) {
+	bit_reference& operator= (const uint64_t c) noexcept {
 		grid = grid & (~(bitmask << minbit));
 		grid = grid | (c << minbit);
 		return *this;
 	}
-	bit_reference& operator++() {
+	bit_reference& operator++() noexcept {
 		grid += (uint64_t)(1 << minbit);
 		return *this;
 	}
@@ -213,7 +174,7 @@ protected:
 
 public:
 	bitcell_itr_base(storage_t each, dimension dim, coord_t bw,
-		bool pos_is_begin = true) :
+		bool pos_is_begin = true) noexcept:
 		each(each),
 		linewidth(dim.width()),
 		ptr(0 +
@@ -225,7 +186,8 @@ public:
 	{
 	}
 
-	bitcell_itr_base& operator++() // TODO: the return value of this is a bug
+	bitcell_itr_base& operator++() noexcept
+		// TODO: the return value of this is a bug
 	{
 		// TODO: use a good modulo function here -> no if
 		if((/*grid = grid >> each,*/ ++ptr) == next_line_end)
@@ -238,9 +200,9 @@ public:
 		return *this;
 	}
 
-	bool operator==(const bitcell_itr_base& rhs) const {
+	bool operator==(const bitcell_itr_base& rhs) const noexcept {
 		return ptr == rhs.ptr; }
-	bool operator!=(const bitcell_itr_base& rhs) const {
+	bool operator!=(const bitcell_itr_base& rhs) const noexcept {
 		return !operator==(rhs); }
 };
 
@@ -249,11 +211,11 @@ class const_bitcell_itr : public bitcell_itr_base
 	storage_t grid;
 public:
 	const_bitcell_itr(storage_t grid, storage_t each, dimension dim, coord_t bw,
-		bool pos_is_begin = true) :
+		bool pos_is_begin = true) noexcept:
 		bitcell_itr_base(each, dim, bw, pos_is_begin),
 		grid(grid) {}
 
-	const_bit_reference operator*() const {
+	const_bit_reference operator*() const noexcept {
 		return const_bit_reference(grid, ptr * each, bitmask);
 	}
 };
@@ -263,11 +225,11 @@ class bitcell_itr : public bitcell_itr_base
 	storage_t& grid;
 public:
 	bitcell_itr(storage_t& grid, storage_t each, dimension dim, coord_t bw,
-		bool pos_is_begin = true) :
+		bool pos_is_begin = true) noexcept:
 		bitcell_itr_base(each, dim, bw, pos_is_begin),
 		grid(grid) {}
 
-	bit_reference operator*() {
+	bit_reference operator*() noexcept {
 		return bit_reference(grid, ptr * each, bitmask);
 	}
 };
@@ -316,13 +278,13 @@ public:
 		(void)border_fill;*/
 	}
 
-	bit_reference operator[](point p)
+	bit_reference operator[](point p) noexcept
 	{
 		//return (grid >> (index(p)*each)) & bitmask;
 		return bit_reference(grid, index_h(p)*each, bitmask);
 	}
 
-	const const_bit_reference operator[](point p) const
+	const const_bit_reference operator[](point p) const noexcept
 	{
 		return const_bit_reference(grid, index_h(p)*each, bitmask);
 		//return (grid >> (index(p)*each)) & bitmask;
@@ -344,48 +306,37 @@ public:
 	using iterator = bitcell_itr;
 	using const_iterator = const_bitcell_itr;
 
-	iterator begin() { return iterator(grid, each, _dim, bw); }
-	iterator end() { return iterator(grid, each, _dim, bw, false); }
-	const_iterator cbegin() const { return const_iterator(grid, each, _dim, bw); }
-	const_iterator cend() const { return const_iterator(grid, each, _dim, bw, false); }
+	iterator begin() noexcept { return iterator(grid, each, _dim, bw); }
+	iterator end() noexcept { return iterator(grid, each, _dim, bw, false); }
+	const_iterator cbegin() const noexcept { return const_iterator(grid, each, _dim, bw); }
+	const_iterator cend() const noexcept { return const_iterator(grid, each, _dim, bw, false); }
 
-	storage_t raw_value() const { return grid; }
+	storage_t raw_value() const noexcept { return grid; }
 };
 
-template<template<class ...> class TblCont>
-class _ca_table_t : ca_eqsolver_t // TODO: only for reading?
+//! header structure and basic utils for a table file
+class _ca_table_hdr_t : public ca_eqsolver_t
 {
+protected:
 	using base = ca_eqsolver_t;
 
-	using coord_t = typename bitgrid_traits::coord_t;
 	using u_coord_t = typename bitgrid_traits::u_coord_t;
 	using cell_t = typename bitgrid_cell_traits::cell_t;
+
+	using coord_t = typename bitgrid_traits::coord_t;
 	using point = _point<bitgrid_traits>;
 	using dimension = _dimension<bitgrid_traits>;
 public:
 	using n_t_type = _n_t<bitgrid_traits, std::vector<point>>;
-private:
+protected:
 	class size_check
 	{
-		size_check(int size)
-		{
-			if(size < 0)
-			 throw "Error: Size negative (did you set num_states == 0?).";
-			if(size > (1<<18))
-			 throw "Error: This ca is too large for a table.";
-		}
+		size_check(int size);
 	};
 
 	struct header_t
 	{
-		header_t(std::istream& stream)
-		{
-			char buf[9];
-			buf[8] = 0;
-			stream.read(buf, 8);
-			if(strcmp(buf, "ca_table"))
-			 throw "Error: This file has no ca_table header.";
-		}
+		header_t(std::istream& stream);
 		static void dump(std::ostream &stream)
 		{
 			stream.write("ca_table", 8);
@@ -394,25 +345,34 @@ private:
 	};
 
 	const header_t header;
+
+	struct version_t
+	{
+		static constexpr const uint32_t id = 1;
+		version_t(const uint32_t& i);
+		version_t() {}
+		static void dump(std::ostream &stream)
+		{
+			stream.write((char*)&id, 4);
+		}
+	};
+	const version_t version;
+
 	const u_coord_t n_w; // TODO: u_coord_t
 	const unsigned own_num_states;
 	const u_coord_t size_each; // TODO: u_coord_t
 	const point center;
 
-	const TblCont<uint64_t> table;
-
-	using storage_t = uint64_t;
-
-// data for outside:
+	// data for outside:
 	const u_coord_t bw; // TODO: u_coord_t
 	const n_t_type neighbourhood;
 
-	u_coord_t compute_bw() const
+	u_coord_t compute_bw() const noexcept
 	{
 		return (n_w - 1)>>1;
 	}
 
-	n_t_type compute_neighbourhood() const
+	n_t_type compute_neighbourhood() const noexcept
 	{
 		u_coord_t bw = border_width();
 		u_coord_t n_width = (bw<<1) + 1;
@@ -420,12 +380,9 @@ private:
 		return n_t_type(moore, point(bw, bw));
 	}
 public:
-	unsigned border_width() const { return bw; } // TODO: should ret reference
-	const n_t_type& get_neighbourhood() const { return neighbourhood; }
-
-private:
-
-//protected: // TODO
+	unsigned border_width() const noexcept { return bw; } // TODO: should ret reference
+	const n_t_type& get_neighbourhood() const noexcept { return neighbourhood; }
+protected:
 	static unsigned fetch_32(std::istream& stream)
 	{
 		uint32_t res;
@@ -436,6 +393,26 @@ private:
 		return res;
 	}
 
+	//! O(1)
+	void dump(std::ostream& stream) const;
+
+	_ca_table_hdr_t(std::istream& stream);
+
+	// TODO: single funcs to initialize and make const?
+	// aka: : ast(private_build_ast), ...
+	_ca_table_hdr_t(const char* equation, cell_t num_states = 0);
+};
+
+template<template<class ...> class TblCont>
+class _ca_table_t : public _ca_table_hdr_t // TODO: only for reading?
+{
+private:
+	// TODO!!! table can use uint8_t in many cases!
+	const TblCont<uint64_t> table;
+
+	using storage_t = uint64_t;
+
+private:
 	static TblCont<uint64_t> fetch_tbl(std::istream& stream, unsigned size_each, unsigned n_w)
 	{
 		TblCont<uint64_t> res(1 << (size_each * n_w * n_w));
@@ -495,38 +472,21 @@ public:
 	//! O(table)
 	void dump(std::ostream& stream) const
 	{
-		header_t::dump(stream);
-		uint32_t tmp = n_w;
-		stream.write((char*)&tmp, 4);
-		tmp = own_num_states;
-		stream.write((char*)&tmp, 4);
+		_ca_table_hdr_t::dump(stream);
 		stream.write((char*)table.data(), table.size() * 8);
 	}
 
 	_ca_table_t(std::istream& stream) :
-		base("v", 0), // not reliable
-		header(stream),
-		n_w(fetch_32(stream)),
-		own_num_states(fetch_32(stream)),
-		size_each((unsigned)ceil(log(own_num_states))), // TODO: use int arithm
-		center((n_w - 1)>>1, (n_w - 1)>>1),
-		table(fetch_tbl(stream, size_each, n_w)),
-		bw(compute_bw()),
-		neighbourhood(compute_neighbourhood())
+		_ca_table_hdr_t(stream),
+		table(fetch_tbl(stream, size_each, n_w))
 	{
 	}
 
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
 	_ca_table_t(const char* equation, cell_t num_states = 0) :
-		base(equation, num_states),
-		n_w((base::border_width()<<1) + 1),
-		own_num_states(base::num_states),
-		size_each((unsigned)ceil(log(own_num_states))), // TODO: use int arithm
-		center(base::border_width(), base::border_width()),
-		table(calculate_table()),
-		bw(compute_bw()),
-		neighbourhood(compute_neighbourhood())
+		_ca_table_hdr_t(equation, num_states),
+		table(calculate_table())
 	{
 	}
 

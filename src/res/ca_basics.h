@@ -168,20 +168,22 @@ inline bool compare_by_input(const trans_t& lhs,
 	return _compare_by_input(lhs, rhs);
 }
 
-template<typename ...>
-struct falsify : std::false_type
-{ };
-
+// TODO: make a utils.h
+template<typename ...> struct falsify : std::false_type { };
+template<typename T, T Arg> class falsify_id : std::false_type { };
 template<typename ...Args>
 class dont_instantiate_me {
 	static_assert(falsify<Args...>::value, "This should not be instantiated.");
 };
-
+template<typename T, T Arg>
+class dont_instantiate_me_id {
+	static_assert(falsify_id<T, Arg>::value, "This should not be instantiated.");
+};
 
 // TODO: std::array
 template<class T>
 std::size_t get_pos(const T&, typename T::const_reference) {
-	dont_instantiate_me<T>();
+	return dont_instantiate_me<T>(), 0;
 }
 
 template<class VT>

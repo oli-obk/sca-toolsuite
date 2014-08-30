@@ -18,50 +18,49 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#include "simulate.h"
 #include "general.h"
-#include "io.h"
-#include "ca.h"
 
-using namespace sca;
-
-// TODO: own sim type class, inherit
-class MyProgram : public Program, sim::ulator
+class MyProgram : public Program
 {
-	exit_t main()
+	exit_code main()
 	{
+
+
+		/*
+		 * args
+		 */
+
 		switch(argc)
 		{
-			case 1:
-				break;
+		//	case 2:
+		//		tbl_file = argv[1];
+		//		break;
+			case 1: break;
 			default:
 				exit_usage();
 		}
 
-		using it = std::istreambuf_iterator<char>;
-		const it eos;
-		const std::string s(it(std::cin), eos);
+		/*
+		 * parsing
+		 */
 
-		const ca::ca_table_t tbl(s.c_str(), 3); // TODO: 3
-		tbl.dump(std::cout);
 
-		return exit_t::success;
+
+		return exit_code::success;
 	}
 };
 
 int main(int argc, char** argv)
 {
 	HelpStruct help;
-	help.syntax = "ca/dump"
+	help.syntax = "ca/scene [<scene-file>]"
 		"";
-	help.description = "Dumps a cellular automaton (ca).\n"
-		"The number of states is always 3 (0-2).\n"
-		"This can be changed in the future.";
-	help.input = "equation string, describing the local tf";
-	help.output = "table for the local tf";
+	help.description = "Converts a scene into a ca document file."
+		"";
+	help.input = "Input grid in a special format.";
+	help.output = "The ca document";
+//	help.add_param("dump|nodump", "whether to dump graph on exit/abort");
 
 	MyProgram p;
 	return p.run(argc, argv, &help);
 }
-
-

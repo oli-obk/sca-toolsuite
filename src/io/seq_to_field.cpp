@@ -27,7 +27,7 @@
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		FILE* read_fp=stdin;
 		dimension dim;
@@ -57,7 +57,7 @@ class MyProgram : public Program
 		} while(symbols_read > 0);
 
 		write_grid(stdout, &grid, &dim);
-		return 0;
+		return exit_t::success;
 	}
 };
 

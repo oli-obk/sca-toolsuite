@@ -28,7 +28,7 @@
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		rgb min_color(255,255,255), max_color(0,0,0);
 		int min_val=0, max_val=3;
@@ -58,7 +58,7 @@ class MyProgram : public Program
 
 		if(argc==7)
 		 fclose(write_fp);
-		return 0;
+		return exit_t::success;
 	}
 };
 

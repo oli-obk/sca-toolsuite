@@ -24,7 +24,7 @@
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		// TODO: re-enable?
 #if 0
@@ -62,7 +62,7 @@ class MyProgram : public Program
 		assert_always(g2[point(1, 0)] == 3, "3");
 		assert_always(g2[point(1, 1)] == 4, "4");
 
-		return 0;
+		return exit_t::success;
 	}
 };
 

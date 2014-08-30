@@ -53,7 +53,7 @@ class MyProgram : public Program
 		}
 	}
 
-	int main()
+	exit_t main()
 	{
 		std::vector<int> grid;
 		dimension dim;
@@ -125,7 +125,7 @@ class MyProgram : public Program
 			 write_grid(stdout, &grid, &dim);
 		}
 
-		return 0;
+		return exit_t::success;
 	}
 };
 

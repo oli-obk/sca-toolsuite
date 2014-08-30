@@ -81,7 +81,7 @@ void parse_avalanches(FILE* in_fp, FILE* out_fp,
 // and those \n signs will occur seldom enough...
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		bool ids = false;
 		def_coord_traits::u_coord_t width;
@@ -91,8 +91,7 @@ class MyProgram : public Program
 			case 2: width = atoi(argv[1]) + 2;
 				break;
 			default:
-				exit_usage();
-				return 1;
+				return exit_usage();
 		}
 
 		FILE* const in_fp = stdin;
@@ -155,7 +154,7 @@ class MyProgram : public Program
 					"must be out of {1,2,4,8}.");
 		}
 
-		return (feof(in_fp)!=0)?0:1; // feof==0 <=> stop, but no eof <=> error
+		return success(feof(in_fp)!=0); // feof==0 <=> stop, but no eof <=> error
 	}
 };
 

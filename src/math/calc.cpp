@@ -26,7 +26,7 @@
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		//FILE* read_fp = stdin;
 		std::istream& read_fp = std::cin;
@@ -69,7 +69,7 @@ class MyProgram : public Program
 			std::cout << (int)solver(ast) << separator;
 		}
 
-		return 0;
+		return exit_t::success;
 	}
 };
 

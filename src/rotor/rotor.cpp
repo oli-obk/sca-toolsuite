@@ -50,7 +50,7 @@ void run(grid_t& grid, grid_t& chips, int hint=-1)
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		std::istream& read_fp = std::cin;
 		int hint = -1;
@@ -65,8 +65,7 @@ class MyProgram : public Program
 				 exit_usage();
 				break;
 			default:
-				exit_usage();
-				return 1;
+				return exit_usage();
 		}
 
 	//	std::vector<int> grid;
@@ -100,7 +99,7 @@ class MyProgram : public Program
 				break;
 		}
 
-		return 0;
+		return exit_t::success;
 	}
 };
 

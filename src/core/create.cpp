@@ -28,7 +28,7 @@
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		std::vector<int> grid;
 		dimension dim;
@@ -42,12 +42,11 @@ class MyProgram : public Program
 					atoi(argv[2]));
 				break;
 			default:
-				exit_usage();
-				return 1; // omit warnings
+				return exit_usage();
 		}
 
 		std::cout << grid_t(dim, 0, predefined_value);
-		return 0;
+		return exit_t::success;
 	}
 };
 

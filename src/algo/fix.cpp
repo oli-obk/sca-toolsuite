@@ -40,7 +40,7 @@ void run(grid_t& grid, int hint=-1)
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		std::istream& read_fp = std::cin;
 		int hint = -1;
@@ -54,8 +54,7 @@ class MyProgram : public Program
 					(output_type=='l'||output_type=='s'));
 				break;
 			default:
-				exit_usage();
-				return 1;
+				return exit_usage();
 		}
 
 		grid_t grid(read_fp, 1);
@@ -73,7 +72,7 @@ class MyProgram : public Program
 				std::cout << grid;
 				break;
 		}
-		return 0;
+		return exit_t::success;
 	}
 };
 

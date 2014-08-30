@@ -391,7 +391,9 @@ public:
 
 	const std::set<point>& area() const { return _area; }
 	const conf_t& conf() const { return _conf; }
+	const conf_t& old_conf() const { return _conf_before; }
 	bool empty() const { return _area.empty(); }
+	std::size_t size() const { return _area.size(); }
 
 	void clear() { _area.clear(); _conf.clear(); _conf_before.clear(); }
 };
@@ -419,7 +421,8 @@ class _backed_up_grid
 		}
 		template<class _Cont>
 		patch_t get_patch(const _Cont& cont, const cell_t& new_c) {
-			return patch_t(cont, ref._grid, new_c);
+			exit(1);
+			return patch_t(cont, ref._grid, new_c); // TODO: invalid order???
 		}
 	public:
 	/*	bool operator==(const cell_t& c) const

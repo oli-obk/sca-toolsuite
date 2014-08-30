@@ -38,7 +38,7 @@ class MyProgram : public Program
 		 sandpile::lx_hint(grid, dim, hint, container, times);
 	}
 
-	int main()
+	exit_t main()
 	{
 		FILE* read_fp = stdin;
 		int hint = -1;
@@ -91,7 +91,7 @@ class MyProgram : public Program
 			start<sandpile::array_stack>(grid, dim, human2internal(hint, dim.width()), times);
 			write_grid(stdout, &grid, &dim);
 		}
-		return 0;
+		return exit_t::success;
 	}
 };
 

@@ -28,7 +28,7 @@ using namespace sca;
 // TODO: own sim type class, inherit
 class MyProgram : public Program, sim::ulator
 {
-	int main()
+	exit_t main()
 	{
 		const char* equation = "v";
 		bool async = false;
@@ -132,7 +132,7 @@ class MyProgram : public Program, sim::ulator
 			os_sleep(1);
 		}
 
-		return 0;
+		return exit_t::success;
 	}
 };
 

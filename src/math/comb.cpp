@@ -30,7 +30,7 @@ inline int min_of_ints(const int i1, const int i2) { return std::min(i1, i2); }
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		if(argc != 3)
 		 exit_usage();
@@ -64,7 +64,7 @@ class MyProgram : public Program
 		}
 
 		write_grid(stdout, &grid0, &dim);
-		return 0;
+		return exit_t::success;
 	}
 };
 

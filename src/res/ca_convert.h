@@ -18,50 +18,46 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#include "simulate.h"
-#include "general.h"
-#include "io.h"
+//! @file ca_convert.h Routines to convert between ca formats
+
+#ifndef CA_CONVERT_H
+#define CA_CONVERT_H
+
 #include "ca.h"
 
-using namespace sca;
+namespace sca { namespace ca {
 
-// TODO: own sim type class, inherit
-class MyProgram : public Program, sim::ulator
+enum class type
 {
-	exit_t main()
-	{
-		switch(argc)
-		{
-			case 1:
-				break;
-			default:
-				exit_usage();
-		}
+	formula,
+	table,
+	grids
+};
 
-		using it = std::istreambuf_iterator<char>;
-		const it eos;
-		const std::string s(it(std::cin), eos);
+template<type in, type out>
+class converter
+{
+	dont_instantiate_me_id<type, in> d;
+};
 
-		const ca::ca_table_t tbl(s.c_str(), 3); // TODO: 3
-		tbl.dump(std::cout);
-
-		return exit_t::success;
+template<type T>
+class converter<T, T>
+{
+	void operator()(std::istream& i, std::ostream& o){
+		o << i.rdbuf();
 	}
 };
 
-int main(int argc, char** argv)
+template<type T>
+class converter<type::table, type::grids>
 {
-	HelpStruct help;
-	help.syntax = "ca/dump"
-		"";
-	help.description = "Dumps a cellular automaton (ca).\n"
-		"The number of states is always 3 (0-2).\n"
-		"This can be changed in the future.";
-	help.input = "equation string, describing the local tf";
-	help.output = "table for the local tf";
+	void operator()(std::istream& i, std::ostream& o) {
+		_ca_table_hdr_t tbl_hdr(i);
+		(void)tbl_hdr(i);
+		dont_instantiate_me_id<type, in>();
+	}
+};
 
-	MyProgram p;
-	return p.run(argc, argv, &help);
-}
+}}
 
-
+#endif // CA_CONVERT_H

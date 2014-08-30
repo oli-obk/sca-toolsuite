@@ -118,7 +118,7 @@ class MyProgram : public Program
 		return true;
 	}
 
-	int main()
+	exit_t main()
 	{
 	//	bool (*scanfunc)(FILE*, int*);
 	//	void (*printfunc)(FILE*, int);
@@ -163,7 +163,7 @@ class MyProgram : public Program
 	//	call_function(_read_array, stdin, &grid, &dim, scanfunc);
 
 		exit("Not working in this commit.");
-		return 0;
+		return exit_t::success;
 	}
 };
 

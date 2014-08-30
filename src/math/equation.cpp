@@ -24,7 +24,7 @@
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		const char* equation = "";
 		switch(argc)
@@ -76,7 +76,7 @@ class MyProgram : public Program
 
 
 		write_grid(stdout, &result, &dim);
-		return 0;
+		return exit_t::success;
 	}
 };
 

@@ -27,7 +27,7 @@
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		const char* fname = nullptr;
 		switch(argc)
@@ -37,11 +37,11 @@ class MyProgram : public Program
 			case 1:
 				break;
 			default:
-				exit_usage();
+				return exit_usage();
 		}
 
 		std::cout << grid_t(fname, 0);
-		return 0;
+		return exit_t::success;
 	}
 };
 

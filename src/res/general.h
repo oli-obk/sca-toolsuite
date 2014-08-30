@@ -58,6 +58,16 @@ protected:
 	const bool env_debug;
 	int argc;
 	char** argv;
+
+	enum class exit_t {
+		success = 0,
+		failure = 1
+	};
+
+	static int _exit_code(exit_t ec) { return (int)(ec); }
+	static exit_t success(bool cond) {
+		return cond ? exit_t::success : exit_t::failure;
+	}
 private:
 	const HelpStruct* help;
 
@@ -73,7 +83,7 @@ public:
 
 protected:
 	//! Main routine for inherited classes.
-	virtual int main() = 0;
+	virtual exit_t main() = 0;
 
 	//! Exit program with message @a str
 	void exit(const char* str) const;
@@ -103,7 +113,7 @@ protected:
 	}
 
 	//! Exit program with usage
-	void exit_usage() const;
+	exit_t exit_usage() const;
 
 	//! Exit program if @a assertion is false, printing usage
 	void assert_usage(bool assertion) const;

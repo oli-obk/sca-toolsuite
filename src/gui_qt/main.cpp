@@ -24,7 +24,7 @@
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		const char *ca_eq =
 			"v+(-4*(v>=4))"
@@ -47,7 +47,7 @@ class MyProgram : public Program
 		MainWindow mainwindow(ca_eq, input_eq);
 		mainwindow.show();
 
-		return app.exec();
+		return success(app.exec() == 0);
 	}
 };
 

@@ -24,7 +24,7 @@
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		using cell_t = def_cell_traits::cell_t;
 		using coord_t = def_coord_traits::coord_t;
@@ -60,7 +60,7 @@ class MyProgram : public Program
 
 		const bool recurrent = array.size() == hdim.area();
 		array.flush();
-		return recurrent ? 0 : 1;
+		return success(recurrent);
 	}
 };
 

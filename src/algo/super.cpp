@@ -28,7 +28,7 @@
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		assert_usage(argc == 1);
 		grid_t grid(std::cin, 1);
@@ -36,7 +36,7 @@ class MyProgram : public Program
 		sandpile::superstabilize(grid);
 		std::cout << grid;
 
-		return 0;
+		return exit_t::success;
 	}
 };
 

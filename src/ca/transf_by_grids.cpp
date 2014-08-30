@@ -57,7 +57,7 @@ class MyProgram : public Program
 		return symmetry_type::none; // suppress compiler error
 	}
 
-	int main()
+	exit_t main()
 	{
 		//int number_of_states;
 		//symmetry_type symm_type = symmetry_type::none;
@@ -172,7 +172,7 @@ class MyProgram : public Program
 			puts("");
 		}
 
-		return 0;
+		return exit_t::success;
 	}
 };
 

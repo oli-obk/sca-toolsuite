@@ -43,7 +43,7 @@ std::vector<char> get_file_contents(std::istream& stream = std::cin)
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		const char *equation = "v";
 		std::string format = "ARGB";
@@ -109,7 +109,7 @@ class MyProgram : public Program
 				<< error.what() << std::endl;
 		}
 
-		return 0;
+		return exit_t::success;
 	}
 };
 

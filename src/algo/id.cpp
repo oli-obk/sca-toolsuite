@@ -28,13 +28,13 @@
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		assert_usage(argc == 3);
 		dimension dim(atoi(argv[1]), atoi(argv[2]));
 
 		std::cout << sandpile::get_identity(dim);
-		return 0;
+		return exit_t::success;
 	}
 };
 

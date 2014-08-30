@@ -29,7 +29,7 @@
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		FILE* read_fp=stdin;
 		char separator = ' ';
@@ -55,7 +55,7 @@ class MyProgram : public Program
 		}
 		fputs("\n", stdout);
 
-		return 0;
+		return exit_t::success;
 	}
 };
 

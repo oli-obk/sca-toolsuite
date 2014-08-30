@@ -26,7 +26,7 @@
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		grid_t grid(std::cin, 0);
 		int expected = 0;
@@ -39,7 +39,7 @@ class MyProgram : public Program
 		auto itr = grid.cbegin();
 		for( ; itr != grid.cend() && *itr == expected; ++itr ) ;
 
-		return ( itr == grid.cend() ) ? 0 : 1;
+		return success( itr == grid.cend() );
 	}
 };
 

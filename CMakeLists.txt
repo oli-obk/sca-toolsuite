@@ -64,7 +64,7 @@ SET(res_dir "${src_base}res/")
 SET(general "${res_dir}/io.cpp" "${res_dir}/io.h" "${res_dir}/general.h" "${res_dir}/general.cpp" "${res_dir}/random.h")
 SET(geometry "${res_dir}/geometry.h" "${res_dir}/geometry.cpp")
 SET(eq_solver "${res_dir}/equation_solver.cpp" "${res_dir}/equation_solver.h" "${res_dir}/eqs_internal.h" "${res_dir}/eqs_functions.cpp" "${res_dir}/eqs_functions.h")
-SET(ca "${res_dir}/ca.h")
+SET(ca "${res_dir}/ca.h" "${res_dir}/ca.cpp")
 SET(ca_basics "${res_dir}/ca_basics.h")
 SET(image "${res_dir}/image.h" "${res_dir}/image.cpp")
 SET(print "${res_dir}/print.h")
@@ -177,7 +177,7 @@ endif()
 # FLAGS
 # the order of -Wall -Wno-unknown-pragmas is important
 # TODO: -Werror
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -Werror ${WARN_EXC} -std=c++11 -pipe")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall ${WARN_EXC} -std=c++11 -pipe")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 ${FLTO_FLAGS}")
 

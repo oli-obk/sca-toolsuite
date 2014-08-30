@@ -27,7 +27,7 @@
 
 class MyProgram : public Program
 {
-	int main()
+	exit_t main()
 	{
 		if(argc != 3)
 		 exit_usage();
@@ -75,7 +75,7 @@ class MyProgram : public Program
 		}
 
 		write_array(stdout, &grid, &dim);
-		return 0;
+		return exit_t::success;
 	}
 };
 

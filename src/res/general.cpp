@@ -49,7 +49,7 @@ int Program::run(int _argc, char **_argv, const HelpStruct *_help)
 			::exit(0);
 		}
 
-	int return_value = 0;
+	exit_t return_value;
 	try {
 		return_value = main();
 	} catch(const char* str) {
@@ -61,7 +61,7 @@ int Program::run(int _argc, char **_argv, const HelpStruct *_help)
 	} catch(...) {
 		exit("Unknown error caught. This should never happen.");
 	}
-	return return_value;
+	return _exit_code(return_value);
 }
 
 Program::Program() : env_debug(safe_atoi(getenv("SCA_DEBUG"))) {}
@@ -81,11 +81,12 @@ void Program::debug(const char *str) const {
 #endif
 }
 
-void Program::exit_usage() const
+Program::exit_t Program::exit_usage() const
 {
 	help->print_usage();
 	fprintf(stderr, " (--help for more information)\n");
 	internal_exit();
+	return exit_t::failure; // suppress compiler warnings
 }
 
 void Program::assert_usage(bool assertion) const { if(!assertion) exit_usage(); }
