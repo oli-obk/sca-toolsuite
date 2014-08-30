@@ -292,7 +292,7 @@ public:
 
 	// TODO: template for grids of other class
 	void copy_to_int(self& other, const rect& rc) const {
-		if(other.dx() != rc.dx()) throw "copy_to(): Incompatible dy";
+		if(other.dx() != rc.dx()) throw "copy_to(): Incompatible dx";
 		if(other.dy() != rc.dy()) throw "copy_to(): Incompatible dy";
 		auto itr = lines(rc).begin();
 		auto itr_other = other.lines().begin();

@@ -24,5 +24,11 @@ add_executable(transf_by_grids "${src_dir}/transf_by_grids.cpp"
 	${ca_basics}
 )
 
+add_executable(scene "${src_dir}/scene.cpp"
+	${general}
+	${geometry}
+	${ca_basics}
+)
+
 cp_script(ca_file)
 

@@ -25,72 +25,19 @@
 
 using namespace sca;
 
-// TODO: own symm type class, inherit
-class MyProgram : public Program
+class trans_vector_t
 {
-	enum class symmetry_type
+	const ca::n_t neighbours;
+	std::vector<ca::trans_t> table; //!< sorted by input (first)
+public:
+	trans_vector_t(std::istream& stream) :
+		neighbours(stream)
 	{
-		none,
-		rotate,
-		rotate_mirror
-	};
-
-	struct symm_wrapper
-	{
-		symmetry_type t;
-		const char* str;
-	};
-
-	const symm_wrapper wraps[4] = // TODO: why is 4 needed?
-	{
-		{ symmetry_type::none, "none" },
-		{ symmetry_type::rotate, "rotate" },
-		{ symmetry_type::rotate_mirror, "rotate+mirror" },
-	};
-
-	symmetry_type type_by_str(const char* str) const
-	{
-		for(const symm_wrapper& i : wraps)
-		 if(!strcmp(i.str, str))
-		  return i.t;
-		exitf("Invalid symmetry type %s", str);
-		return symmetry_type::none; // suppress compiler error
-	}
-
-	exit_t main()
-	{
-		//int number_of_states;
-		//symmetry_type symm_type = symmetry_type::none;
-		/*switch(argc)
-		{
-			case 3:
-				symm_type = type_by_str(argv[2]);
-			case 2:
-				number_of_states = atoi(argv[1]); break;
-			default:
-				exit_usage();
-		}*/
-
-		assert_usage(argc == 1);
-
-		// read neighbour grid
-#ifdef SCA_DEBUG
-		std::cerr << "Parsing first grid (neighbourhood)..." << std::endl;
-#endif
-		const ca::n_t neighbours(stdin);
-		const point& center_cell = neighbours.get_center_cell();
-
-		std::vector<ca::trans_t> table;
-
-		// read other grids into table
-#ifdef SCA_DEBUG
-		std::cerr << "Parsing table..." << std::endl;
-#endif
-
+		const point center_cell = neighbours.get_center_cell();
 		dimension n_dim = neighbours.get_dim();
 		grid_t _in_grid(n_dim, 0);
 
-		while(!feof(stdin))
+		while(std::cin.good())
 		{
 			grid_t in_grid(std::cin, 0);
 			grid_t out_grid(std::cin, 0);
@@ -127,9 +74,14 @@ class MyProgram : public Program
 			assert(*itr != *recent);
 			recent = &*itr;
 		}
+	}
 
-		// write to out
-		std::sort(table.begin(), table.end());
+	void dump_as_formula(std::ostream& stream) const
+	{
+		// write to out // TODO: redundant?
+		std::vector<ca::trans_t> table_copy = table;
+		std::sort(table_copy.begin(), table_copy.end()); // compares only by output
+
 		{
 			std::size_t braces = 0;
 
@@ -137,19 +89,23 @@ class MyProgram : public Program
 			for(std::size_t i = 0; i < neighbours.size(); i++)
 			{
 				point p = neighbours[i];
-				printf("h[%lu]:=a[%d,%d],\n",
-					i, p.x, p.y);
+				//printf("h[%lu]:=a[%d,%d],\n",
+				//	i, p.x, p.y);
+				stream << "h[" << i << "]:=a["
+					<< p.x << "," << p.y << "],\n";
 			}
 
-			int recent_output = table[0].get_output();
-			puts("(");
+			int recent_output = table_copy[0].get_output();
+			stream << "(" << std::endl;
 			// print functions
-			for(const auto& tf : table)
+			for(const auto& tf : table_copy)
 			{
 				if(recent_output != tf.get_output())
 				{
-					printf("0 ) ? %d : (\n"
-					"(\n", recent_output);
+					//printf("0 ) ? %d : (\n"
+					//"(\n", recent_output);
+					stream << "0 ) ? " << recent_output
+						<< " : (\n(\n";
 					++braces;
 					recent_output = tf.get_output();
 				}
@@ -160,17 +116,77 @@ class MyProgram : public Program
 					const bool is_set = tf.input(i, &input_val);
 					assert(is_set);
 					if(is_set)
-					 printf("(h[%d] == %d) && \n",
-						i, input_val);
+						stream << "(h[" << i << "] == " << input_val
+							<< ") && \n";
+					// printf("(h[%d] == %d) && \n",
+					//	i, input_val);
 				}
-				puts(" 1 ||");
+				stream << " 1 ||" << std::endl;
 			}
 			// keep value as v if no matches
-			printf("0 ) ? %d : v", recent_output);
+			//printf("0 ) ? %d : v", recent_output);
+			stream << "0 ) ? " << recent_output << " : v";
 			for(std::size_t i = 0; i < braces; ++i)
-			 printf(")");
-			puts("");
+			 stream << ")";
+			 //printf(")");
+			stream << std::endl;
 		}
+	}
+
+};
+
+// TODO: own symm type class, inherit
+class MyProgram : public Program
+{
+// symmetry not implemented:
+#if USE_SYMMETRY
+	enum class symmetry_type
+	{
+		none,
+		rotate,
+		rotate_mirror
+	};
+
+	struct symm_wrapper
+	{
+		symmetry_type t;
+		const char* str;
+	};
+
+	const symm_wrapper wraps[4] = // TODO: why is 4 needed?
+	{
+		{ symmetry_type::none, "none" },
+		{ symmetry_type::rotate, "rotate" },
+		{ symmetry_type::rotate_mirror, "rotate+mirror" },
+	};
+
+	symmetry_type type_by_str(const char* str) const
+	{
+		for(const symm_wrapper& i : wraps)
+		 if(!strcmp(i.str, str))
+		  return i.t;
+		exitf("Invalid symmetry type %s", str);
+		return symmetry_type::none; // suppress compiler error
+	}
+#endif
+
+	exit_t main()
+	{
+		//int number_of_states;
+		//symmetry_type symm_type = symmetry_type::none;
+		/*switch(argc)
+		{
+			case 3:
+				symm_type = type_by_str(argv[2]);
+			case 2:
+				number_of_states = atoi(argv[1]); break;
+			default:
+				exit_usage();
+		}*/
+		assert_usage(argc == 1);
+
+		trans_vector_t tv(std::cin);
+		tv.dump_as_formula(std::cout); // TODO: cout
 
 		return exit_t::success;
 	}

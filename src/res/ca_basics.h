@@ -419,6 +419,14 @@ public:
 		return stream;
 	}
 
+	friend std::istream& operator>> (std::istream& stream,
+		_n_t& n)
+	{
+		grid_t in_grid(stream, 0);
+		n.init(in_grid.data(), in_grid.internal_dim());
+		return stream;
+	}
+
 	bool is_neighbour_of(const point& p1, const point& p2) const
 	{
 		return std::binary_search(neighbours.begin(), neighbours.end(), p1-p2);
@@ -505,15 +513,8 @@ public:
 		// TODO: parameter in_dim is useless?
 		init(in_grid, in_dim);
 	}
-
-	// TODO: deprecated
-	_n_t(FILE* fp)
-	{
-		std::vector<int> in_grid;
-		dimension tmp_dim;
-		read_grid(fp, &in_grid, &tmp_dim, 0);
-		init(in_grid, tmp_dim);
-	}
+	_n_t(std::istream& stream) { stream >> *this; } // TODO: const ctor
+	_n_t() {}
 
 	// TODO: make constexpr version, too
 	//! assumes that no borders exist
