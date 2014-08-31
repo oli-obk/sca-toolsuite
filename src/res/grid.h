@@ -278,9 +278,10 @@ class _grid_t : public grid_alignment_t<Traits>
 
 public:
 
-	line_cont_t lines(const rect& rc = base::internal_dim()) const {
+	line_cont_t lines(const rect& rc) const {
 		return line_cont_t(rc); }
-
+	line_cont_t lines() const {
+		return lines(base::internal_dim()); }
 
 	void copy_line_to(self& other, const line& m_line, const line& other_line) const {
 		const auto& m_begin = _data.begin()

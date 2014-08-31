@@ -21,119 +21,9 @@
 #include <cstring>
 #include "general.h"
 #include "io.h"
-#include "ca_basics.h" // TODO: -> cmake deps
+#include "ca_convert.h" // TODO: -> cmake deps
 
 using namespace sca;
-
-class trans_vector_t
-{
-	const ca::n_t neighbours;
-	std::vector<ca::trans_t> table; //!< sorted by input (first)
-public:
-	trans_vector_t(std::istream& stream) :
-		neighbours(stream)
-	{
-		const point center_cell = neighbours.get_center_cell();
-		dimension n_dim = neighbours.get_dim();
-		grid_t _in_grid(n_dim, 0);
-
-		while(std::cin.good())
-		{
-			grid_t in_grid(std::cin, 0);
-			grid_t out_grid(std::cin, 0);
-			//assert(out_grid.human_dim().area() == 1);
-			assert((2 + out_grid.human_dim().dx())
-				== in_grid.human_dim().dx());
-			assert((2 + out_grid.human_dim().dy())
-				== in_grid.human_dim().dy());
-
-			point ul = *in_grid.points().end();
-			dimension rc(ul.x-2, ul.y-2);
-			for(const point& p : rc)
-			{
-				in_grid.copy_to_int(_in_grid, n_dim + p);
-
-				const def_cell_traits::cell_t out_cell
-					= out_grid[p];
-
-				neighbours.add_transition_functions(
-						table, center_cell, _in_grid, out_cell
-					);
-			}
-		}
-
-		assert(table.size() > 0);
-
-		// uniq assertion
-		std::sort(table.begin(), table.end(), ca::compare_by_input);
-		const ca::trans_t* recent = &(table[0]);
-
-		for(std::vector<ca::trans_t>::const_iterator itr
-			= (++table.begin()); itr != table.end(); ++itr)
-		{
-			assert(*itr != *recent);
-			recent = &*itr;
-		}
-	}
-
-	void dump_as_formula(std::ostream& stream) const
-	{
-		// write to out // TODO: redundant?
-		std::vector<ca::trans_t> table_copy = table;
-		std::sort(table_copy.begin(), table_copy.end()); // compares only by output
-
-		{
-			std::size_t braces = 0;
-
-			// print helper vars
-			for(std::size_t i = 0; i < neighbours.size(); i++)
-			{
-				point p = neighbours[i];
-				//printf("h[%lu]:=a[%d,%d],\n",
-				//	i, p.x, p.y);
-				stream << "h[" << i << "]:=a["
-					<< p.x << "," << p.y << "],\n";
-			}
-
-			int recent_output = table_copy[0].get_output();
-			stream << "(" << std::endl;
-			// print functions
-			for(const auto& tf : table_copy)
-			{
-				if(recent_output != tf.get_output())
-				{
-					//printf("0 ) ? %d : (\n"
-					//"(\n", recent_output);
-					stream << "0 ) ? " << recent_output
-						<< " : (\n(\n";
-					++braces;
-					recent_output = tf.get_output();
-				}
-
-				for(unsigned i = 0; i < neighbours.size(); i++)
-				{
-					int input_val;
-					const bool is_set = tf.input(i, &input_val);
-					assert(is_set);
-					if(is_set)
-						stream << "(h[" << i << "] == " << input_val
-							<< ") && \n";
-					// printf("(h[%d] == %d) && \n",
-					//	i, input_val);
-				}
-				stream << " 1 ||" << std::endl;
-			}
-			// keep value as v if no matches
-			//printf("0 ) ? %d : v", recent_output);
-			stream << "0 ) ? " << recent_output << " : v";
-			for(std::size_t i = 0; i < braces; ++i)
-			 stream << ")";
-			 //printf(")");
-			stream << std::endl;
-		}
-	}
-
-};
 
 // TODO: own symm type class, inherit
 class MyProgram : public Program
@@ -185,8 +75,9 @@ class MyProgram : public Program
 		}*/
 		assert_usage(argc == 1);
 
-		trans_vector_t tv(std::cin);
-		tv.dump_as_formula(std::cout); // TODO: cout
+		using namespace sca::ca;
+		converter<type::grids, type::formula> c;
+		c();
 
 		return exit_t::success;
 	}

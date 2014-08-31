@@ -20,6 +20,7 @@
 
 #include "general.h"
 #include "ca_basics.h"
+#include "ca_convert.h"
 
 #include <string>
 #include <iostream>
@@ -43,14 +44,14 @@ public:
 	}
 };
 
-struct sca_infile // TODO: name
+struct infile_t
 {
 	constexpr static std::size_t READ_BUF_SIZE = 128;
 	char read_buffer[READ_BUF_SIZE] = { 0 };
 	std::istream& stream;
 public:
 
-	struct sca_file_err
+	struct error_t
 	{
 		int line;
 		const char* msg;
@@ -58,12 +59,12 @@ public:
 
 	int line = 1;
 
-	sca_file_err mk_error(const char* err) {
+	error_t mk_error(const char* err) const {
 		std::cerr << "parsing stopped after: " << read_buffer << std::endl;
-		return sca_file_err { line, err };
+		return error_t { line, err };
 	}
 
-	sca_infile(std::istream& stream = std::cin) :
+	infile_t(std::istream& stream = std::cin) :
 		stream(stream) {}
 
 	void read_newline()
@@ -238,7 +239,7 @@ public:
 	std::vector<markup> markup_list;
 	std::vector<arrow> arrow_list;
 
-	bool parse(sca_infile& inf)
+	bool parse(infile_t& inf)
 	{
 		if(inf.read_int(grid_id))
 		{
@@ -269,8 +270,9 @@ public:
 	n_t n;
 	std::map<std::size_t, grid_t> grids;
 	std::vector<std::vector<path_node>> paths;
+	trans_vector_t tv;
 
-	void parse(sca_infile& inf)
+	void parse(infile_t& inf)
 	{
 		section_t sec;
 		while((sec = inf.read_section()))
@@ -300,14 +302,29 @@ public:
 			}
 		}
 	}
+
+	void get_tv()
+	{
+		tv_ctor cons(n);
+		for(const std::vector<path_node>& v : paths)
+		{
+			using itr_t = std::vector<path_node>::const_iterator;
+			itr_t tar = v.begin();
+			itr_t src = tar++;
+			for(; tar != v.end(); ++src, ++tar)
+			{
+				cons.add_eq(grids[src->grid_id], grids[tar->grid_id]);
+			}
+		}
+
+		tv = std::move(trans_vector_t(std::move(cons)));
+	}
 };
 
 class MyProgram : public Program
 {
 	exit_t main()
 	{
-
-
 		/*
 		 * args
 		 */
@@ -328,15 +345,12 @@ class MyProgram : public Program
 		 * parsing
 		 */
 
-		sca_infile inf;
-
+		infile_t inf;
 		scene_t scene;
 
-		try{
+		try {
 			scene.parse(inf);
-
-		} catch(sca_infile::sca_file_err ife)
-		{
+		} catch(infile_t::error_t ife) {
 			std::cout << "infile line " << ife.line << ": "	 << ife.msg << std::endl;
 		}
 
