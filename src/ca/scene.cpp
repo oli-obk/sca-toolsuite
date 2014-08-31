@@ -116,38 +116,14 @@ public:
 		/*if(!*read_buffer) {
 			throw mk_error("Expected a non-empty string");
 		}*/
-
 		std::string result = read_string_noclear();
 		clear_buffer();
 		return result;
 	}
 
-	/*template<class T>
-	bool expect_int_until_section(const char* section, T* result)
-	{
-		stream.getline(read_buffer, READ_BUF_SIZE);
-		const bool is_section = !strcmp(read_buffer, section);
-
-		if(!is_section)
-		{
-			*result = atoi(read_buffer);
-		}
-		read_newline(); // read empty line
-
-		return !is_section;
-	}*/
-
-/*	void expect_section(const char* section)
-	{
-		int tmp;
-		assert_always(!expect_int_until_section(section, &tmp),
-			"Expected a new section.");
-	}*/
-
 	/*void read_grid(grid_t& grid) {
 		stream >> grid;
 	}*/
-
 
 	section_t read_section()
 	{
