@@ -202,12 +202,9 @@ public:
 		arrow(const char* str)
 		{
 			const char* ptr = str;
-			p1.x = atoi(ptr);
-			next_word(ptr);
-			p1.y = atoi(ptr);
-			next_word(ptr);
-			p2.x = atoi(ptr);
-			next_word(ptr);
+			p1.x = atoi(ptr); next_word(ptr);
+			p1.y = atoi(ptr); next_word(ptr);
+			p2.x = atoi(ptr); next_word(ptr);
 			p2.y = atoi(ptr);
 		}
 	};
@@ -239,6 +236,29 @@ public:
 	}
 };
 
+/*class outfile_t
+{
+	std::ostream& stream;
+	void section(const char* s) {
+		stream << s;
+	}
+};*/
+
+template<class ...SubSections>
+class section
+{
+	const char*& name;
+	const std::tuple<SubSections&...> subsections;
+	section(const char* name, const SubSections&... subsections) :
+		name(name),
+		subsections{subsections...} {}
+	friend std::ostream& operator<< (std::ostream& stream,
+		const section& s) {
+		return stream << s.name << std::endl << ;
+	}
+
+};
+
 class scene_t
 {
 public:
@@ -247,6 +267,20 @@ public:
 	std::map<std::size_t, grid_t> grids;
 	std::vector<std::vector<path_node>> paths;
 	trans_vector_t tv;
+
+	void dump()
+	{
+		std::ostream outf;
+		outf << "description" << std::endl
+			<< description << std::endl
+			<< "n" << std::endl
+			<< n << std::endl
+			<< "grids" << std::endl;
+
+
+		outf << section("description", description)
+			<< section("grids",);
+	}
 
 	void parse(infile_t& inf)
 	{
@@ -339,7 +373,7 @@ int main(int argc, char** argv)
 	HelpStruct help;
 	help.syntax = "ca/scene [<out format>]"
 		"";
-	help.description = "Converts a scene into a ca document file."
+	help.description = "Converts a scene into a document file."
 		"";
 	help.input = "Input grid in a special format.";
 	help.output = "The ca document";
