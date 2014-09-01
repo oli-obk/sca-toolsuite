@@ -247,14 +247,16 @@ public:
 template<class ...SubSections>
 class section
 {
-	const char*& name;
+	const char* const& name;
 	const std::tuple<SubSections&...> subsections;
-	section(const char* name, const SubSections&... subsections) :
+	section(const char* const &name, const SubSections&... subsections) :
 		name(name),
 		subsections{subsections...} {}
 	friend std::ostream& operator<< (std::ostream& stream,
 		const section& s) {
-		return stream << s.name << std::endl << ;
+		(void) stream;
+		(void) s;
+	//	return stream << s.name << std::endl << ;
 	}
 
 };
@@ -268,9 +270,8 @@ public:
 	std::vector<std::vector<path_node>> paths;
 	trans_vector_t tv;
 
-	void dump()
+	void dump(std::ostream& outf)
 	{
-		std::ostream outf;
 		outf << "description" << std::endl
 			<< description << std::endl
 			<< "n" << std::endl
@@ -278,8 +279,8 @@ public:
 			<< "grids" << std::endl;
 
 
-		outf << section("description", description)
-			<< section("grids",);
+		/*outf << section("description", description)
+			<< section("grids", );*/
 	}
 
 	void parse(infile_t& inf)
