@@ -390,6 +390,7 @@ public:
 		return tmp += rhs;
 	}
 
+	//! complexity: O(neighbours)
 	template<class T>
 	std::vector<_point<T>> operator()(const _point<T>& rhs) const
 	{
@@ -400,6 +401,7 @@ public:
 		return result;
 	}
 
+	//! complexity: theoretically O(neighbours), but we implemented it too slow
 	template<class Cont>
 	std::set<typename Cont::value_type> operator()(const Cont& rhs) const
 	{
@@ -663,6 +665,7 @@ public:
 	}*/
 public:
 	_conf_t(cell_t single_val) : _data{single_val} {}
+	_conf_t(cell_t single_val, std::size_t n) : _data(n, single_val) {}
 	_conf_t(std::vector<cell_t>&& _data) : _data(_data) {} // TODO: public?
 
 // TODO: re-enable
@@ -818,6 +821,7 @@ public:
 	}
 
 	std::size_t size() const { return _data.size(); }
+	// TODO: the following returns a reference for vector<bool>
 	const cell_t& operator[](unsigned id) const { return _data[id]; }
 	cell_t& operator[](unsigned id) { return _data[id]; }
 

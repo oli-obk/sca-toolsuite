@@ -256,6 +256,7 @@ class section
 		const section& s) {
 		(void) stream;
 		(void) s;
+		return s;
 	//	return stream << s.name << std::endl << ;
 	}
 
