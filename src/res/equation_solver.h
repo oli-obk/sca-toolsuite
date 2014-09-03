@@ -244,6 +244,20 @@ struct variable_area_grid : public boost::static_visitor<visit_result_type>
 	inline unsigned int operator()(vaddr::var_helper<T> _h) const { (void)_h; return 0; }
 };
 
+template<class Cont>
+struct variable_area_cont : public boost::static_visitor<Cont>
+{
+	using base = boost::static_visitor<Cont>;
+	inline unsigned int operator()(nil) const { return 0; }
+	inline unsigned int operator()(vaddr::var_x) const { return 0; }
+	inline unsigned int operator()(vaddr::var_y) const { return 0; }
+	inline typename base::result_type operator()(vaddr::var_array _a) const {
+		return Cont(_a.x, _a.y);
+	}
+	template<bool T>
+	inline unsigned int operator()(vaddr::var_helper<T> _h) const { (void)_h; return 0; }
+};
+
 
 struct variable_area_helpers : public boost::static_visitor<visit_result_type>
 {
