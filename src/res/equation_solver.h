@@ -24,6 +24,7 @@
 #include <cmath>
 #include <cstring>
 #include <cstdint>
+#include <tuple>
 
 #include <boost/spirit/include/support_info.hpp> // qi::info::nil
 
@@ -110,28 +111,27 @@ struct vaddr
 {
 	struct var_x{};
 	struct var_y{};
-	struct var_array {
-		int x, y;
-		var_array(int x, int y) : x(x), y(y) {}
-		var_array(std::string const& s1, std::string const& s2)
-			: var_array(atoi(s1.c_str()), atoi(s2.c_str()))
-		{
-		}
-		std::string to_str() { return std::to_string(x) + std::to_string(y); }
+
+	template<bool IsAddress, char Sign, class ...Coords>
+	class var_vector
+	{
+		std::tuple<Coords...> coords;
+	public:
+		//!< direct ctor
+		var_vector(Coords ...coords) : coords(coords...) {}
+		//!< ctor from std::string
+		template<class ...String>
+		var_vector(String const& ...strings) : var_vector(atoi(strings.c_str())...) {}
+		template<char Idx>
+		int x() const { return std::get<Idx-1>(coords); }
+		std::string to_str() const { return "TODO"; }
 	};
 
-	//! is used as "adress to index"
-	template<bool IsAddress>
-	struct var_helper {
-		int i; //!< index that shall be adressed
-		var_helper(std::string const& s/*, bool _address = false*/)
-		 : i(atoi(s.c_str()))
-		{
-		}
-		std::string to_str() {
-			return "h[" + std::to_string(i) + "]";
-		}
-	};
+	//template<bool A>
+	using var_array = var_vector<true, 'a', int, int>;
+	template<bool A>
+	using var_helper = var_vector<A, 'h', int>;
+
 	typedef boost::variant<nil, var_x, var_y, var_array, var_helper<true>, var_helper<false>> type;
 	type expr;
 	vaddr(const type& _t) { expr = _t; }
@@ -153,7 +153,7 @@ struct grid_storage_array
 	grid_storage_array(storage_t const v, int width) :
 		v(v), width(width) {}
 	inline unsigned int operator()(vaddr::var_array _a) const {
-		return v[_a.x+_a.y*width]; }
+		return v[_a.x<1>()+_a.x<2>()*width]; }
 };
 
 struct grid_storage_bits
@@ -164,7 +164,7 @@ struct grid_storage_bits
 	char vpos;
 	int width;
 	inline unsigned int operator()(vaddr::var_array _a) const {
-		return (grid >> ((vpos + _a.x + _a.y*width) * each)) & bitmask;
+		return (grid >> ((vpos + _a.x<1>() + _a.x<2>()*width) * each)) & bitmask;
 	}
 	grid_storage_bits(storage_t grid, storage_t each, int width, storage_t vpos) :
 		each(each),
@@ -214,11 +214,11 @@ struct _variable_print : public boost::static_visitor<visit_result_type>
 	}
 	inline int* operator()(vaddr::var_helper<true> _h) const {
 		//return (_h.address) ? ((result_type*)(helper_vars + _h.i)) : helper_vars[_h.i];
-		return helper_vars + _h.i;
+		return helper_vars + _h.x<1>();
 	}
 	inline unsigned int operator()(vaddr::var_helper<false> _h) const {
 		//return (_h.address) ? ((result_type*)(helper_vars + _h.i)) : helper_vars[_h.i];
-		return helper_vars[_h.i];
+		return helper_vars[_h.x<1>()];
 	}
 
 };
@@ -231,7 +231,7 @@ struct variable_area_grid : public boost::static_visitor<visit_result_type>
 	inline unsigned int operator()(vaddr::var_x) const { return 0; }
 	inline unsigned int operator()(vaddr::var_y) const { return 0; }
 	inline result_type operator()(vaddr::var_array _a) const {
-		return std::max(std::abs(_a.x), std::abs(_a.y));
+		return std::max(std::abs(_a.x<1>()), std::abs(_a.x<2>()));
 	}
 	template<bool T>
 	inline unsigned int operator()(vaddr::var_helper<T> _h) const { (void)_h; return 0; }
@@ -245,7 +245,7 @@ struct variable_area_cont : public boost::static_visitor<Cont>
 	inline unsigned int operator()(vaddr::var_x) const { return 0; }
 	inline unsigned int operator()(vaddr::var_y) const { return 0; }
 	inline typename base::result_type operator()(vaddr::var_array _a) const {
-		return Cont(_a.x, _a.y);
+		return Cont(_a.x<1>(), _a.x<2>());
 	}
 	template<bool T>
 	inline unsigned int operator()(vaddr::var_helper<T> _h) const { (void)_h; return 0; }
@@ -259,8 +259,8 @@ struct variable_area_helpers : public boost::static_visitor<visit_result_type>
 	inline result_type operator()(vaddr::var_y) const { return -1; }
 	inline result_type operator()(vaddr::var_array _a) const { (void)_a; return -1; }
 
-	inline result_type operator()(vaddr::var_helper<true> _h) const { return _h.i; } // todo: correct?
-	inline result_type operator()(vaddr::var_helper<false> _h) const { return _h.i; } // todo: correct?
+	inline result_type operator()(vaddr::var_helper<true> _h) const { return _h.x<1>(); } // todo: correct?
+	inline result_type operator()(vaddr::var_helper<false> _h) const { return _h.x<1>(); } // todo: correct?
 };
 
 //! expression tree node
@@ -889,12 +889,12 @@ struct ast_minmax : public boost::static_visitor<unsigned int>
 		inline int_pair* operator()(vaddr::var_helper<true> _h) const {
 			//return (_h.address) ? ((result_type*)(helper_vars + _h.i)) : helper_vars[_h.i];
 		//	std::cout << "returning ptr: " << helper_vars[_h.i].first << std::endl;
-			return helper_vars + _h.i;
+			return helper_vars + _h.x<1>();
 		}
 		inline int_pair operator()(vaddr::var_helper<false> _h) const {
 			//return (_h.address) ? ((result_type*)(helper_vars + _h.i)) : helper_vars[_h.i];
 		//	std::cout << "returning value: " << helper_vars[_h.i].first << std::endl;
-			return helper_vars[_h.i];
+			return helper_vars[_h.x<1>()];
 		}
 
 		variable_minmax_helpers(std::size_t helpers_size)
