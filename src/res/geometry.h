@@ -400,7 +400,7 @@ public:
 		return !(operator ==(other));
 	}
 
-	bool point_is_contained(const point& p) const {
+	bool contains(const point& p) const {
 		return p.x >= s::ul().x && p.x < s::_lr.x
 			&& p.y >= s::ul().y && p.y < s::_lr.y;
 	}
@@ -413,7 +413,7 @@ public:
 			for(const point& p : points)
 			{
 				std::cout << p << std::endl;
-				if(!point_is_contained(p))
+				if(!contains(p))
 				 return false;
 			}
 		}
@@ -446,6 +446,11 @@ class _bounding_box
 	point _ul, _lr;
 public:
 	constexpr _bounding_box() : _ul(point::zero()), _lr(point::zero()) {}
+	/*template<class Cont>
+	_bounding_box(const Cont& sorted_points)
+	{ // TODO: const ctor
+	//	_lr.y = sorted_points.begin();
+	}*/ // TODO
 
 	void add_point(const point& p)
 	{
@@ -471,6 +476,7 @@ public:
 	u_coord_t x_size() const { return _lr.x - _ul.x; }
 	point ul() const { return _ul; }
 	point lr() const { return _lr; }
+	_rect<Traits> rect() const { return _rect<Traits>(_ul, _lr); }
 	dimension dim() const {
 		return dimension { (u_coord_t) y_size(),
 			(u_coord_t) x_size() };

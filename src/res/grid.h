@@ -86,11 +86,12 @@ using cell_itr = _cell_itr<def_coord_traits, def_cell_traits>;
 template<class Traits>
 class grid_alignment_t
 {
-protected:
+public:
 	using coord_t = typename Traits::coord_t;
 	using u_coord_t = typename Traits::u_coord_t;
 	using area_t = typename Traits::area_t;
 	using point = _point<Traits>;
+protected:
 	using dimension = _dimension<Traits>;
 
 // TODO: all protected?
@@ -162,6 +163,10 @@ public:
 
 	_dim_cont<Traits> points() const { return _dim.points(bw); }
 
+	bool contains(const point& p) const {
+		return _human_dim().contains(p);
+	}
+
 	//! simple constructor: empty grid
 	grid_alignment_t(u_coord_t border_width) :
 		bw(border_width),
@@ -201,9 +206,13 @@ class _grid_t : public grid_alignment_t<Traits>
 	using base::bw;
 	using base::bw_2;
 	using base::_dim;
+public:
+	using traits_t = Traits;
+	using cell_traits_t = CellTraits;
 	using point = typename base::point;
 	using area_t = typename base::area_t;
 	using u_coord_t = typename base::u_coord_t;
+private:
 	using dimension = typename base::dimension;
 
 	class line

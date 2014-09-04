@@ -83,13 +83,6 @@ using fptr_base = Ret (*)(Args...);
 template<class Ret, class ...Args>
 struct nary_op;
 
-template<class Ret, class ...Args>
-using ternary_op = nary_op<Ret, Args...>;
-template<class Ret, class ...Args>
-using binary_op = nary_op<Ret, Args...>;
-template<class Ret, class ...Args>
-using unary_op = nary_op<Ret, Args...>;
-
 template<std::size_t... Is> struct seq {};
 template<std::size_t N, std::size_t... Is> struct make_seq : make_seq<N-1, N-1, Is...> {};
 template<std::size_t... Is> struct make_seq<0, Is...> : seq<Is...> {};
@@ -289,10 +282,10 @@ public:
 		, std::string  // TODO: needed?
 		, vaddr
 		, boost::recursive_wrapper<expression_ast>
-		, boost::recursive_wrapper<ternary_op<int, int, int, int>>
-		, boost::recursive_wrapper<binary_op<int, int, int>>
-		, boost::recursive_wrapper<binary_op<int, int*, int>>
-		, boost::recursive_wrapper<unary_op<int, int>>
+		, boost::recursive_wrapper<nary_op<int, int, int, int>>
+		, boost::recursive_wrapper<nary_op<int, int, int>>
+		, boost::recursive_wrapper<nary_op<int, int*, int>>
+		, boost::recursive_wrapper<nary_op<int, int>>
 		>;
 
 	expression_ast() : expr(nil()) {}
@@ -982,6 +975,7 @@ const char* get_help_description();
 void build_tree(const char* equation, eqsolver::expression_ast* ast);
 
 //! Computes the result of the equation with @a x, @a y and @a z filled in.
+//! @todo unused
 int solve(const char* equation, int x, int y, int v);
 
 }

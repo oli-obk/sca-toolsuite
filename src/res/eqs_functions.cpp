@@ -28,7 +28,7 @@ namespace eqsolver
 #define MAKE_OP(OP, VISUAL, EXECUTE) \
 	expression_ast& expression_ast::operator OP(expression_ast const& rhs) \
 	{ \
-		expr = binary_op<int, int, int>(VISUAL, &EXECUTE, expr, rhs); \
+		expr = nary_op<int, int, int>(VISUAL, &EXECUTE, expr, rhs); \
 		return *this; \
 	}
 
@@ -57,29 +57,25 @@ MAKE_OP(^,'^',f2i_lxor);
 MAKE_OP(&&,'&',f2i_and);
 MAKE_OP(||,'|',f2i_or);
 
-using ternary_op_i = ternary_op<int, int, int, int>;
-using binary_op_i = binary_op<int, int, int>;
-using unary_op_i = unary_op<int, int>;
-
 #define DEF_UNARY_FUNC(OP, VISUAL, EXECUTE) \
 expression_ast OP::operator()(expression_ast const& expr) const { \
-	return expression_ast(unary_op_i(VISUAL, EXECUTE, expr)); \
+	return expression_ast(nary_op<int, int>(VISUAL, EXECUTE, expr)); \
 }
 
 #define DEF_BINARY_FUNC(OP, VISUAL, EXECUTE) \
 expression_ast OP::operator()(expression_ast const& expr1, expression_ast const& expr2) const { \
-	return expression_ast(binary_op_i(VISUAL, EXECUTE, expr1, expr2)); \
+	return expression_ast(nary_op<int, int, int>(VISUAL, EXECUTE, expr1, expr2)); \
 }
 
 #define DEF_BINARY_FUNC_ADDR(OP, VISUAL, EXECUTE) \
 expression_ast OP::operator()(expression_ast const& expr1, expression_ast const& expr2) const { \
-	return expression_ast(binary_op<int, int*, int>(VISUAL, EXECUTE, expr1, expr2)); \
+	return expression_ast(nary_op<int, int*, int>(VISUAL, EXECUTE, expr1, expr2)); \
 }
 
 #define DEF_TERNARY_FUNC(OP, VISUAL, EXECUTE) \
 expression_ast OP::operator()(expression_ast const& expr1, expression_ast const& expr2, \
 	expression_ast const& expr3) const{ \
-	return expression_ast(ternary_op_i(VISUAL, EXECUTE, expr1, expr2, expr3)); \
+	return expression_ast(nary_op<int, int, int, int>(VISUAL, EXECUTE, expr1, expr2, expr3)); \
 }
 
 DEF_UNARY_FUNC(neg, '-', f1i_neg);
