@@ -73,6 +73,16 @@ const boost::phoenix::function< _make_0<vaddr::var_x> > make_x;
 const boost::phoenix::function< _make_0<vaddr::var_y> > make_y;
 
 
+template <typename Iterator>
+struct str_int_t : qi::grammar<Iterator, expression_ast(), ascii::space_type>
+{
+	str_int_t() : str_int_t::base_type(str_int)
+	{
+		str_int = (qi::char_("-") >> *qi::char_("0-9")) | (*qi::char_("0-9"));
+	}
+	qi::rule<Iterator, std::string()> str_int;
+};
+
 
 template <typename Iterator, bool>
 struct var_calculator : qi::grammar<Iterator, expression_ast(), ascii::space_type>
@@ -83,20 +93,16 @@ struct var_calculator : qi::grammar<Iterator, expression_ast(), ascii::space_typ
 		using qi::_val;
 		using qi::_1;
 		using qi::_2;
-		using qi::uint_;
-		using ascii::string;
 
 		str_int =  (qi::char_("-") >> *qi::char_("0-9")) | (*qi::char_("0-9"));
-
 		helper_variable = "h[" >> (str_int [_val = make_helper_index_var(_1)]) >> ']';
-	//	helper_address = "h[" >> (str_int [_val = make_helper_index(_1)]) >> ']';
 		array_variable = "a[" >> ( str_int >> ',' >> str_int ) [_val = make_array_indexes(_1, _2)] >> ']';
 
 		other = qi::char_("x") [ _val = make_x() ]
 			| qi::char_("y") [ _val = make_y() ]
 			| qi::char_("v") [ _val = make_array_indexes(null_str, null_str)];
 
-		var_base = helper_variable | /*helper_address |*/ array_variable | other;
+		var_base = helper_variable | array_variable | other;
 	}
 	qi::rule<Iterator, std::string()> str_int;
 	qi::rule<Iterator, expression_ast(), ascii::space_type> var_base;
@@ -111,16 +117,11 @@ struct var_calculator<Iterator, true> : qi::grammar<Iterator, expression_ast(), 
 	{
 		using qi::_val;
 		using qi::_1;
-		using qi::_2;
-		using qi::uint_;
-		using ascii::string;
 		boost::phoenix::function<expression_ast::factory_f<expression_ast> > make_expr;
-
 
 		str_int =  (qi::char_("-") >> *qi::char_("0-9")) | (*qi::char_("0-9"));
 
 		helper_address = "h[" >> (str_int [_val = make_helper_index(_1)]) >> ']';
-	//	array_variable = "a[" >> ( str_int >> ',' >> str_int ) [_val = make_array_indexes(_1, _2)] >> ']';
 
 		var_base = helper_address [ _val = make_expr(_1) ]; // TODO: [] necessary?
 	}
@@ -143,35 +144,7 @@ struct calculator : qi::grammar<Iterator, expression_ast(), ascii::space_type>
 		using qi::_1;
 		using qi::_2;
 		using qi::uint_;
-		using ascii::string;
 		boost::phoenix::function<expression_ast::factory_f<expression_ast> > make_expr;
-
-
-
-
-		// fixed indentation:
-		/*helper_variable = "h[" >>
-		    (
-			str_int [_val = make_helper_index(_1)]
-		    ) >> ']';
-*/
-		/*array_variable = qi::char_("a") >> qi::char_("[") >>
-		    ( str_int >> ',' >> str_int )
-			[_val = make_array_indexes(_1, _2)]
-		    >> qi::char_("]");*/
-
-
-
-
-	/*	variable = qi::char_("x") [ _val = make_x() ]
-			| qi::char_("y") [ _val = make_y() ]
-			| qi::char_("v") [ _val = make_array_indexes(null_str, null_str)];*/
-
-		//helper_variable = qi::char_("h") >> qi::char_("[") >> str_int >> qi::char_("]");
-		//array_variable = qi::char_("a") >> qi::char_("[") >> str_int >> qi::char_(",") >> str_int >> qi::char_("]");
-
-
-
 
 		comma_assignment = assignment [_val = _1]
 				>> *( (',' >> assignment [_val = com_func(_val, _1)]));
@@ -229,18 +202,6 @@ struct calculator : qi::grammar<Iterator, expression_ast(), ascii::space_type>
 			    )
 			;
 
-		//variable = +qi::char_("xyvXYV");
-
-		//array_subscript = array_variable [_val = _1]
-		//	| helper_variable [_val = _1];
-
-
-		//array_subscript = ("a[" >> (*qi::char_("0-9")) >> (*qi::char_(",")) >> (*qi::char_("0-9")) >> ']')
-		//		| ("A[" >> (*qi::char_("0-9")) >> (*qi::char_(",")) >> (*qi::char_("0-9")) >> ']');
-
-		//("a[" >> (*qi::char_("0-9")) >> (*qi::char_(",")) >> (*qi::char_("0-9")) >> ']')
-
-
 		function =
 			( "min(" >> assignment [_val = _1] >> ','
 				>> assignment [_val = min_func(_val,_1)] >> ')')
@@ -251,9 +212,6 @@ struct calculator : qi::grammar<Iterator, expression_ast(), ascii::space_type>
 
 		factor =
 			variable                        [_val = make_expr(_1)]
-			//| array_subscript               [_val = _1]
-//			| helper_variable [_val = make_expr(_1)]
-//			| array_variable  [_val = make_expr(_1)]
 			| uint_                         [_val = make_expr(_1)]
 			|   '(' >> comma_assignment           [_val = make_expr(_1)] >> ')'
 			|   ('-' >> factor              [_val = neg(_1)])
@@ -262,16 +220,13 @@ struct calculator : qi::grammar<Iterator, expression_ast(), ascii::space_type>
 			| function                  [_val = _1]
 			;
 
-
 	}
 	qi::rule<Iterator, expression_ast(), ascii::space_type> comma_assignment, assignment,
 	tern_expression,
 	or_expression, and_expression, equation, inequation, sum, term, factor, function,
 	lor, lxor, land, shift;
-//	qi::rule<Iterator, vaddr()> variable, variable_address, /*array_variable, helper_variable, helper_address*/;
 	var_calculator<Iterator, false> variable;
 	var_calculator<Iterator, true> variable_address;
-	//qi::rule<Iterator, std::string()> array_variable, helper_variable, variable, array_subscript, str_int;
 };
 
 }

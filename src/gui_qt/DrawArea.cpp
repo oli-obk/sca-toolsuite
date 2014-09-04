@@ -24,6 +24,7 @@
 #include <QPaintEvent>
 //#include "asm_basic.h"
 #include "DrawArea.h"
+#include "ca.h"
 
 using eq_sim_t = sca::ca::ca_simulator_t<sca::ca::ca_eqsolver_t,
 	def_coord_traits, def_cell_traits>;

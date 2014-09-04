@@ -31,7 +31,9 @@
 #include "labeled_widget.h"
 #include "image.h"
 
-#include "ca.h" // TODO: -> cpp?
+namespace sca { namespace ca {
+	class input_ca;
+} }
 
 /*namespace sandpile
 {
