@@ -88,10 +88,10 @@ template<std::size_t... Is> struct seq {};
 template<std::size_t N, std::size_t... Is> struct make_seq : make_seq<N-1, N-1, Is...> {};
 template<std::size_t... Is> struct make_seq<0, Is...> : seq<Is...> {};
 
-struct visit_result_type
+class visit_result_type
 {
 	boost::variant<unsigned int, int*> v;
-
+public:
 	visit_result_type(unsigned int i) : v(i) {}
 	visit_result_type(int* i) : v(i) {}
 
@@ -109,7 +109,7 @@ struct nil {};
 
 struct vaddr
 {
-	struct var_x{};
+	struct var_x{}; // TODO: 0-dimensional case? specialization?
 	struct var_y{};
 
 	template<bool IsAddress, char Sign, class ...Coords>
@@ -148,7 +148,7 @@ struct grid_storage_nothing
 		return nullptr; }
 };
 
-struct grid_storage_base
+class grid_storage_base
 {
 	int width;
 protected:
@@ -159,10 +159,11 @@ protected:
 	}
 };
 
-struct grid_storage_array : grid_storage_base
+class grid_storage_array : grid_storage_base
 {
 	using storage_t = int*;
 	storage_t const v;
+public:
 	grid_storage_array(storage_t const v, int width) :
 		grid_storage_base(width), v(v) {}
 	inline int* operator()(vaddr::var_array<true> _a) const { // TODO: ref?
@@ -173,11 +174,11 @@ struct grid_storage_array : grid_storage_base
 
 class grid_storage_bits : grid_storage_base
 {
-public:
 	using storage_t = int64_t;
 	const storage_t each, bitmask;
 	const storage_t grid;
 	char vpos;
+public:
 	inline unsigned int operator()(vaddr::var_array<false> _a) const {
 		return (grid >> ((vpos + idx(_a)) * each)) & bitmask;
 	}
@@ -195,10 +196,10 @@ public:
 	}
 };
 
-
 template<class GridStorage = grid_storage_array>
-struct _variable_print : public boost::static_visitor<visit_result_type>
+class _variable_print : public boost::static_visitor<visit_result_type>
 {
+public:
 	_variable_print(int _x) : x(_x) {}
 	/**
 	 * @brief variable_print
@@ -209,28 +210,31 @@ struct _variable_print : public boost::static_visitor<visit_result_type>
 	 * @param _v The address of the current element in the grid. Needed for neighbor calculations.
 	 * @param _h
 	 */
-	_variable_print(int _height, int _width, int _x, int _y, const GridStorage& grid_storage, const int* _h)
-		: height(_height), width(_width), x(_x), y(_y),
-		grid_storage(grid_storage),
+	_variable_print(int _x, int _y, const GridStorage& src,
+		//const GridStorage& tar, int tar_h, int tar_w,
+		const int* _h)
+		: /*height(_height), width(_width),*/ x(_x), y(_y),
+		src(src), //tar(tar),
 		/*v((const int*)_v), */helper_vars((int*)_h) {
 	}
 
 //	typedef unsigned int result_type;
 
-	int height, width; // TODO: height unused?
+//	int height, width; // TODO: height unused?
+private:
 	unsigned int x,y;
 //	const int *v;
-	GridStorage grid_storage;
+	GridStorage src;//, tar;
 	int* helper_vars;
-
+public:
 	inline unsigned int operator()(nil) const { return 0; }
 	inline result_type operator()(vaddr::var_x) const { return x; }
 	inline result_type operator()(vaddr::var_y) const { return y; }
 	inline unsigned int operator()(vaddr::var_array<false> _a) const {
-		return grid_storage(_a);
+		return src(_a);
 	}
 	inline int* operator()(vaddr::var_array<true> _a) const {
-		return grid_storage(_a);
+		return src(_a);
 	}
 	inline int* operator()(vaddr::var_helper<true> _h) const {
 		//return (_h.address) ? ((result_type*)(helper_vars + _h.i)) : helper_vars[_h.i];
@@ -372,7 +376,8 @@ struct nary_op
 	expression_ast subtrees[sizeof...(Args)];
 };
 
-inline int array_subscript_to_coord(std::string* str, int width) {
+inline int array_subscript_to_coord(std::string* str, int width)
+{
 	const int comma_pos = str->find(',');
 	const int first_pos = str->find('[')+1;
 	(*str)[comma_pos]=0;
@@ -383,7 +388,7 @@ inline int array_subscript_to_coord(std::string* str, int width) {
 
 //! Class for iterating an expression tree and printing the result.
 template<typename variable_handler>
-struct ast_print  : public boost::static_visitor<visit_result_type>
+class ast_print  : public boost::static_visitor<visit_result_type>
 {
 	// todo: only one possible variable_handler? -> then put it in here
 	// ( and don't alloc direct access from outside?)
@@ -393,6 +398,8 @@ struct ast_print  : public boost::static_visitor<visit_result_type>
 	// h and w shall be internal, since we want to avoid adding 2
 	// so it is still general to non-bordered areas
 //	int height, width;
+
+public:
 	typedef unsigned int res_type;
 //	const res_type x,y, *v;
 	//mutable std::map<int, int> helper_vars;
@@ -464,11 +471,11 @@ namespace dump_detail
 }
 
 //! Class for iterating an expression tree and printing the result.
-struct ast_dump  : public boost::static_visitor<std::string>
+class ast_dump  : public boost::static_visitor<std::string>
 {
-	using result_type = std::string;
 	const char* const err_str = "<error>"; // TODO: static
-
+public:
+	using result_type = std::string;
 	struct variable_handler : public boost::static_visitor<std::string>
 	{
 		const char* const err_str = "<error>"; // TODO: use parent class's err str
@@ -549,10 +556,11 @@ inline int n_max(int first) {
 //! Class for iterating an expression tree and print the used area in the array.
 //! The result is an int describing the half size of a square.
 template<typename variable_handler>
-struct ast_area  : public boost::static_visitor<unsigned int>
+class ast_area  : public boost::static_visitor<unsigned int>
 {
-	typedef unsigned int result_type;
 	variable_handler var_area;
+public:
+	typedef unsigned int result_type;
 
 	inline result_type operator()(const eqsolver::nil&) const { return 0; }
 
@@ -880,10 +888,11 @@ struct ast_minmax : public boost::static_visitor<unsigned int>
 	using int_pair = std::pair<expression_ast, expression_ast>;
 //	const static int_pair arbitrary;
 
-	struct mm_result_type
+	class mm_result_type
 	{
-		typedef std::pair<expression_ast, expression_ast> int_pair;
 		boost::variant<int_pair, int_pair*> v;
+	public:
+		typedef std::pair<expression_ast, expression_ast> int_pair;
 
 		mm_result_type(int_pair i) : v(i) {}
 		mm_result_type(int_pair* i) : v(i) {}
@@ -904,7 +913,7 @@ struct ast_minmax : public boost::static_visitor<unsigned int>
 		typedef std::pair<expression_ast, expression_ast> int_pair;
 		int_pair* helper_vars;
 		const expression_ast expr_x, expr_y, expr_v;
-
+	public:
 		inline int_pair operator()(nil) const { exit(99); }
 		inline int_pair operator()(vaddr::var_x) const { return int_pair(expr_x, expr_x); }
 		inline int_pair operator()(vaddr::var_y) const { return int_pair(expr_y, expr_y); }
