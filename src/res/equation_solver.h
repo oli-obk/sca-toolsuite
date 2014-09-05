@@ -25,6 +25,7 @@
 #include <cstring>
 #include <cstdint>
 #include <tuple>
+#include <algorithm>
 
 #include <boost/spirit/include/support_info.hpp> // qi::info::nil
 
@@ -297,16 +298,18 @@ struct variable_area_grid : public boost::static_visitor<visit_result_type>
 template<class Cont>
 struct variable_area_cont : public boost::static_visitor<Cont>
 {
-	using base = boost::static_visitor<Cont>;
-	inline unsigned int operator()(nil) const { return 0; }
-	inline unsigned int operator()(vaddr::var_x) const { return 0; }
-	inline unsigned int operator()(vaddr::var_y) const { return 0; }
+	using cont_t = Cont;
+	using base = boost::static_visitor<cont_t>;
+	using typename base::result_type;
+	inline result_type operator()(nil) const { return cont_t(); }
+	inline result_type operator()(vaddr::var_x) const { return cont_t(); }
+	inline result_type operator()(vaddr::var_y) const { return cont_t(); }
 	template<bool Addr>
-	inline typename base::result_type operator()(vaddr::var_array<Addr> _a) const {
-		return Cont(_a.template x<1>(), _a.template x<2>());
+	inline result_type operator()(vaddr::var_array<Addr> _a) const {
+		return cont_t {{_a.template x<1>(), _a.template x<2>()}};
 	}
 	template<bool T>
-	inline unsigned int operator()(vaddr::var_helper<T> _h) const { (void)_h; return 0; }
+	inline result_type operator()(vaddr::var_helper<T> ) const { return cont_t(); }
 };
 
 
@@ -632,6 +635,71 @@ public:
 	//	: var_area(_area_type) {}
 };
 
+//! Class for iterating an expression tree and print the used area in the array.
+//! The result is an int describing the half size of a square.
+template<typename variable_handler>
+class ast_area_cont : public boost::static_visitor<typename variable_handler::cont_t>
+{
+	variable_handler var_area;
+public:
+	using cont_t = typename variable_handler::cont_t;
+	using base = boost::static_visitor<cont_t>;
+	using typename base::result_type;
+	//typedef unsigned int result_type;
+
+	inline result_type operator()(const eqsolver::nil&) const { return cont_t(); }
+
+	inline result_type operator()(boost::spirit::info::nil) const { return cont_t(); }
+	inline result_type operator()(int) const { return cont_t();  }
+	inline result_type operator()(std::string) const
+	{
+		exit(99);
+	}
+
+	inline result_type operator()(const vaddr& v) const
+	{
+		return boost::apply_visitor(var_area, v.expr);
+	}
+
+	inline result_type operator()(expression_ast const& ast) const {
+		return boost::apply_visitor(*this, ast.expr);
+	}
+
+private:
+	// TODO: this is mostly a duplicate... dumbly solved!
+	template<class NaryOpT> // no indexes
+	inline void apply_fptr(cont_t& , NaryOpT const&) const
+	{
+	}
+
+	// TODO: this is mostly a duplicate... dumbly solved!
+	template<class NaryOpT, std::size_t idx0, std::size_t ...Idxs>
+	inline void apply_fptr(cont_t& res, NaryOpT const& expr) const
+	{
+		cont_t to_append =
+			boost::apply_visitor(*this, std::move(expr.subtrees[idx0].expr));
+		std::move(to_append.begin(), to_append.end(),
+			std::inserter(res, res.begin()));
+		apply_fptr<NaryOpT, Idxs...>(res, expr);
+	}
+
+	template<class NaryOpT, std::size_t ...Idxs>
+	inline void apply_fptr(cont_t& res, NaryOpT const& expr, seq<Idxs...>) const
+	{
+		apply_fptr<NaryOpT, Idxs...>(res, expr);
+	}
+public:
+	template<class Ret, class ...Args>
+	inline result_type operator()(nary_op<Ret, Args...> const& expr) const {
+		cont_t res;
+		apply_fptr(res, expr, make_seq<sizeof...(Args)>());
+		return res;
+	}
+
+	//ast_area(variable_area::AREA_TYPE _area_type)
+	//	: var_area(_area_type) {}
+};
+
 #if 0
 namespace minmax_detail
 {
@@ -912,6 +980,8 @@ inline int f2i_com(int arg1, int arg2) { (void)arg1; return arg2; }
 }
 #endif
 
+#if 0
+
 //! Class for iterating an expression tree and print the used area in the array.
 //! The result is an int describing the half size of a square.
 struct ast_minmax : public boost::static_visitor<unsigned int>
@@ -1030,6 +1100,8 @@ public:
 	//	: var_area(_area_type) {}
 };
 
+#endif
+
 const char* get_help_description();
 
 /**
@@ -1043,7 +1115,7 @@ void build_tree(const char* equation, eqsolver::expression_ast* ast);
 
 //! Computes the result of the equation with @a x, @a y and @a z filled in.
 //! @todo unused
-int solve(const char* equation, int x, int y, int v);
+//int solve(const char* equation, int x, int y, int v);
 
 }
 

@@ -33,6 +33,15 @@ ca_eqsolver_t::ca_eqsolver_t(const char *equation, unsigned num_states)
 	eqsolver::ast_area<eqsolver::variable_area_grid>
 			grid_solver;
 	_border_width = (int)grid_solver(ast);
+
+	eqsolver::ast_area_cont<eqsolver::variable_area_cont<std::set<point>>>
+			grid_solver_2;
+	std::set<point> res = grid_solver_2(ast);
+	std::vector<point> res_v;
+	std::move(res.begin(), res.end(), std::back_inserter(res_v));
+	neighbourhood = n_t(std::move(res_v));
+	center_cell = neighbourhood.get_center_cell();
+
 #ifdef CA_DEBUG
 	printf("Size of Moore Neighbourhood: %d\n", // TODO: use cout
 	       _border_width);

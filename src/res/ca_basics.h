@@ -533,7 +533,8 @@ public:
 		}
 	}
 
-public:
+	_n_t(const Container&& cont) : neighbours(cont) {}
+
 	//! assumes that no borders exist
 	template<std::size_t N>
 	constexpr _n_t(const std::array<point, N>& arr)

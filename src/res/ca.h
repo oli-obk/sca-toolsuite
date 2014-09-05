@@ -44,6 +44,8 @@ class ca_eqsolver_t
 	int* helper_vars = nullptr; //!< @todo: auto_ptr
 	int helpers_size;
 	int _border_width;
+	n_t neighbourhood;
+	point center_cell;
 protected:
 	int num_states;
 //	n_t_const neighbourhood;
@@ -75,6 +77,28 @@ protected:
 		return (int)solver(ast);
 	}
 
+	//! version for multi-targets
+	template<class T, class CT>
+	int calculate_next_state(const typename CT::cell_t *cell_ptr,
+		const _point<T>& p, const _dimension<T>& dim, const typename CT::cell_t *cell_tar,
+		const _dimension<T>& tar_dim) const
+	{
+		// TODO: replace &((*old_grid)[internal]) by old_value
+		// and make old_value a ptr/ref?
+		// TODO: const cast
+		eqsolver::const_grid_storage_array arr(cell_ptr, dim.width());
+		eqsolver::grid_storage_array tar(cell_tar, tar_dim.width());
+
+		// TODO: why do we need to specify the default argument?
+		using vprinter_t = eqsolver::_variable_print<>;
+		vprinter_t vprinter(
+			p.x, p.y,
+			arr, tar, helper_vars);
+		eqsolver::ast_print<vprinter_t> solver(&vprinter);
+		return (int)solver(ast);
+	}
+
+
 	//! Runtime: depends on formula.
 	// TODO: bit storage grids?
 	template<class T, class = void>
@@ -97,11 +121,9 @@ protected:
 public:
 	int border_width() const noexcept { return _border_width; }
 	using n_t_type = n_t;
-	n_t get_neighbourhood() const
+	const n_t& get_neighbourhood() const noexcept
 	{
-		int bw = border_width();
-		unsigned n_width = (bw<<1) + 1;
-		return n_t(dimension{ n_width, n_width }, point(bw, bw));
+		return neighbourhood;
 	}
 	//bool can_optimize_table() const { return num_states }
 };
