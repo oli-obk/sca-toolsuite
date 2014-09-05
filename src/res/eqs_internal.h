@@ -32,6 +32,7 @@ namespace qi = boost::spirit::qi;
 
 namespace eqsolver {
 
+// TODO: generic version? (with specialization for _make_0)
 template<typename _result_type>
 struct _make_0
 {
@@ -65,7 +66,8 @@ struct _make_2
 	}
 };
 
-const boost::phoenix::function< _make_2<vaddr::var_array> > make_array_indexes;
+const boost::phoenix::function< _make_2<vaddr::var_array<false>> > make_array_index;
+const boost::phoenix::function< _make_2<vaddr::var_array<true>> > make_array_addr;
 const boost::phoenix::function< _make_1<vaddr::var_helper<true>> > make_helper_index;
 const boost::phoenix::function< _make_1<vaddr::var_helper<false>> > make_helper_index_var;
 //const boost::phoenix::function< _make_1<vaddr::var_helper> > make_helper_index;
@@ -89,18 +91,18 @@ struct var_calculator : qi::grammar<Iterator, expression_ast(), ascii::space_typ
 {
 	var_calculator() : var_calculator::base_type(var_base)
 	{
-		std::string null_str = "0";
+		const std::string null_str = "0";
 		using qi::_val;
 		using qi::_1;
 		using qi::_2;
 
 		str_int =  (qi::char_("-") >> *qi::char_("0-9")) | (*qi::char_("0-9"));
 		helper_variable = "h[" >> (str_int [_val = make_helper_index_var(_1)]) >> ']';
-		array_variable = "a[" >> ( str_int >> ',' >> str_int ) [_val = make_array_indexes(_1, _2)] >> ']';
+		array_variable = "a[" >> ( str_int >> ',' >> str_int ) [_val = make_array_index(_1, _2)] >> ']';
 
 		other = qi::char_("x") [ _val = make_x() ]
 			| qi::char_("y") [ _val = make_y() ]
-			| qi::char_("v") [ _val = make_array_indexes(null_str, null_str)];
+			| qi::char_("v") [ _val = make_array_index(null_str, null_str)];
 
 		var_base = helper_variable | array_variable | other;
 	}
@@ -117,17 +119,20 @@ struct var_calculator<Iterator, true> : qi::grammar<Iterator, expression_ast(), 
 	{
 		using qi::_val;
 		using qi::_1;
+		using qi::_2;
 		boost::phoenix::function<expression_ast::factory_f<expression_ast> > make_expr;
 
 		str_int =  (qi::char_("-") >> *qi::char_("0-9")) | (*qi::char_("0-9"));
 
 		helper_address = "h[" >> (str_int [_val = make_helper_index(_1)]) >> ']';
+		array_address = "a[" >> ( str_int >> ',' >> str_int ) [_val = make_array_addr(_1, _2)] >> ']';
 
-		var_base = helper_address [ _val = make_expr(_1) ]; // TODO: [] necessary?
+		var_base = helper_address [ _val = make_expr(_1) ]
+			| array_address [ _val = make_expr(_1) ]; // TODO: [] necessary?
 	}
 	qi::rule<Iterator, std::string()> str_int;
 	qi::rule<Iterator, expression_ast(), ascii::space_type> var_base;
-	qi::rule<Iterator, vaddr()> helper_address;
+	qi::rule<Iterator, vaddr()> helper_address, array_address;
 };
 
 
