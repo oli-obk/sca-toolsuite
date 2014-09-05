@@ -62,13 +62,15 @@ protected:
 		// TODO: replace &((*old_grid)[internal]) by old_value
 		// and make old_value a ptr/ref?
 		// TODO: const cast
-		eqsolver::grid_storage_array arr(
-			const_cast<typename CT::cell_t*>(cell_ptr), dim.width());
+		eqsolver::const_grid_storage_array arr(cell_ptr, dim.width());
+		int result;
+		eqsolver::grid_storage_single tar(&result);
+
 		// TODO: why do we need to specify the default argument?
-		using vprinter_t = eqsolver::_variable_print<eqsolver::grid_storage_array>;
+		using vprinter_t = eqsolver::_variable_print<>;
 		vprinter_t vprinter(
 			p.x, p.y,
-			arr, helper_vars);
+			arr, tar, helper_vars);
 		eqsolver::ast_print<vprinter_t> solver(&vprinter);
 		return (int)solver(ast);
 	}
@@ -81,11 +83,13 @@ protected:
 	{
 		int eval_idx = dim.width() * p.y + p.x; // TODO: bw?
 		eqsolver::grid_storage_bits arr(grid_int, size_each, dim.width(), eval_idx);
+		int _result;
+		eqsolver::grid_storage_single tar(&_result);
 
 		using vprinter_t = eqsolver::_variable_print<eqsolver::grid_storage_bits>;
 		vprinter_t vprinter(
 			p.x, p.y,
-			arr, helper_vars);
+			arr, tar, helper_vars);
 		eqsolver::ast_print<vprinter_t> solver(&vprinter);
 		return solver(ast);
 	}

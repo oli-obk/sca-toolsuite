@@ -66,9 +66,11 @@ class MyProgram : public Program
 				result[internal] = INT_MIN;
 			}
 			else {
-				eqsolver::grid_storage_array stor(&grid[internal], dim.width());
-				using vprinter_t = eqsolver::_variable_print<eqsolver::grid_storage_array>;
-				vprinter_t vprinter(x-1 ,y-1, stor, nullptr);
+				int result_int;
+				const eqsolver::const_grid_storage_array stor(&grid[internal], dim.width());
+				eqsolver::grid_storage_single tar(&result_int);
+				using vprinter_t = eqsolver::_variable_print<>;
+				vprinter_t vprinter(x-1, y-1, stor, tar, nullptr);
 				eqsolver::ast_print<vprinter_t> solver(&vprinter);
 				result[internal] = (int)solver(ast);
 			}

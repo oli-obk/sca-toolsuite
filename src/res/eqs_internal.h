@@ -106,6 +106,7 @@ struct var_calculator : qi::grammar<Iterator, expression_ast(), ascii::space_typ
 
 		var_base = helper_variable | array_variable | other;
 	}
+private:
 	qi::rule<Iterator, std::string()> str_int;
 	qi::rule<Iterator, expression_ast(), ascii::space_type> var_base;
 	qi::rule<Iterator, vaddr()> array_variable, helper_variable, other;
@@ -117,6 +118,7 @@ struct var_calculator<Iterator, true> : qi::grammar<Iterator, expression_ast(), 
 {
 	var_calculator() : var_calculator::base_type(var_base)
 	{
+		const std::string null_str = "0";
 		using qi::_val;
 		using qi::_1;
 		using qi::_2;
@@ -126,13 +128,16 @@ struct var_calculator<Iterator, true> : qi::grammar<Iterator, expression_ast(), 
 
 		helper_address = "h[" >> (str_int [_val = make_helper_index(_1)]) >> ']';
 		array_address = "a[" >> ( str_int >> ',' >> str_int ) [_val = make_array_addr(_1, _2)] >> ']';
+		v_sign = qi::char_("v") [ _val = make_array_addr(null_str, null_str)];
 
 		var_base = helper_address [ _val = make_expr(_1) ]
-			| array_address [ _val = make_expr(_1) ]; // TODO: [] necessary?
+			| array_address [ _val = make_expr(_1) ]
+			| v_sign [ _val = make_expr(_1) ]; // TODO: [] necessary?
 	}
+private:
 	qi::rule<Iterator, std::string()> str_int;
 	qi::rule<Iterator, expression_ast(), ascii::space_type> var_base;
-	qi::rule<Iterator, vaddr()> helper_address, array_address;
+	qi::rule<Iterator, vaddr()> helper_address, array_address, v_sign;
 };
 
 
@@ -226,6 +231,7 @@ struct calculator : qi::grammar<Iterator, expression_ast(), ascii::space_type>
 			;
 
 	}
+private:
 	qi::rule<Iterator, expression_ast(), ascii::space_type> comma_assignment, assignment,
 	tern_expression,
 	or_expression, and_expression, equation, inequation, sum, term, factor, function,

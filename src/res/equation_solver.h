@@ -159,6 +159,17 @@ protected:
 	}
 };
 
+class const_grid_storage_array : grid_storage_base
+{
+	using storage_t = const int*;
+	storage_t const v;
+public:
+	const_grid_storage_array(storage_t const v, int width) :
+		grid_storage_base(width), v(v) {}
+	inline unsigned int operator()(vaddr::var_array<false> _a) const {
+		return v[idx(_a)]; }
+};
+
 class grid_storage_array : grid_storage_base
 {
 	using storage_t = int*;
@@ -170,6 +181,25 @@ public:
 		return v + idx(_a); }
 	inline unsigned int operator()(vaddr::var_array<false> _a) const {
 		return v[idx(_a)]; }
+};
+
+class grid_storage_single
+{
+	using storage_t = int*;
+	storage_t const v;
+	template<bool T>
+	void bounds_check(const vaddr::var_array<T>& _a) const {
+		if(_a.template x<1>() || _a.template x<2>())
+		 throw "Error: This CA only supports writing to the center cell a[0,0]";
+	}
+public:
+	grid_storage_single(storage_t const v) : v(v) {}
+	inline unsigned int operator()(vaddr::var_array<false> _a) const {
+		return bounds_check(_a), *v;
+	}
+	inline int* operator()(vaddr::var_array<true> _a) const { // TODO: ref?
+		return bounds_check(_a), v;
+	}
 };
 
 class grid_storage_bits : grid_storage_base
@@ -196,7 +226,8 @@ public:
 	}
 };
 
-template<class GridStorage = grid_storage_array>
+template<class GridStorageSrc = const_grid_storage_array,
+	class GridStorageTar = grid_storage_single>
 class _variable_print : public boost::static_visitor<visit_result_type>
 {
 public:
@@ -210,11 +241,11 @@ public:
 	 * @param _v The address of the current element in the grid. Needed for neighbor calculations.
 	 * @param _h
 	 */
-	_variable_print(int _x, int _y, const GridStorage& src,
-		//const GridStorage& tar, int tar_h, int tar_w,
+	_variable_print(int _x, int _y, const GridStorageSrc& src,
+		const GridStorageTar& tar,
 		const int* _h)
 		: /*height(_height), width(_width),*/ x(_x), y(_y),
-		src(src), //tar(tar),
+		src(src), tar(tar),
 		/*v((const int*)_v), */helper_vars((int*)_h) {
 	}
 
@@ -224,7 +255,8 @@ public:
 private:
 	unsigned int x,y;
 //	const int *v;
-	GridStorage src;//, tar;
+	GridStorageSrc src;
+	GridStorageTar tar;
 	int* helper_vars;
 public:
 	inline unsigned int operator()(nil) const { return 0; }
@@ -234,7 +266,7 @@ public:
 		return src(_a);
 	}
 	inline int* operator()(vaddr::var_array<true> _a) const {
-		return src(_a);
+		return tar(_a);
 	}
 	inline int* operator()(vaddr::var_helper<true> _h) const {
 		//return (_h.address) ? ((result_type*)(helper_vars + _h.i)) : helper_vars[_h.i];
@@ -247,7 +279,7 @@ public:
 
 };
 
-using variable_print = _variable_print<grid_storage_nothing>;
+using variable_print = _variable_print<grid_storage_nothing, grid_storage_nothing>;
 
 struct variable_area_grid : public boost::static_visitor<visit_result_type>
 {
