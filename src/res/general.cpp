@@ -49,7 +49,7 @@ int Program::run(int _argc, char **_argv, const HelpStruct *_help)
 			::exit(0);
 		}
 
-	exit_t return_value;
+	exit_t return_value = exit_t::failure;
 	try {
 		return_value = main();
 	} catch(const char* str) {

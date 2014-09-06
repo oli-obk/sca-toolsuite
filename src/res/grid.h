@@ -500,6 +500,14 @@ public:
 		return stream;
 	}
 
+	//! reads a grid with current border width (0 if default constructed)
+	friend std::istream& operator>> (std::istream& stream,
+		_grid_t& g) {
+		read_grid(stream, g._data, g._dim, g.bw);
+		return stream;
+	}
+
+
 	//! constructor which reads a grid immediatelly
 	_grid_t(std::istream& stream, u_coord_t border_width) :
 		base(border_width)

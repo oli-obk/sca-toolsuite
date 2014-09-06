@@ -44,6 +44,23 @@ public:
 	}
 };
 
+bool is_number_digit(const char& c) noexcept {
+	return (isdigit(c) || c == '-' || c == '+');
+}
+
+void skip_num_after(const char* ptr) noexcept
+{
+	while(is_number_digit(*++ptr)) ;
+}
+
+
+bool is_number(const char* ptr) noexcept
+{
+	bool ok = is_number_digit(*ptr);
+	while(is_number_digit(*++ptr)) ;
+	return ok && !*(ptr);
+}
+
 struct infile_t
 {
 	constexpr static std::size_t READ_BUF_SIZE = 128;
@@ -76,7 +93,7 @@ public:
 	}
 
 	static bool m_atoi(int& res, const char* str) {
-		return (isdigit(*str) || *str == '-' || *str == '+')
+		return is_number_digit(*str)
 			? res = atoi(str), true
 			: false;
 	}
@@ -93,12 +110,16 @@ public:
 			: false;
 	}
 
-	const char* get_next_line() {
-		if(!*read_buffer) {
+	const char* get_next_line()
+	{
+		const char* result = read_buffer;
+		if(!*result) {
 			stream.getline(read_buffer, READ_BUF_SIZE);
 			++line;
+			if(!stream.good())
+			 clear_buffer();
 		}
-		return read_buffer;
+		return result;
 	}
 
 	void clear_buffer() { *read_buffer = 0; }
@@ -119,6 +140,21 @@ public:
 		std::string result = read_string_noclear();
 		clear_buffer();
 		return result;
+	}
+
+	bool match_string(const char* str)
+	{
+		/*if(!*read_buffer) {
+			throw mk_error("Expected a non-empty string");
+		}*/
+		std::string result = read_string_noclear();
+		if(result == str)
+		{
+			clear_buffer();
+			return true;
+		}
+		else
+		 return false;
 	}
 
 	/*void read_grid(grid_t& grid) {
@@ -167,7 +203,7 @@ inline const char* next_word(const char*& str) {
 class path_node
 {
 public:
-	int grid_id;
+	//int grid_id;
 	std::string description;
 
 	enum class mark_type
@@ -214,9 +250,9 @@ public:
 
 	bool parse(infile_t& inf)
 	{
-		if(inf.read_int(grid_id))
+		/*if(inf.read_int(grid_id))
 		{
-			inf.read_newline();
+			inf.read_newline();*/
 			std::string str;
 			while((str = inf.read_string()).size())
 			{
@@ -231,35 +267,234 @@ public:
 				}
 			}
 			return true;
-		}
-		else return false;
+		//}
+		//else return false;
 	}
 };
 
-/*class outfile_t
+class leaf_base_t
 {
-	std::ostream& stream;
-	void section(const char* s) {
-		stream << s;
-	}
-};*/
+public:
+	virtual void parse(infile_t& inf) = 0;
+};
 
-template<class ...SubSections>
-class section
+template<class T>
+class leaf_template_t : public leaf_base_t
 {
-	const char* const& name;
-	const std::tuple<SubSections&...> subsections;
-	section(const char* const &name, const SubSections&... subsections) :
-		name(name),
-		subsections{subsections...} {}
-	friend std::ostream& operator<< (std::ostream& stream,
-		const section& s) {
-		(void) stream;
-		(void) s;
-		return s;
-	//	return stream << s.name << std::endl << ;
+	T t;
+public:
+	void parse(infile_t& inf) { inf.stream >> t; std::cerr << "Read object via cin: " << t << std::endl; }
+};
+
+template<>
+class leaf_template_t<std::string> : public leaf_base_t
+{
+	std::string t;
+public:
+	void parse(infile_t& inf) { t = inf.read_section();  std::cerr << "Read string: " << t << std::endl; }
+};
+
+template<> // TODO: abstract case of path_node? enable_if?
+class leaf_template_t<path_node> : public leaf_base_t
+{
+	path_node t;
+public:
+	void parse(infile_t& inf) { t.parse(inf); }
+};
+
+class factory_base
+{
+public:
+	virtual leaf_base_t* make() = 0;
+};
+
+template<class T>
+class factory : public factory_base
+{
+public:
+	virtual T* make() { return new T(); }
+};
+
+class supersection_t : public leaf_base_t
+{
+public:
+	using self_type = supersection_t;
+
+	enum class type_t
+	{
+		sections,
+		multi,
+		batch
+	};
+	type_t type;
+private:
+	const bool required;
+	std::string batch_str;
+	factory_base* leaf_factory;
+	std::map<std::string, leaf_base_t*> supersections;
+	std::map<std::size_t, leaf_base_t*> multi_sections;
+	std::map<std::string, leaf_base_t*> leafs;
+protected:
+	template<class T>
+	void init_subsection(const char* sec_name) {
+		supersections[sec_name] = new T();
+	}
+	template<class T>
+	void init_leaf(const char* leaf_name) {
+		leafs[leaf_name] = new T();
+	}
+	template<class T>
+	void init_factory() {
+		leaf_factory = new factory<T>();
+	}
+	void set_batch_str(const char* str) {
+		batch_str = str;
 	}
 
+	enum class cur_type_t
+	{
+		multi,
+		batch,
+		super,
+		leaf,
+		unknown
+	};
+
+	mutable std::map<std::string, leaf_base_t*>::iterator super_itr;
+	mutable std::map<std::string, leaf_base_t*>::iterator leaf_itr;
+
+	cur_type_t check_string(infile_t& inf, std::string& s)
+	{
+		s = inf.read_string_noclear();
+		cur_type_t res;
+		if(type == type_t::multi && is_number(s.c_str()))
+		{
+			std::cout << "Found multi object: `" << s << "'" << std::endl;
+			res = cur_type_t::multi;
+		}
+		else if((type == type_t::batch) && (batch_str == s))
+		{
+			std::cout << "Found batch string: `" << s << "'" << std::endl;
+			res = cur_type_t::batch;
+		}
+		else if((super_itr = supersections.find(s)) != supersections.end())
+		{
+			std::cout << "Found supersection: `" << s << "'" << std::endl;
+			res = cur_type_t::super;
+		}
+		else if((leaf_itr = leafs.find(s)) != leafs.end()) // TODO: store itr in mutable class var?
+		{
+			std::cout << "Found leaf: `" << s << "'" << std::endl;
+			res = cur_type_t::leaf;
+		}
+		else {
+			std::cout << "No match: `" << s << "'" << std::endl;
+			res = cur_type_t::unknown;
+		}
+
+		if(res != cur_type_t::unknown)
+		{
+			inf.clear_buffer();
+			inf.read_newline();
+		}
+
+		return res;
+	}
+
+
+public:
+	void parse (infile_t& inf)
+	{
+		std::string s;
+		cur_type_t cur;
+		while(cur_type_t::unknown != (cur = check_string(inf, s))) // TODO: while type = inf.read_string_no_clear() ...
+		{
+			std::cerr << "Trying to parse section: " << s << std::endl;
+			int idx = -1; // TODO: size_t
+
+
+			switch(cur)
+			{
+				case cur_type_t::multi:
+				{
+					idx = std::stoi(s);
+					std::cerr << "Reading multi object: " << idx << "..." << std::endl;
+					auto ptr = leaf_factory->make();
+					ptr->parse(inf);
+					multi_sections[idx] = ptr;
+				}
+				break;
+
+				case cur_type_t::batch:
+				{
+					auto ptr = leaf_factory->make();
+					ptr->parse(inf);
+					multi_sections[++idx] = ptr;
+				}
+				break;
+
+				case cur_type_t::super:
+					super_itr->second->parse(inf);
+					break;
+
+				case cur_type_t::leaf:
+					leaf_itr->second->parse(inf);
+					break;
+
+				default:
+					throw "Impossible";
+					break;
+			}
+
+		}
+		std::cerr << "Aborted on reading: " << s << ":" << std::endl
+			<< " - `" << s << "' is no known super section or leaf" << std::endl;
+		if(type == type_t::multi)
+		{
+			std::cerr << " - `" << s << "' is no number" << std::endl;
+		}
+		else if(type == type_t::batch)
+		{
+			std::cerr << " - `" << s << "' does not match the batch string `" << batch_str << "'" << std::endl;
+		}
+		std::cerr << std::endl;
+	}
+
+	supersection_t(type_t type = type_t::sections, bool required = true) :
+		type(type),
+		required(required)
+		{}
+};
+
+class scene_grids_t : public supersection_t
+{
+public:
+	scene_grids_t() : supersection_t(type_t::multi) {
+		init_factory<leaf_template_t<grid_t>>();
+	}
+};
+
+class scene_path_t : public supersection_t
+{
+public:
+	scene_path_t() : supersection_t(type_t::multi) {
+		init_factory<leaf_template_t<path_node>>();
+	}
+};
+
+
+class scene_2_t : public supersection_t // TODO: public?
+{
+public:
+	scene_2_t() : supersection_t(type_t::batch)
+	{
+		init_leaf<leaf_template_t<std::string>>("description");
+		init_leaf<leaf_template_t<n_t>>("n");
+		init_subsection<scene_grids_t>("grids");
+
+		init_factory<scene_path_t>();
+		set_batch_str("path");
+	}
 };
 
 class scene_t
@@ -271,6 +506,8 @@ public:
 	std::vector<std::vector<path_node>> paths;
 	trans_vector_t tv;
 
+
+
 	void dump(std::ostream& outf)
 	{
 		outf << "description" << std::endl
@@ -280,8 +517,8 @@ public:
 			<< "grids" << std::endl;
 
 
-		/*outf << section("description", description)
-			<< section("grids", );*/
+	//	outf << section("description", description)
+	//		<< section("grids", );
 	}
 
 	void parse(infile_t& inf)
@@ -296,7 +533,7 @@ public:
 			 inf.stream >> n;
 			else if(sec == "grids")
 			{
-				while (inf.read_int(idx))
+				while (inf.read_int(idx)) // TODO: these ints could be sections, too
 				{
 					grids[idx] = grid_t(inf.stream, 0);
 				}
@@ -317,7 +554,7 @@ public:
 
 	void get_tv()
 	{
-		tv_ctor cons(n);
+	/*	tv_ctor cons(n);
 		for(const std::vector<path_node>& v : paths)
 		{
 			using itr_t = std::vector<path_node>::const_iterator;
@@ -329,7 +566,7 @@ public:
 			}
 		}
 
-		tv = std::move(trans_vector_t(std::move(cons)));
+		tv = std::move(trans_vector_t(std::move(cons)));*/
 	}
 };
 
@@ -358,8 +595,16 @@ class MyProgram : public Program
 		 */
 
 		infile_t inf;
-		scene_t scene;
+/*		scene_t scene;
 
+		try {
+			scene.parse(inf);
+		} catch(infile_t::error_t ife) {
+			std::cout << "infile line " << ife.line << ": "	 << ife.msg << std::endl;
+		}
+
+		scene.dump(std::cout);*/
+		scene_2_t scene;
 		try {
 			scene.parse(inf);
 		} catch(infile_t::error_t ife) {
