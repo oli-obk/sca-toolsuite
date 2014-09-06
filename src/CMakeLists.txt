@@ -1,3 +1,4 @@
+add_subdirectory(res)
 add_subdirectory(math)
 add_subdirectory(test)
 add_subdirectory(core)

@@ -95,4 +95,5 @@ OTHER_FILES += ../DOCUMENTATION \
 	rotor/CMakeLists.txt \
 	gui_qt/CMakeLists.txt \
 	test/CMakeLists.txt \
-	img/CMakeLists.txt
+	img/CMakeLists.txt \
+    res/CMakeLists.txt

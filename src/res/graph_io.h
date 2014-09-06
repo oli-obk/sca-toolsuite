@@ -21,6 +21,8 @@
 #ifndef GRAPH_IO_H
 #define GRAPH_IO_H
 
+#ifdef SCA_GRAPHS
+
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graphviz.hpp>
 
@@ -70,5 +72,7 @@ void dump_graph_as_dot(const GraphType &graph, const boost::dynamic_properties& 
 	std::ofstream stream(filename);
 	dump_graph_as_dot(graph, stream, dp);
 }
+
+#endif SCA_GRAPHS
 
 #endif // GRAPH_IO_H

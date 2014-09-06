@@ -18,6 +18,8 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
+#ifdef SCA_GRAPHS
+
 #include "graph_io.h"
 
 void create_boost_graph(FILE* read_fp, graph_t* boost_graph)
@@ -80,3 +82,5 @@ void dump_graph_as_tgf(FILE* write_fp, const graph_t* graph)
 		fprintf(write_fp, "%d %d\n", cur_source+1, cur_target+1);
 	}
 }
+
+#endif

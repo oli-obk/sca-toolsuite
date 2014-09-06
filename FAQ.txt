@@ -44,6 +44,11 @@ A: If this happens, your boost libraries are too old for your compiler. You'll
    find a line in our CMakeLists ("WARN_EXC") which you can enable to ignore
    the errors.
 
+Q: libres is compiled once for multiple binaries. What if I need different
+   versions of it for different executables in `./src'?
+A: We think that this happens seldom. If it does, you could either make two
+   different builds of sca-toolsuite (suggested), or hack into the CMakeLists.
+
 3 Sandpiles
 :::::::::::
 

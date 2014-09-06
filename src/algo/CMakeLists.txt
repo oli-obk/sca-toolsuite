@@ -1,11 +1,9 @@
-SET(src_dir "${CMAKE_CURRENT_SOURCE_DIR}")
-
-add_executable(relax "${src_dir}/relax.cpp" ${general} ${geometry})
-add_executable(fix "${src_dir}/fix.cpp" ${general} ${geometry})
-add_executable(random_throw "${src_dir}/random_throw.cpp" ${general} ${geometry})
-add_executable(burning_test "${src_dir}/burning_test.cpp" ${general} ${geometry})
-add_executable(id "${src_dir}/id.cpp" ${general} ${geometry})
-add_executable(super "${src_dir}/super.cpp" ${general} ${geometry})
+compile("relax.cpp")
+compile("fix.cpp")
+compile("random_throw.cpp")
+compile("burning_test.cpp")
+compile("id.cpp")
+compile("super.cpp")
 
 cp_script(is_recurrent)
 cp_script(l)

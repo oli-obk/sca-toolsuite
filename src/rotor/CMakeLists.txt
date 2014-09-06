@@ -1,8 +1,4 @@
-SET(src_dir "${CMAKE_CURRENT_SOURCE_DIR}")
-
-add_executable(rotor "${src_dir}/rotor.cpp"
-	${general}
-	${geometry})
+compile("rotor.cpp")
 
 cp_script(xrotor)
 

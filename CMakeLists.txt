@@ -75,6 +75,13 @@ function(cp_script script_name)
 		${CMAKE_CURRENT_BINARY_DIR}/${script_name} COPYONLY)
 endfunction()
 
+# expects something like "${src_dir}/math.cpp"
+function(compile cpp_name)
+	get_filename_component(target_path "${cpp_name}" NAME_WE)
+	add_executable("${target_path}" "${CMAKE_CURRENT_SOURCE_DIR}/${cpp_name}")
+	target_link_libraries("${target_path}" res)
+endfunction()
+
 include_directories("${CMAKE_CURRENT_BINARY_DIR}src/") # for config.h
 include_directories("${res_dir}")
 
