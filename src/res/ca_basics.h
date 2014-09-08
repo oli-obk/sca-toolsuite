@@ -413,6 +413,22 @@ public:
 		return result;
 	}
 
+	template<class Functor>
+	void for_each(const point& p, const Functor& ftor) const
+	{
+		for(const point& np : neighbours)
+		 ftor(p + np);
+	}
+
+	template<class Functor>
+	bool for_each_bool(const point& p, const Functor& ftor) const
+	{
+		bool ok = true;
+		for(auto itr = neighbours.cbegin(); itr != neighbours.cend() && ok; ++itr)
+		 ok = ok && ftor(p + *itr);
+		return ok;
+	}
+
 	friend std::ostream& operator<< (std::ostream& stream,
 		const _n_t& n) {
 		stream << "Neighbourhood: (";

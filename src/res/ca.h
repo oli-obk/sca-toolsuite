@@ -44,7 +44,7 @@ class ca_eqsolver_t
 	int* helper_vars = nullptr; //!< @todo: auto_ptr
 	int helpers_size;
 	int _border_width;
-	n_t neighbourhood;
+	n_t _n_in, _n_out;
 	point center_cell;
 protected:
 	int num_states;
@@ -121,10 +121,8 @@ protected:
 public:
 	int border_width() const noexcept { return _border_width; }
 	using n_t_type = n_t;
-	const n_t& get_neighbourhood() const noexcept
-	{
-		return neighbourhood;
-	}
+	const n_t& n_in() const noexcept { return _n_in; }
+	const n_t& n_out() const noexcept { return _n_out; }
 	//bool can_optimize_table() const { return num_states }
 };
 
@@ -409,7 +407,7 @@ protected:
 	}
 public:
 	unsigned border_width() const noexcept { return bw; } // TODO: should ret reference
-	const n_t_type& get_neighbourhood() const noexcept { return neighbourhood; }
+	const n_t_type& n_in() const noexcept { return neighbourhood; }
 protected:
 	static unsigned fetch_32(std::istream& stream)
 	{
@@ -770,6 +768,15 @@ public:
 		return _base::template calculate_next_state<T, CT>(cell_ptr, p, dim);
 	}
 
+	//! calculates next states around (human) position (x,y)
+	//! @param dim the grids internal dimension
+	template<class T, class CT>
+	int next_state(const m_cell<CT> *cell_ptr, const _point<T>& p, const _dimension<T>& dim,
+		const m_cell<CT> *cell_tar, const _dimension<T>& tar_dim) const
+	{
+		return _base::template calculate_next_state<T, CT>(cell_ptr, p, dim, cell_tar, tar_dim);
+	}
+
 	//! overload, with x and y in internal format. slower.
 	template<class T, class CT>
 	int next_state_realxy(const m_cell<CT> *cell_ptr, const  _point<T>& p, const _dimension<T>& dim) const
@@ -889,13 +896,15 @@ class ca_simulator_t : /*private _ca_calculator_t<Solver>,*/ public input_ca
 	using point = _point<Traits>;
 	using calc_class = _ca_calculator_t<Solver>;
 	using grid_t = _grid_t<Traits, CellTraits>;
-	calc_class ca_calc;
+
 	using input_class = calc_class; //!< TODO: Solver class is enough
+
+	calc_class ca_calc;
 	input_class ca_input;
 
 	grid_t _grid[2];
 	grid_t *old_grid = _grid, *new_grid = _grid;
-	typename calc_class::n_t_type neighbours; // TODO: const?
+	typename calc_class::n_t_type n_in, n_out; // TODO: const?
 	std::vector<point> //recent_active_cells(old_grid->size()),
 			new_changed_cells; // TODO: this vector will shrink :/
 	//! temporary variable
@@ -911,7 +920,8 @@ public:
 		ca_calc(equation, num_states),
 		ca_input(input_equation, num_states),
 		_grid{ca_calc.border_width(), ca_calc.border_width()},
-		neighbours(ca_calc.get_neighbourhood()),
+		n_in(ca_calc.n_in()),
+		n_out(ca_calc.n_out()),
 		async(async)
 	{
 	}
@@ -936,7 +946,8 @@ public:
 		ca_calc = calc_class(equation);
 		ca_input = input_class(input_equation);
 		grid().resize_borders(ca_calc.border_width());
-		neighbours = ca_calc.get_neighbourhood();
+		n_in = ca_calc.n_in();
+		n_out = ca_calc.n_out();
 	}
 
 	// TODO: no function should take grid pointer
@@ -986,7 +997,7 @@ public:
 			// TODO: use active criterion if possible
 			// TODO: otherwise, invariant can be broken...
 			// TODO: (because these cells are not active)
-			//for(const point np : neighbours)
+			//for(const point np : n_in)
 			if(ca_calc.is_cell_active(_grid[0], p))
 			 new_changed_cells.push_back(p);
 		}
@@ -1009,7 +1020,7 @@ public:
 
 		cells_to_check.clear();
 		for(const point& ap : new_changed_cells)
-		for(const point& np : neighbours)
+		for(const point& np : n_in)
 		{
 			const point p = ap + np;
 			if(sim_rect.is_inside(p)) // TODO: intsct?
@@ -1018,8 +1029,28 @@ public:
 		}
 		new_changed_cells.clear();
 
-		for(const point& p : cells_to_check )
-		if(async(2))
+		// try to find neighbours that do not overwrite each other
+		std::set<point> try_change;
+		bool this_ok;
+		do // TODO: this is slow...
+		{
+			this_ok = true;
+			for(auto itr = cells_to_check.cbegin(); itr != cells_to_check.cend() && this_ok; ++itr)
+			if(async(2))
+			{
+				const auto n_ok = [&](const point& p){ return try_change.find(p) == try_change.end(); };
+				if(n_out.for_each_bool(*itr, n_ok))
+				 try_change.insert(*itr);
+				else
+				 this_ok = false;
+			}
+		} while(!this_ok);
+
+		*new_grid = *old_grid; // TODO: necessary?
+
+	//	for(const point& p : cells_to_check )
+	//	if(try_change.find(p) != try_change.end())
+		for(const point& p : try_change )
 		// TODO: use bool async template here to increase speed?
 		// plus: exploit code duplication?
 		{
@@ -1038,11 +1069,11 @@ public:
 			}
 
 		}
-		else
+/*		else
 		{	// i.e. async + not activated
 			// we still need to assign the old value:
 			(*new_grid)[p] = (*old_grid)[p];
-		}
+		}*/
 
 	//	std::cout << "NOW:" <<  std::endl;
 	//	std::cout << *old_grid;
@@ -1114,7 +1145,7 @@ public:
 		// TODO: for now, we assume that the ca is always stable
 		(*old_grid)[p] = (*new_grid)[p] = ca_input.template
 			next_state<Traits, CellTraits>(*new_grid, p);
-		/*for(const point np : neighbours)
+		/*for(const point np : n_in)
 		{
 			point cur = p + np;
 			if(!grid().point_is_on_border(cur)

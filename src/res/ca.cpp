@@ -34,13 +34,29 @@ ca_eqsolver_t::ca_eqsolver_t(const char *equation, unsigned num_states)
 			grid_solver;
 	_border_width = (int)grid_solver(ast);
 
+	{
 	eqsolver::ast_area_cont<eqsolver::variable_area_cont<std::set<point>>>
-			grid_solver_2;
+			grid_solver_2(true);
 	std::set<point> res = grid_solver_2(ast);
 	std::vector<point> res_v;
 	std::move(res.begin(), res.end(), std::back_inserter(res_v));
-	neighbourhood = n_t(std::move(res_v));
-	center_cell = neighbourhood.get_center_cell();
+	_n_in = n_t(std::move(res_v));
+	center_cell = _n_in.get_center_cell();
+	} // TODO: own function
+
+	{
+	eqsolver::ast_area_cont<eqsolver::variable_area_cont<std::set<point>>>
+			grid_solver_2(false);
+	std::set<point> res = grid_solver_2(ast);
+	std::vector<point> res_v;
+	std::move(res.begin(), res.end(), std::back_inserter(res_v));
+	_n_out = n_t(std::move(res_v));
+	}
+
+#ifdef CA_DEBUG
+	std::cout << "Input neighbourhood: " << _n_in << std::endl;
+	std::cout << "Output neighbourhood: " << _n_out << std::endl;
+#endif
 
 #ifdef CA_DEBUG
 	printf("Size of Moore Neighbourhood: %d\n", // TODO: use cout

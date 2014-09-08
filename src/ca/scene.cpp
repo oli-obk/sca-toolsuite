@@ -270,12 +270,18 @@ public:
 		//}
 		//else return false;
 	}
+
+	void dump(std::ostream& stream) const { (void)stream; /*TODO*/ }
 };
 
 class leaf_base_t
 {
 public:
 	virtual void parse(infile_t& inf) = 0;
+	virtual void dump(std::ostream& stream) const = 0;
+	friend std::ostream& operator<<(std::ostream& stream, const leaf_base_t& l) {
+		return l.dump(stream), stream;
+	}
 };
 
 template<class T>
@@ -284,6 +290,7 @@ class leaf_template_t : public leaf_base_t
 	T t;
 public:
 	void parse(infile_t& inf) { inf.stream >> t; std::cerr << "Read object via cin: " << t << std::endl; }
+	void dump(std::ostream& stream) const { stream << t; }
 };
 
 template<>
@@ -292,6 +299,7 @@ class leaf_template_t<std::string> : public leaf_base_t
 	std::string t;
 public:
 	void parse(infile_t& inf) { t = inf.read_section();  std::cerr << "Read string: " << t << std::endl; }
+	void dump(std::ostream& stream) const { stream << t; }
 };
 
 template<> // TODO: abstract case of path_node? enable_if?
@@ -300,6 +308,7 @@ class leaf_template_t<path_node> : public leaf_base_t
 	path_node t;
 public:
 	void parse(infile_t& inf) { t.parse(inf); }
+	void dump(std::ostream& stream) const { t.dump(stream); }
 };
 
 class factory_base
@@ -403,6 +412,28 @@ protected:
 
 
 public:
+
+	void dump(std::ostream& stream) const
+	{
+		for(const auto& pr : supersections)
+		{
+			stream << pr.first << std::endl << std::endl
+				<< (*pr.second);
+		}
+
+		for(const auto& pr : leafs)
+		{
+			stream << pr.first << std::endl << std::endl
+				<< (*pr.second);
+		}
+
+		for(const auto& pr : multi_sections)
+		{
+			stream << pr.first << std::endl << std::endl
+				<< (*pr.second);
+		}
+	}
+
 	void parse (infile_t& inf)
 	{
 		std::string s;
@@ -495,6 +526,25 @@ public:
 		init_factory<scene_path_t>();
 		set_batch_str("path");
 	}
+
+/*	void get_tv()
+	{
+
+
+		tv_ctor cons(n);
+		for(const std::vector<path_node>& v : paths)
+		{
+			using itr_t = std::vector<path_node>::const_iterator;
+			itr_t tar = v.begin();
+			itr_t src = tar++;
+			for(; tar != v.end(); ++src, ++tar)
+			{
+				cons.add_eq(grids[src->grid_id], grids[tar->grid_id]);
+			}
+		}
+
+		tv = std::move(trans_vector_t(std::move(cons)));
+	} */
 };
 
 class scene_t
@@ -610,6 +660,7 @@ class MyProgram : public Program
 		} catch(infile_t::error_t ife) {
 			std::cout << "infile line " << ife.line << ": "	 << ife.msg << std::endl;
 		}
+		std::cout << scene;
 
 		return exit_t::success;
 	}

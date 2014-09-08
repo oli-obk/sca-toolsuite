@@ -650,7 +650,7 @@ public:
 	inline result_type operator()(const eqsolver::nil&) const { return cont_t(); }
 
 	inline result_type operator()(boost::spirit::info::nil) const { return cont_t(); }
-	inline result_type operator()(int) const { return cont_t();  }
+	inline result_type operator()(int) const { return cont_t(); }
 	inline result_type operator()(std::string) const
 	{
 		exit(99);
@@ -658,7 +658,8 @@ public:
 
 	inline result_type operator()(const vaddr& v) const
 	{
-		return boost::apply_visitor(var_area, v.expr);
+		return allow ? boost::apply_visitor(var_area, v.expr)
+			: cont_t();
 	}
 
 	inline result_type operator()(expression_ast const& ast) const {
@@ -666,6 +667,9 @@ public:
 	}
 
 private:
+	bool input;
+	mutable bool allow;
+
 	// TODO: this is mostly a duplicate... dumbly solved!
 	template<class NaryOpT> // no indexes
 	inline void apply_fptr(cont_t& , NaryOpT const&) const
@@ -692,12 +696,27 @@ public:
 	template<class Ret, class ...Args>
 	inline result_type operator()(nary_op<Ret, Args...> const& expr) const {
 		cont_t res;
-		apply_fptr(res, expr, make_seq<sizeof...(Args)>());
+		if((void*)expr.fptr == (void*)f2i_asn) // TODO: this is not clean
+		{
+			// only apply left side
+			if(input)
+			 apply_fptr<nary_op<Ret, Args...> const&, 1>(res, expr);
+			else
+			{
+				allow = true;
+				res = boost::apply_visitor(*this, std::move(expr.subtrees[0].expr));
+				allow = false;
+			}
+		}
+		else
+		 apply_fptr(res, expr, make_seq<sizeof...(Args)>());
 		return res;
 	}
 
 	//ast_area(variable_area::AREA_TYPE _area_type)
 	//	: var_area(_area_type) {}
+	//! @param input true if shall measure input n, false for output
+	ast_area_cont(bool input) : input(input), allow(input) {}
 };
 
 #if 0
