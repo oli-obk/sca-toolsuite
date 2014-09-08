@@ -424,7 +424,7 @@ public:
 
 //! header structure and basic utils for a table file
 class _table_hdr_t : public _eqsolver_t<
-	bitgrid_traits, bitgrid_cell_traits>
+	bitgrid_traits, bitgrid_cell_traits> // TODO: make base a template?
 {
 protected:
 	using base = _eqsolver_t<
@@ -438,6 +438,16 @@ protected:
 	using dimension = _dimension<bitgrid_traits>;
 public:
 	using n_t = _n_t<bitgrid_traits, std::vector<point>>;
+
+	/*
+		table format:
+		header: ca_table (8 char)
+		version: 1 (uint_32)
+		nw (uint_32)
+		own_num_states (uint_32)
+		table (size_each * n_w * n_w * uint_64)
+	*/
+
 protected:
 	class size_check
 	{
@@ -469,7 +479,7 @@ protected:
 	const version_t version;
 
 	const u_coord_t n_w; // TODO: u_coord_t
-	const unsigned own_num_states;
+	const unsigned own_num_states; //!< number of possible states per cell
 	const u_coord_t size_each; // TODO: u_coord_t
 	const point center;
 
@@ -836,6 +846,8 @@ public:
 private:
 	const u_coord_t _border_width;
 	const n_t _n_in, _n_out;
+	const point cc_out;
+	mutable grid_t tmp_out_grid;
 
 public:
 	// TODO: single funcs to initialize and make const?
@@ -844,7 +856,9 @@ public:
 		Solver(equation, num_states),
 		_border_width(_base::calc_border_width()),
 		_n_in(_base::calc_n_in()),
-		_n_out(_base::calc_n_out())
+		_n_out(_base::calc_n_out()),
+		cc_out(_n_out.get_center_cell()),
+		tmp_out_grid(_n_out.get_dim(), 0)
 	{
 	}
 
@@ -853,7 +867,9 @@ public:
 		Solver(stream),
 		_border_width(_base::calc_border_width()),
 		_n_in(_base::calc_n_in()),
-		_n_out(_base::calc_n_out())
+		_n_out(_base::calc_n_out()),
+		cc_out(_n_out.get_center_cell()),
+		tmp_out_grid(_n_out.get_dim(), 0)
 	{
 	}
 
@@ -889,9 +905,17 @@ public:
 		return next_state(&grid[p], p, grid.internal_dim());
 	}
 
+/*	//! overload with human coordinates and reference to grid. slower.
+	int next_state(const grid_t &grid, const point& p, const grid_t & tar) const
+	{
+		return next_state(&grid[p], p, grid.internal_dim(), &tar[p], tar.internal_dim());
+	}*/
+
+#if 0
 	//! returns whether cell at point @a p is active.
 	//! @a result is set to the result in all cases, if it is not nullptr
 	// TODO: overloads
+	// TODO: deprecated
 	bool is_cell_active(const grid_t& grid, const point& p, cell_t* result = nullptr) const
 	{
 		const cell_t* const cell_ptr = &grid[p];
@@ -900,6 +924,35 @@ public:
 		 *result = next;
 		return next != *cell_ptr;
 	}
+#endif
+
+	//! calculates next states around (human) position (x,y)
+	//! @param dim the grids internal dimension
+	const grid_t& next_state_ref(const grid_t &grid, const point& p) const
+	{
+		next_state(&grid[p], p, grid.internal_dim(),
+			&tmp_out_grid[cc_out], tmp_out_grid.internal_dim());
+		return tmp_out_grid;
+	}
+
+
+	//! returns whether cell at point @a p is active.
+	//! @a result is set to the result in all cases
+	// TODO: overloads
+	// TODO: deprecated
+	bool is_cell_active(const grid_t& grid, const point& p, grid_t* result = nullptr) const
+	{
+		// TODO: might be redirected to Solver to save time, in many cases
+		*result = next_state_ref(grid, p);
+		// TODO: linewise compare
+
+		bool equal = true;
+		for(auto itr = _n_out.cbegin();
+			equal && itr != _n_out.cend(); ++itr)
+		 equal = equal && (grid[*itr + p] == tmp_out_grid[*itr]);
+		return equal;
+	}
+
 };
 
 template<class Traits, class CellTraits>
