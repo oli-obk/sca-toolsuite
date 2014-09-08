@@ -18,37 +18,38 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#ifndef RANDOM_H
-#define RANDOM_H
+#ifndef TRAITS_H
+#define TRAITS_H
 
-#include <cstdlib>
-#include <sys/types.h>
-#include <unistd.h>
-#include <ctime>
+#include <type_traits>
+#include <cstdint>
 
-// TODO: do not inline the first two functions -> cpp file
+template<class T>
+struct area_class { using type = unsigned int; };
+template<>
+struct area_class<char> { using type = unsigned short; };
+template<>
+struct area_class<int8_t> { using type = unsigned short; };
+template<>
+struct area_class<uint8_t> { using type = unsigned short; };
 
-namespace sca_random
+//! @arg Coord The type for using coords. signed or unsigned
+template<class Coord, class Area = typename area_class<Coord>::type> // TODO: def for area
+struct coord_traits
 {
+	using coord_t = Coord;
+	using u_coord_t = typename std::make_unsigned<coord_t>::type; // TODO...
+	using area_t = typename std::make_unsigned<Area>::type;
+};
 
-//! Gets a seed which should differ much enough from time to time.
-inline unsigned int find_good_seed(void) {
-	return (unsigned int)time(NULL) + getpid() + getppid() + 42;
-}
-//! Calls function of OS to set a randome seed value.
-inline void set_seed(unsigned int seed) {
-	srandom(seed);
-}
-//! Calls function of OS to set a randome seed value.
-inline void set_seed() {
-	srandom(find_good_seed());
-}
-//! Returns a random value out of max subsequent values, beginning with 0
-//! In other words, the result will be in [0, max-1]
-inline unsigned int get_int(unsigned int max) {
-	return (unsigned int) (((float)max)*random()/(RAND_MAX+1.0));
-}
+template<class Cell>
+struct cell_traits
+{
+	using cell_t = Cell;
+};
 
-}
+using def_coord_traits = coord_traits<int>;
+using def_cell_traits = cell_traits<int>;
+using def_cell_const_traits = cell_traits<const int>;
 
-#endif // RANDOM_H
+#endif // TRAITS_H

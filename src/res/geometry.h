@@ -25,38 +25,10 @@
 #include <vector>
 #include <set>
 #include <fstream>
-#include <type_traits>
 #include <limits>
 #include <iostream>
-#include <cstdint>
 
-template<class T>
-struct area_class { using type = unsigned int; };
-template<>
-struct area_class<char> { using type = unsigned short; };
-template<>
-struct area_class<int8_t> { using type = unsigned short; };
-template<>
-struct area_class<uint8_t> { using type = unsigned short; };
-
-//! @arg Coord The type for using coords. signed or unsigned
-template<class Coord, class Area = typename area_class<Coord>::type> // TODO: def for area
-struct coord_traits
-{
-	using coord_t = Coord;
-	using u_coord_t = typename std::make_unsigned<coord_t>::type; // TODO...
-	using area_t = typename std::make_unsigned<Area>::type;
-};
-
-template<class Cell>
-struct cell_traits
-{
-	using cell_t = Cell;
-};
-
-using def_coord_traits = coord_traits<int>;
-using def_cell_traits = cell_traits<int>;
-using def_cell_const_traits = cell_traits<const int>;
+#include "traits.h"
 
 enum class storage_t
 {

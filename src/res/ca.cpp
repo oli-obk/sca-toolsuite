@@ -18,7 +18,8 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#include "ca.h"
+// TODO: rename this file: ca_table.cpp
+#include "ca_table.h"
 
 namespace sca { namespace ca {
 

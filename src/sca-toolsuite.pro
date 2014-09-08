@@ -32,7 +32,11 @@ HEADERS += res/io.h res/stack_algorithm.h \
     res/patch.h \
     res/print.h \
     res/simulate.h \
-    res/ca_convert.h
+    res/ca_convert.h \
+    res/ca_table.h \
+    res/bitgrid.h \
+    res/ca_eqs.h \
+    res/traits.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \
