@@ -201,6 +201,7 @@ class _n_t
 {
 	using point = _point<Traits>;
 	using dimension = _dimension<Traits>;
+	using u_coord_t = typename Traits::u_coord_t;
 protected:
 #if 0
 	_n_t() {} // TODO: bad coding style
@@ -249,6 +250,14 @@ protected:
 		*tfs = tf; // TODO: redundant
 	}
 
+	_bounding_box<Traits> get_bb() const
+	{
+		_bounding_box<Traits> _bb;
+		for(const point& p : neighbours)
+		 _bb.add_point( p );
+		return _bb;
+	}
+
 public:
 	std::size_t pos(const point& p) const
 	{
@@ -257,18 +266,20 @@ public:
 
 	point get_center_cell() const
 	{
-		_bounding_box<Traits> _bb;
-		for(const point& p : neighbours)
-		 _bb.add_point( p );
+		_bounding_box<Traits> _bb = get_bb();
 		return point(-_bb.ul().x, -_bb.ul().y);
 	}
 
-	dimension get_dim() const
+	dimension get_dim() const { return get_bb().dim(); }
+	u_coord_t get_max_w() const
 	{
-		_bounding_box<Traits> _bb;
-		for(const point& p : neighbours)
-		 _bb.add_point( p );
-		return _bb.dim();
+		_bounding_box<Traits> _bb = get_bb();
+		return std::max(
+			std::max((u_coord_t)-_bb.ul().x,
+				(u_coord_t)-_bb.ul().y),
+			std::max((u_coord_t)_bb.lr().x,
+				(u_coord_t)_bb.lr().y)
+		);
 	}
 
 	point operator[](unsigned i) const { return neighbours[i]; }

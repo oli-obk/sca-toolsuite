@@ -72,7 +72,7 @@ protected:
 
 	struct version_t
 	{
-		static constexpr const uint32_t id = 1;
+		static constexpr const uint32_t id = 2;
 		version_t(const uint32_t& i);
 		version_t() {}
 		static void dump(std::ostream &stream)
@@ -82,30 +82,53 @@ protected:
 	};
 	const version_t version;
 
-	const u_coord_t n_w; // TODO: u_coord_t
+//	const u_coord_t n_w; // TODO: u_coord_t
 	const unsigned own_num_states; //!< number of possible states per cell
 	const u_coord_t size_each; // TODO: u_coord_t
+	const n_t _n_in, _n_out;
 	const point center;
 
 	// data for outside:
 	const u_coord_t bw; // TODO: u_coord_t
-	const n_t neighbourhood;
 
-	u_coord_t compute_bw() const noexcept
+//	const n_t neighbourhood;
+
+/*	u_coord_t compute_bw() const noexcept
 	{
 		return (n_w - 1)>>1;
 	}
 
-	n_t compute_neighbourhood() const noexcept
+	n_t compute_neighbourhood() const
 	{
 		u_coord_t bw = border_width();
 		u_coord_t n_width = (bw<<1) + 1;
 		dimension moore = { n_width, n_width };
 		return n_t(moore, point(bw, bw));
+	}*/
+
+	static unsigned fetch_8(std::istream& stream)
+	{
+		uint8_t res;
+		stream.read((char*)&res, 1);
+		return res;
 	}
+
+	n_t fetch_n(std::istream& stream) const
+	{
+		std::vector<point> v(fetch_32(stream));
+		for(std::size_t i = 0; i < v.size(); ++i)
+		{
+			coord_t x = fetch_8(stream);
+			coord_t y = fetch_8(stream);
+			v.push_back(point(x, y));
+		}
+		return n_t(std::move(v));
+	}
+
 public:
 	unsigned border_width() const noexcept { return bw; } // TODO: should ret reference
-	const n_t& n_in() const noexcept { return neighbourhood; }
+	const n_t& n_in() const noexcept { return _n_in; }
+	const n_t& n_out() const noexcept { return _n_out; }
 protected:
 	static unsigned fetch_32(std::istream& stream)
 	{
@@ -137,9 +160,9 @@ private:
 	using storage_t = uint64_t;
 
 private:
-	static TblCont<uint64_t> fetch_tbl(std::istream& stream, unsigned size_each, unsigned n_w)
+	static TblCont<uint64_t> fetch_tbl(std::istream& stream, unsigned size_each, unsigned n_size)
 	{
-		TblCont<uint64_t> res(1 << (size_each * n_w * n_w));
+		TblCont<uint64_t> res(1 << (size_each * n_size));
 		stream.read((char*)res.data(), res.size() * 8);
 		return res;
 	}
@@ -149,11 +172,11 @@ private:
 	{
 		TblCont<uint64_t> tbl;
 	//	tbl.reserve(1 << (size_each * n_w * n_w)); // ctor can not reserve
-		tbl.resize(1 << (size_each * n_w * n_w));
+		tbl.resize(1 << (size_each * _n_in.size()));
 
-		bitgrid_t grid(size_each, dimension(n_w, n_w), 0, 0);
+		bitgrid_t grid(size_each, _n_in.get_dim(), 0, 0);
 		const dimension& dim = grid.internal_dim();
-		const std::size_t max = (int)pow(num_states, (n_w * n_w));
+		const std::size_t max = (int)pow(num_states, _n_in.size());
 
 		std::size_t percent = 0, cur;
 
@@ -202,7 +225,7 @@ public:
 
 	_table_t(std::istream& stream) :
 		_table_hdr_t(stream),
-		table(fetch_tbl(stream, size_each, n_w))
+		table(fetch_tbl(stream, size_each, _n_in.size()))
 	{
 	}
 
@@ -224,7 +247,7 @@ public:
 		using grid_cell_t = typename GCT::cell_t;
 
 		(void)p; // for a ca, the coordinates are no cell input
-		bitgrid_t bitgrid(size_each, dimension(n_w, n_w), 0);
+		bitgrid_t bitgrid(size_each, _n_in.get_dim(), 0);
 
 		grid_cell_t min = std::numeric_limits<grid_cell_t>::max(),
 			max = std::numeric_limits<grid_cell_t>::min(); // any better alternative?
