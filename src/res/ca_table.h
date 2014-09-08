@@ -247,6 +247,7 @@ public:
 
 };
 
+/*
 template<class T>
 class table_vector
 {
@@ -260,7 +261,7 @@ public:
 	void push_back(value_type&& sz) { vec.push_back(sz); }
 	void dump(const std::ostream& stream) const {
 		stream.write((char*)vec.data(), vec.size() * 8); }
-};
+};*/
 
 using table_t = _table_t<std::vector>;
 

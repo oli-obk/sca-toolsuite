@@ -25,8 +25,6 @@ namespace sca { namespace ca {
 
 constexpr const uint32_t _table_hdr_t::version_t::id;
 
-
-
 _table_hdr_t::size_check::size_check(int size)
 {
 	if(size < 0)

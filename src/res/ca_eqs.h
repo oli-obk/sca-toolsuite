@@ -49,7 +49,6 @@ private:
 	eqsolver::expression_ast ast;
 	int* helper_vars = nullptr; //!< @todo: auto/unique_ptr
 	std::size_t helpers_size;
-//	u_coord_t _border_width;
 protected:
 	cell_t num_states;
 //	n_t_const neighbourhood;
@@ -92,8 +91,6 @@ protected:
 		//	debug("Building AST from equation...\n");
 		eqsolver::build_tree(equation, &ast);
 
-	//	tmp_out_conf = conf_t(0, _n_out.size());
-
 #ifdef CA_DEBUG
 		std::cout << "Input neighbourhood: " << _n_in << std::endl;
 		std::cout << "Output neighbourhood: " << _n_out << std::endl;
@@ -135,14 +132,10 @@ protected:
 	int calculate_next_state(const typename CT::cell_t *cell_ptr,
 		const _point<T>& p, const _dimension<T>& dim) const
 	{
-		// TODO: replace &((*old_grid)[internal]) by old_value
-		// and make old_value a ptr/ref?
-		// TODO: const cast
 		eqsolver::const_grid_storage_array arr(cell_ptr, dim.width());
 		int result;
 		eqsolver::grid_storage_single tar(&result);
 
-		// TODO: why do we need to specify the default argument?
 		using vprinter_t = eqsolver::_variable_print<>;
 		vprinter_t vprinter(
 			p.x, p.y,
@@ -195,12 +188,6 @@ protected:
 		eqsolver::ast_print<vprinter_t> solver(&vprinter);
 		return solver(ast);
 	}
-
-public:
-/*	const u_coord_t& border_width() const noexcept { return _border_width; }
-	const n_t& n_in() const noexcept { return _n_in; }
-	const n_t& n_out() const noexcept { return _n_out; }*/
-	//bool can_optimize_table() const { return num_states }
 };
 
 using eqsolver_t = _eqsolver_t<def_coord_traits, def_cell_traits>;
