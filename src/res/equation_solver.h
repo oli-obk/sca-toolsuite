@@ -305,8 +305,12 @@ struct variable_area_cont : public boost::static_visitor<Cont>
 	inline result_type operator()(vaddr::var_x) const { return cont_t(); }
 	inline result_type operator()(vaddr::var_y) const { return cont_t(); }
 	template<bool Addr>
-	inline result_type operator()(vaddr::var_array<Addr> _a) const {
-		return cont_t {{_a.template x<1>(), _a.template x<2>()}};
+	inline result_type operator()(vaddr::var_array<Addr> _a) const
+	{
+		using vt = typename cont_t::value_type;
+		using coord_t = typename vt::coord_t;
+		return cont_t {{ static_cast<coord_t>(_a.template x<1>()),
+			static_cast<coord_t>(_a.template x<2>())}};
 	}
 	template<bool T>
 	inline result_type operator()(vaddr::var_helper<T> ) const { return cont_t(); }

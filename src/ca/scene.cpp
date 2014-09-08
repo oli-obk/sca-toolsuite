@@ -343,6 +343,13 @@ private:
 	std::map<std::string, leaf_base_t*> supersections;
 	std::map<std::size_t, leaf_base_t*> multi_sections;
 	std::map<std::string, leaf_base_t*> leafs;
+
+	bool check_required()
+	{
+		(void)required; // TODO
+		return true;
+	}
+
 protected:
 	template<class T>
 	void init_subsection(const char* sec_name) {
@@ -489,6 +496,8 @@ public:
 			std::cerr << " - `" << s << "' does not match the batch string `" << batch_str << "'" << std::endl;
 		}
 		std::cerr << std::endl;
+
+		check_required();
 	}
 
 	supersection_t(type_t type = type_t::sections, bool required = true) :

@@ -257,7 +257,7 @@ public:
 
 	point get_center_cell() const
 	{
-		bounding_box _bb;
+		_bounding_box<Traits> _bb;
 		for(const point& p : neighbours)
 		 _bb.add_point( p );
 		return point(-_bb.ul().x, -_bb.ul().y);
@@ -265,7 +265,7 @@ public:
 
 	dimension get_dim() const
 	{
-		bounding_box _bb;
+		_bounding_box<Traits> _bb;
 		for(const point& p : neighbours)
 		 _bb.add_point( p );
 		return _bb.dim();

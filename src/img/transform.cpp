@@ -85,8 +85,8 @@ class MyProgram : public Program
 				Magick::CharPixel, grid.data().data());
 
 
-			using ca_sim_t = sca::ca::ca_simulator_t<
-				sca::ca::ca_eqsolver_t, def_coord_traits, def_cell_traits>;
+			using ca_sim_t = sca::ca::simulator_t<
+				sca::ca::eqsolver_t, def_coord_traits, def_cell_traits>;
 			ca_sim_t sim(equation);
 			sim.grid() = grid;
 			sim.finalize();

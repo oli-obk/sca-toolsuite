@@ -42,7 +42,7 @@ class MyProgram : public Program, sim::ulator
 		const it eos;
 		const std::string s(it(std::cin), eos);
 
-		const ca::ca_table_t tbl(s.c_str(), 3); // TODO: 3
+		const ca::table_t tbl(s.c_str(), 3); // TODO: 3
 		tbl.dump(std::cout);
 
 		return exit_t::success;

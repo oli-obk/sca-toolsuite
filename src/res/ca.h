@@ -38,24 +38,101 @@ namespace sca { namespace ca {
 
 //#define CA_DEBUG
 
-class ca_eqsolver_t
+template<class Traits, class CellTraits>
+class _eqsolver_t // TODO: can we move the private members to inheriting class?
 {
+	using dimension = _dimension<Traits>;
+	using point = _point<Traits>;
+	using cell_t = typename CellTraits::cell_t;
+	using coord_t = typename Traits::coord_t;
+	using u_coord_t = typename Traits::u_coord_t;
+public:
+	using n_t = _n_t<Traits, std::vector<point>>;
+private:
 	eqsolver::expression_ast ast;
-	int* helper_vars = nullptr; //!< @todo: auto_ptr
-	int helpers_size;
-	int _border_width;
-	n_t _n_in, _n_out;
-	point center_cell;
+	int* helper_vars = nullptr; //!< @todo: auto/unique_ptr
+	std::size_t helpers_size;
+//	u_coord_t _border_width;
 protected:
-	int num_states;
+	cell_t num_states;
 //	n_t_const neighbourhood;
 
+	u_coord_t calc_border_width() const
+	{
+		eqsolver::ast_area<eqsolver::variable_area_grid>
+			grid_solver;
+		return (int)grid_solver(ast);
+	}
+
+	n_t calc_n_in() const
+	{
+		eqsolver::ast_area_cont<eqsolver::variable_area_cont<std::set<point>>>
+			grid_solver_2(true);
+		std::set<point> res = grid_solver_2(ast);
+		std::vector<point> res_v;
+		std::move(res.begin(), res.end(), std::back_inserter(res_v));
+		return n_t(std::move(res_v));
+	}
+
+	n_t calc_n_out() const
+	{
+		eqsolver::ast_area_cont<eqsolver::variable_area_cont<std::set<point>>>
+			grid_solver_2(false);
+		std::set<point> res = grid_solver_2(ast);
+		std::vector<point> res_v;
+		std::move(res.begin(), res.end(), std::back_inserter(res_v));
+		return n_t(std::move(res_v));
+	}
+
 protected:
-	~ca_eqsolver_t() noexcept { delete[] helper_vars; }
+	~_eqsolver_t() noexcept { delete[] helper_vars; }
 
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
-	ca_eqsolver_t(const char* equation, unsigned num_states = 0);
+	_eqsolver_t(const char* equation, cell_t num_states = 0)
+		: num_states(num_states)
+	{
+		//	debug("Building AST from equation...\n");
+		eqsolver::build_tree(equation, &ast);
+
+	//	tmp_out_conf = conf_t(0, _n_out.size());
+
+#ifdef CA_DEBUG
+		std::cout << "Input neighbourhood: " << _n_in << std::endl;
+		std::cout << "Output neighbourhood: " << _n_out << std::endl;
+#endif
+
+#ifdef CA_DEBUG
+		printf("Size of Moore Neighbourhood: %d\n", // TODO: use cout
+		       _border_width);
+#endif
+		eqsolver::ast_area<eqsolver::variable_area_helpers>
+				helpers_solver;
+		helpers_size = (int)helpers_solver(ast) + 1;
+#ifdef CA_DEBUG
+		printf("Size of Helper Variable Array: %d\n",
+		       helpers_size);
+#endif
+		if(helpers_size > 0)
+			helper_vars = new int[helpers_size];
+
+#if 0
+		eqsolver::ast_minmax minmax_solver(helpers_size);
+		//std::pair<int, int> mm = (std::pair<int, int>)minmax_solver(ast);
+		/*	num_states = (mm.first == INT_MIN || mm.second == INT_MAX)
+	? INT_MAX
+	: (mm.second - mm.first + 1);*/
+		std::pair<eqsolver::expression_ast, eqsolver::expression_ast> mm
+				= (std::pair<eqsolver::expression_ast, eqsolver::expression_ast>)minmax_solver(ast);
+
+		eqsolver::ast_dump dumper;
+		std::cout << "original: " << dumper(ast) << std::endl;
+
+		std::cout << "mm first: " << (std::string)dumper(mm.first) << std::endl; // TODO: non return syntax
+		(void)mm;
+#endif
+		//num_states = 0;
+	}
 
 	template<class T, class CT>
 	int calculate_next_state(const typename CT::cell_t *cell_ptr,
@@ -78,9 +155,11 @@ protected:
 	}
 
 	//! version for multi-targets
+	// TODO: point should be 1st arg, dim 2nd
+	// TODO: choose useful return value
 	template<class T, class CT>
 	int calculate_next_state(const typename CT::cell_t *cell_ptr,
-		const _point<T>& p, const _dimension<T>& dim, const typename CT::cell_t *cell_tar,
+		const _point<T>& p, const _dimension<T>& dim, typename CT::cell_t *cell_tar,
 		const _dimension<T>& tar_dim) const
 	{
 		// TODO: replace &((*old_grid)[internal]) by old_value
@@ -90,7 +169,9 @@ protected:
 		eqsolver::grid_storage_array tar(cell_tar, tar_dim.width());
 
 		// TODO: why do we need to specify the default argument?
-		using vprinter_t = eqsolver::_variable_print<>;
+		using vprinter_t = eqsolver::_variable_print<
+			eqsolver::const_grid_storage_array,
+			eqsolver::grid_storage_array>;
 		vprinter_t vprinter(
 			p.x, p.y,
 			arr, tar, helper_vars);
@@ -102,7 +183,7 @@ protected:
 	//! Runtime: depends on formula.
 	// TODO: bit storage grids?
 	template<class T, class = void>
-	int calculate_next_state(uint64_t grid_int, uint64_t size_each,
+		int calculate_next_state(uint64_t grid_int, uint64_t size_each,
 		const _point<T>& p, const _dimension<T>& dim) const
 	{
 		int eval_idx = dim.width() * p.y + p.x; // TODO: bw?
@@ -119,12 +200,13 @@ protected:
 	}
 
 public:
-	int border_width() const noexcept { return _border_width; }
-	using n_t_type = n_t;
+/*	const u_coord_t& border_width() const noexcept { return _border_width; }
 	const n_t& n_in() const noexcept { return _n_in; }
-	const n_t& n_out() const noexcept { return _n_out; }
+	const n_t& n_out() const noexcept { return _n_out; }*/
 	//bool can_optimize_table() const { return num_states }
 };
+
+using eqsolver_t = _eqsolver_t<def_coord_traits, def_cell_traits>;
 
 using bitgrid_traits = coord_traits<char>;
 using bitgrid_cell_traits = cell_traits<char>;
@@ -341,10 +423,12 @@ public:
 };
 
 //! header structure and basic utils for a table file
-class _ca_table_hdr_t : public ca_eqsolver_t
+class _table_hdr_t : public _eqsolver_t<
+	bitgrid_traits, bitgrid_cell_traits>
 {
 protected:
-	using base = ca_eqsolver_t;
+	using base = _eqsolver_t<
+		bitgrid_traits, bitgrid_cell_traits>;
 
 	using u_coord_t = typename bitgrid_traits::u_coord_t;
 	using cell_t = typename bitgrid_cell_traits::cell_t;
@@ -353,7 +437,7 @@ protected:
 	using point = _point<bitgrid_traits>;
 	using dimension = _dimension<bitgrid_traits>;
 public:
-	using n_t_type = _n_t<bitgrid_traits, std::vector<point>>;
+	using n_t = _n_t<bitgrid_traits, std::vector<point>>;
 protected:
 	class size_check
 	{
@@ -391,23 +475,23 @@ protected:
 
 	// data for outside:
 	const u_coord_t bw; // TODO: u_coord_t
-	const n_t_type neighbourhood;
+	const n_t neighbourhood;
 
 	u_coord_t compute_bw() const noexcept
 	{
 		return (n_w - 1)>>1;
 	}
 
-	n_t_type compute_neighbourhood() const noexcept
+	n_t compute_neighbourhood() const noexcept
 	{
 		u_coord_t bw = border_width();
 		u_coord_t n_width = (bw<<1) + 1;
 		dimension moore = { n_width, n_width };
-		return n_t_type(moore, point(bw, bw));
+		return n_t(moore, point(bw, bw));
 	}
 public:
 	unsigned border_width() const noexcept { return bw; } // TODO: should ret reference
-	const n_t_type& n_in() const noexcept { return neighbourhood; }
+	const n_t& n_in() const noexcept { return neighbourhood; }
 protected:
 	static unsigned fetch_32(std::istream& stream)
 	{
@@ -422,15 +506,15 @@ protected:
 	//! O(1)
 	void dump(std::ostream& stream) const;
 
-	_ca_table_hdr_t(std::istream& stream);
+	_table_hdr_t(std::istream& stream);
 
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
-	_ca_table_hdr_t(const char* equation, cell_t num_states = 0);
+	_table_hdr_t(const char* equation, cell_t num_states = 0);
 };
 
 template<template<class ...> class TblCont>
-class _ca_table_t : public _ca_table_hdr_t // TODO: only for reading?
+class _table_t : public _table_hdr_t // TODO: only for reading?
 {
 private:
 	// TODO!!! table can use uint8_t in many cases!
@@ -498,20 +582,20 @@ public:
 	//! O(table)
 	void dump(std::ostream& stream) const
 	{
-		_ca_table_hdr_t::dump(stream);
+		_table_hdr_t::dump(stream);
 		stream.write((char*)table.data(), table.size() * 8);
 	}
 
-	_ca_table_t(std::istream& stream) :
-		_ca_table_hdr_t(stream),
+	_table_t(std::istream& stream) :
+		_table_hdr_t(stream),
 		table(fetch_tbl(stream, size_each, n_w))
 	{
 	}
 
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
-	_ca_table_t(const char* equation, cell_t num_states = 0) :
-		_ca_table_hdr_t(equation, num_states),
+	_table_t(const char* equation, cell_t num_states = 0) :
+		_table_hdr_t(equation, num_states),
 		table(calculate_table())
 	{
 	}
@@ -564,7 +648,7 @@ public:
 		stream.write((char*)vec.data(), vec.size() * 8); }
 };
 
-using ca_table_t = _ca_table_t<std::vector>;
+using table_t = _table_t<std::vector>;
 
 namespace calc_methods
 {
@@ -736,77 +820,90 @@ public:
  *
  * Thus it contains no grid.
  */
-template<class Solver>
-class _ca_calculator_t : public Solver
+template<class Solver, class Traits, class CellTraits>
+class _calculator_t : public Solver
 {
 	using _base = Solver;
-/*	using cell_t = typename Traits::cell_t;
-	using grid_t = _grid_t<Traits>;
+	using u_coord_t = typename Traits::u_coord_t;
+	using cell_t = typename CellTraits::cell_t;
+	using grid_t = _grid_t<Traits, CellTraits>;
 	using point = _point<Traits>;
-	using dimension = _dimension<Traits>;*/
-	template<class CellTraits>
-	using m_cell = typename CellTraits::cell_t;
+	using dimension = _dimension<Traits>;
+
+public:
+	using n_t = _n_t<Traits, std::vector<point>>;
+
+private:
+	const u_coord_t _border_width;
+	const n_t _n_in, _n_out;
+
 public:
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
-	_ca_calculator_t(const char* equation, unsigned num_states = 0) :
-		Solver(equation, num_states)
+	_calculator_t(const char* equation, unsigned num_states = 0) :
+		Solver(equation, num_states),
+		_border_width(_base::calc_border_width()),
+		_n_in(_base::calc_n_in()),
+		_n_out(_base::calc_n_out())
 	{
 	}
 
 	//! tries to synch (TODO: better word) the CA from a file
-	_ca_calculator_t(std::istream& stream) :
-		Solver(stream)
+	_calculator_t(std::istream& stream) :
+		Solver(stream),
+		_border_width(_base::calc_border_width()),
+		_n_in(_base::calc_n_in()),
+		_n_out(_base::calc_n_out())
 	{
 	}
 
+	const u_coord_t& border_width() const noexcept { return _border_width; }
+	const n_t& n_in() const noexcept { return _n_in; }
+	const n_t& n_out() const noexcept { return _n_out; }
+
 	//! calculates next state at (human) position (x,y)
 	//! @param dim the grids internal dimension
-	template<class T, class CT>
-	int next_state(const m_cell<CT> *cell_ptr, const _point<T>& p, const _dimension<T>& dim) const
+	int next_state(const cell_t *cell_ptr, const point& p, const dimension& dim) const // TODO: return cell_t
 	{
-		return _base::template calculate_next_state<T, CT>(cell_ptr, p, dim);
+		return _base::template calculate_next_state<Traits, CellTraits>(cell_ptr, p, dim);
 	}
 
 	//! calculates next states around (human) position (x,y)
 	//! @param dim the grids internal dimension
-	template<class T, class CT>
-	int next_state(const m_cell<CT> *cell_ptr, const _point<T>& p, const _dimension<T>& dim,
-		const m_cell<CT> *cell_tar, const _dimension<T>& tar_dim) const
+	int next_state(const cell_t *cell_ptr, const point& p, const dimension& dim,
+		cell_t *cell_tar, const dimension& tar_dim) const
 	{
-		return _base::template calculate_next_state<T, CT>(cell_ptr, p, dim, cell_tar, tar_dim);
+		return _base::template calculate_next_state<Traits, CellTraits>(cell_ptr, p, dim, cell_tar, tar_dim);
 	}
 
 	//! overload, with x and y in internal format. slower.
-	template<class T, class CT>
-	int next_state_realxy(const m_cell<CT> *cell_ptr, const  _point<T>& p, const _dimension<T>& dim) const
+	int next_state_realxy(const cell_t *cell_ptr, const point& p, const dimension& dim) const
 	{
 		int bw = _base::border_width();
-		return next_state<T, CT>(cell_ptr, p - point { bw, bw }, dim);
+		return next_state(cell_ptr, p - point { bw, bw }, dim);
 	}
 
 	//! overload with human coordinates and reference to grid. slower.
-	template<class T, class CT>
-	int next_state(const _grid_t<T, CT> &grid, const _point<T>& p) const
+	int next_state(const grid_t &grid, const point& p) const
 	{
-		return next_state<T, CT>(&grid[p], p, grid.internal_dim());
+		return next_state(&grid[p], p, grid.internal_dim());
 	}
 
 	//! returns whether cell at point @a p is active.
 	//! @a result is set to the result in all cases, if it is not nullptr
 	// TODO: overloads
-	template<class T, class CT>
-	bool is_cell_active(const _grid_t<T, CT>& grid, const _point<T>& p, m_cell<CT>* result = nullptr) const
+	bool is_cell_active(const grid_t& grid, const point& p, cell_t* result = nullptr) const
 	{
-		const m_cell<CT>* const cell_ptr = &grid[p];
-		const m_cell<CT> next = next_state<T, CT>(cell_ptr, p, grid.internal_dim());
+		const cell_t* const cell_ptr = &grid[p];
+		const cell_t next = next_state(cell_ptr, p, grid.internal_dim());
 		if(result)
 		 *result = next;
 		return next != *cell_ptr;
 	}
 };
 
-using ca_calculator_t = _ca_calculator_t<ca_eqsolver_t>;
+template<class Traits, class CellTraits>
+using calculator_t = _calculator_t<eqsolver_t, Traits, CellTraits>;
 
 #if 0 // TODO: clang forbids this for some strange reason
 class asm_synch_calculator_t
@@ -891,10 +988,10 @@ public:
  * Defines sequence: (stabilisation)((input)(stabilisation))*
  */
 template<class Solver, class Traits, class CellTraits>
-class ca_simulator_t : /*private _ca_calculator_t<Solver>,*/ public input_ca
+class simulator_t : /*private _ca_calculator_t<Solver>,*/ public input_ca
 {
 	using point = _point<Traits>;
-	using calc_class = _ca_calculator_t<Solver>;
+	using calc_class = _calculator_t<Solver, Traits, CellTraits>;
 	using grid_t = _grid_t<Traits, CellTraits>;
 
 	using input_class = calc_class; //!< TODO: Solver class is enough
@@ -903,8 +1000,8 @@ class ca_simulator_t : /*private _ca_calculator_t<Solver>,*/ public input_ca
 	input_class ca_input;
 
 	grid_t _grid[2];
-	grid_t *old_grid = _grid, *new_grid = _grid;
-	typename calc_class::n_t_type n_in, n_out; // TODO: const?
+	grid_t *old_grid = _grid, *new_grid = _grid; // TODO: old grid const?
+	typename calc_class::n_t n_in, n_out; // TODO: const?
 	std::vector<point> //recent_active_cells(old_grid->size()),
 			new_changed_cells; // TODO: this vector will shrink :/
 	//! temporary variable
@@ -915,7 +1012,7 @@ class ca_simulator_t : /*private _ca_calculator_t<Solver>,*/ public input_ca
 
 	void initialize_first() { run_once(); }
 public:
-	ca_simulator_t(const char* equation, const char* input_equation,
+	simulator_t(const char* equation, const char* input_equation,
 		unsigned num_states, bool async = false) :
 		ca_calc(equation, num_states),
 		ca_input(input_equation, num_states),
@@ -926,19 +1023,19 @@ public:
 	{
 	}
 
-	ca_simulator_t(const char* equation, const char* input_equation,
+	simulator_t(const char* equation, const char* input_equation,
 		bool async = false) : // TODO: 2 ctots?
-		ca_simulator_t(equation, input_equation, 0, async)
+		simulator_t(equation, input_equation, 0, async)
 	{
 	}
 
-	ca_simulator_t(const char* equation,
+	simulator_t(const char* equation,
 		bool async = false) :
-		ca_simulator_t(equation, "v", async)
+		simulator_t(equation, "v", async)
 	{
 	}
 
-	virtual ~ca_simulator_t() {}
+	virtual ~simulator_t() {}
 
 	// TODO: there is no virtual function right now...
 	void reset_ca(const char* equation, const char* input_equation)
@@ -1054,19 +1151,35 @@ public:
 		// TODO: use bool async template here to increase speed?
 		// plus: exploit code duplication?
 		{
+#if 0
 			int new_value;
 			const int old_value = (*old_grid)[p];
 			(*new_grid)[p] = (new_value
 				= ca_calc.template next_state<Traits, CellTraits>
 					(&((*old_grid)[p]),
 						p, _grid->internal_dim()));
-
-		//	std::cout << "at " << p << ": " << new_value
-		//		<< ", " << old_value << std::endl;
 			if(new_value != old_value)
 			{
 				new_changed_cells.push_back(p);
 			}
+#else
+			(*new_grid)[p] = ca_calc.next_state
+					(&((*old_grid)[p]),
+						p, _grid->internal_dim(),
+						&((*new_grid)[p]), _grid->internal_dim());
+			const auto on_changed = [&](const point& np) {
+				if((*old_grid)[np] != (*new_grid)[np])
+				 new_changed_cells.push_back(np);
+			};
+
+			n_out.for_each(p, on_changed);
+			on_changed(p); // backwards compatibility
+#endif
+
+
+		//	std::cout << "at " << p << ": " << new_value
+		//		<< ", " << old_value << std::endl;
+
 
 		}
 /*		else
@@ -1143,8 +1256,8 @@ public:
 	{
 		//if(has_)
 		// TODO: for now, we assume that the ca is always stable
-		(*old_grid)[p] = (*new_grid)[p] = ca_input.template
-			next_state<Traits, CellTraits>(*new_grid, p);
+		(*old_grid)[p] = (*new_grid)[p] =
+			ca_input.next_state(*new_grid, p);
 		/*for(const point np : n_in)
 		{
 			point cur = p + np;

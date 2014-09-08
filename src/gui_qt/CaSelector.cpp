@@ -93,7 +93,7 @@ CaSelector::CaSelector(QWidget *parent) :
 sca::ca::input_ca* CaSelector::instantiate_ca()
 {
 	// TODO: redundant in DrawArea.cpp
-	using eq_sim_t = sca::ca::ca_simulator_t<sca::ca::ca_eqsolver_t,
+	using eq_sim_t = sca::ca::simulator_t<sca::ca::eqsolver_t,
 		def_coord_traits, def_cell_traits>;
 	return new eq_sim_t(
 		formula_edit.widget().toPlainText().toAscii().data(),

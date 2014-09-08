@@ -26,7 +26,7 @@
 #include "DrawArea.h"
 #include "ca.h"
 
-using eq_sim_t = sca::ca::ca_simulator_t<sca::ca::ca_eqsolver_t,
+using eq_sim_t = sca::ca::simulator_t<sca::ca::eqsolver_t,
 	def_coord_traits, def_cell_traits>;
 
 DrawArea::DrawArea(StateMachine& _state_machine, const char *ca_eq,
