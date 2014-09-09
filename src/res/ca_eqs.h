@@ -125,20 +125,31 @@ protected:
 		//num_states = 0;
 	}
 
+
+	template<class Src, class Tar, class T>
+	int calculate_next_state(const Src& src_array, const Tar& tar_array,
+		const _point<T>& p) const
+	{
+		// TODO: replace &((*old_grid)[internal]) by old_value
+		// and make old_value a ptr/ref?
+		using vprinter_t = eqsolver::_variable_print<Src, Tar>;
+		vprinter_t vprinter(
+			p.x, p.y,
+			src_array, tar_array, helper_vars);
+		eqsolver::ast_print<vprinter_t> solver(&vprinter);
+		return (int)solver(ast);
+	}
+
 	template<class T, class CT>
 	int calculate_next_state(const typename CT::cell_t *cell_ptr,
 		const _point<T>& p, const _dimension<T>& dim) const
 	{
-		eqsolver::const_grid_storage_array arr(cell_ptr, dim.width());
-		int result;
-		eqsolver::grid_storage_single tar(&result);
-
-		using vprinter_t = eqsolver::_variable_print<>;
-		vprinter_t vprinter(
-			p.x, p.y,
-			arr, tar, helper_vars);
-		eqsolver::ast_print<vprinter_t> solver(&vprinter);
-		return (int)solver(ast);
+		int result; // TODO: used?
+		return calculate_next_state(
+			eqsolver::const_grid_storage_array(cell_ptr, dim.width()),
+			eqsolver::grid_storage_single(&result),
+			p
+			);
 	}
 
 	//! version for multi-targets
@@ -149,21 +160,11 @@ protected:
 		const _point<T>& p, const _dimension<T>& dim, typename CT::cell_t *cell_tar,
 		const _dimension<T>& tar_dim) const
 	{
-		// TODO: replace &((*old_grid)[internal]) by old_value
-		// and make old_value a ptr/ref?
-		// TODO: const cast
-		eqsolver::const_grid_storage_array arr(cell_ptr, dim.width());
-		eqsolver::grid_storage_array tar(cell_tar, tar_dim.width());
-
-		// TODO: why do we need to specify the default argument?
-		using vprinter_t = eqsolver::_variable_print<
-			eqsolver::const_grid_storage_array,
-			eqsolver::grid_storage_array>;
-		vprinter_t vprinter(
-			p.x, p.y,
-			arr, tar, helper_vars);
-		eqsolver::ast_print<vprinter_t> solver(&vprinter);
-		return (int)solver(ast);
+		return calculate_next_state(
+			eqsolver::const_grid_storage_array(cell_ptr, dim.width()),
+			eqsolver::grid_storage_array(cell_tar, tar_dim.width()),
+			p
+			);
 	}
 
 
@@ -174,16 +175,12 @@ protected:
 		const _point<T>& p, const _dimension<T>& dim) const
 	{
 		int eval_idx = dim.width() * p.y + p.x; // TODO: bw?
-		eqsolver::grid_storage_bits arr(grid_int, size_each, dim.width(), eval_idx);
-		int _result;
-		eqsolver::grid_storage_single tar(&_result);
-
-		using vprinter_t = eqsolver::_variable_print<eqsolver::grid_storage_bits>;
-		vprinter_t vprinter(
-			p.x, p.y,
-			arr, tar, helper_vars);
-		eqsolver::ast_print<vprinter_t> solver(&vprinter);
-		return solver(ast);
+		int _result; // TODO: used?
+		return calculate_next_state(
+			eqsolver::grid_storage_bits(grid_int, size_each, dim.width(), eval_idx),
+			eqsolver::grid_storage_single(&_result),
+			p
+			);
 	}
 };
 

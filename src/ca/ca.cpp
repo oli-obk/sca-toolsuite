@@ -79,7 +79,7 @@ class MyProgram : public Program, sim::ulator
 				break;
 		}
 
-//#define CA_TABLE_OPTIMIZATION
+#define CA_TABLE_OPTIMIZATION
 #ifdef CA_TABLE_OPTIMIZATION
 		(void)in_fp;
 		using ca_sim_t = ca::simulator_t<ca::table_t, def_coord_traits, def_cell_traits>;
