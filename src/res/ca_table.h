@@ -26,13 +26,44 @@
 
 namespace sca { namespace ca {
 
+namespace tbl_detail
+{
+
+class size_check
+{
+	size_check(int size);
+};
+
+struct header_t
+{
+	header_t(std::istream& stream);
+	static void dump(std::ostream &stream)
+	{
+		stream.write("ca_table", 8);
+	}
+	header_t() {}
+};
+
+const header_t header;
+
+struct version_t
+{
+	static constexpr const uint32_t id = 2;
+	version_t(const uint32_t& i);
+	version_t() {}
+	static void dump(std::ostream &stream)
+	{
+		stream.write((char*)&id, 4);
+	}
+};
+
+}
+
 //! header structure and basic utils for a table file
-class _table_hdr_t : public _eqsolver_t<
-	bitgrid_traits, bitgrid_cell_traits> // TODO: make base a template?
+class _table_hdr_t : public eqsolver_t // TODO: make base a template?
 {
 protected:
-	using base = _eqsolver_t<
-		bitgrid_traits, bitgrid_cell_traits>;
+	using base = eqsolver_t;
 
 	using u_coord_t = typename bitgrid_traits::u_coord_t;
 	using cell_t = typename bitgrid_cell_traits::cell_t;
@@ -53,34 +84,9 @@ public:
 	*/
 
 protected:
-	class size_check
-	{
-		size_check(int size);
-	};
 
-	struct header_t
-	{
-		header_t(std::istream& stream);
-		static void dump(std::ostream &stream)
-		{
-			stream.write("ca_table", 8);
-		}
-		header_t() {}
-	};
-
-	const header_t header;
-
-	struct version_t
-	{
-		static constexpr const uint32_t id = 2;
-		version_t(const uint32_t& i);
-		version_t() {}
-		static void dump(std::ostream &stream)
-		{
-			stream.write((char*)&id, 4);
-		}
-	};
-	const version_t version;
+	const tbl_detail::header_t header;
+	const tbl_detail::version_t version;
 
 //	const u_coord_t n_w; // TODO: u_coord_t
 	const unsigned own_num_states; //!< number of possible states per cell
@@ -126,9 +132,11 @@ protected:
 	}
 
 public:
-	unsigned border_width() const noexcept { return bw; } // TODO: should ret reference
-	const n_t& n_in() const noexcept { return _n_in; }
-	const n_t& n_out() const noexcept { return _n_out; }
+/*	unsigned border_width() const noexcept { return bw; } // TODO: should ret reference
+	const n_t& n_in() const noexcept {
+		std::set<n_t::>
+	}
+	const n_t& n_out() const noexcept {  }*/
 protected:
 	static unsigned fetch_32(std::istream& stream)
 	{
@@ -141,16 +149,67 @@ protected:
 	}
 
 	//! O(1)
-	void dump(std::ostream& stream) const;
+	void dump(std::ostream& stream) const
+	{
+		tbl_detail::header_t::dump(stream);
+		tbl_detail::version_t::dump(stream);
+		uint32_t tmp = _n_in.size();
+		stream.write((char*)&tmp, 4);
+		tmp = own_num_states;
+		stream.write((char*)&tmp, 4);
+	}
 
-	_table_hdr_t(std::istream& stream);
+	_table_hdr_t(std::istream& stream) :
+		base("v", 0), // not reliable
+		header(stream),
+		version(fetch_32(stream)),
+		//	n_w(fetch_32(stream)),
+		own_num_states(fetch_32(stream)),
+		size_each((unsigned)ceil(log(own_num_states))), // TODO: use int arithm
+		//	center((n_w - 1)>>1, (n_w - 1)>>1),
+		_n_in(fetch_n(stream)),
+		_n_out(fetch_n(stream)),
+		center(_n_in.get_center_cell()),
+		bw(_n_in.get_max_w())
+	{
+	}
 
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
-	_table_hdr_t(const char* equation, cell_t num_states = 0);
+	_table_hdr_t(const char* equation, cell_t num_states = 0) :
+		base(equation, num_states),
+		//	n_w((base::calc_border_width()<<1) + 1),
+		own_num_states(base::num_states),
+		size_each((unsigned)ceil(log(own_num_states))), // TODO: use int arithm
+		_n_in(base::calc_n_in<bitgrid_traits>()),
+		_n_out(base::calc_n_out<bitgrid_traits>()),
+		center(base::calc_border_width<bitgrid_traits>(),
+			base::calc_border_width<bitgrid_traits>()), // TODO: don't calc bw 3 times...
+		bw(_n_in.get_max_w())
+	{
+	}
+
+	template<class Traits>
+	typename Traits::u_coord_t calc_border_width() const noexcept { return bw; }
+	template<class Traits>
+	_n_t_v<Traits> calc_n_in() const noexcept {
+		using point = _point<Traits>;
+		std::vector<point> res_v;
+		for(const auto& p : _n_in)
+		 res_v.push_back(point(p.x, p.y));
+		return _n_t_v<Traits>(std::move(res_v));
+	}
+	template<class Traits>
+	_n_t_v<Traits> calc_n_out() const noexcept {
+		using point = _point<Traits>;
+		std::vector<point> res_v;
+		for(const auto& p : _n_out)
+		 res_v.push_back(point(p.x, p.y));
+		return _n_t_v<Traits>(std::move(res_v));
+	}
 };
 
-template<template<class ...> class TblCont>
+template<template<class ...> class TblCont, class Traits, class CellTraits>
 class _table_t : public _table_hdr_t // TODO: only for reading?
 {
 private:
@@ -158,6 +217,11 @@ private:
 	const TblCont<uint64_t> table;
 
 	using storage_t = uint64_t;
+
+
+	using b = _table_hdr_t; // TODO: remove b everywhere
+	using typename b::cell_t;
+	using typename b::point;
 
 private:
 	static TblCont<uint64_t> fetch_tbl(std::istream& stream, unsigned size_each, unsigned n_size)
@@ -172,11 +236,12 @@ private:
 	{
 		TblCont<uint64_t> tbl;
 	//	tbl.reserve(1 << (size_each * n_w * n_w)); // ctor can not reserve
-		tbl.resize(1 << (size_each * _n_in.size()));
+		tbl.resize(1 << (b::size_each * b::_n_in.size()));
 
-		bitgrid_t grid(size_each, _n_in.get_dim(), 0, 0);
-		const dimension& dim = grid.internal_dim();
-		const std::size_t max = (int)pow(num_states, _n_in.size());
+		const _dimension<bitgrid_traits> n_in_dim(b::_n_in.get_dim().dx(), b::_n_in.get_dim().dy());
+		bitgrid_t grid(b::size_each, n_in_dim, 0, 0);
+		const _dimension<bitgrid_traits>& dim = grid.internal_dim();
+		const std::size_t max = (int)pow(b::num_states, b::_n_in.size());
 
 		std::size_t percent = 0, cur;
 
@@ -186,8 +251,8 @@ private:
 		for(std::size_t i = 0; i < max; ++i)
 		{
 			// evaluate
-			tbl.at(grid.raw_value()) = (base::
-				calculate_next_state(grid.raw_value(), size_each, center, dim));
+			tbl.at(grid.raw_value()) = (b::
+				calculate_next_state(grid.raw_value(), b::size_each, b::center, dim));
 
 #ifdef SCA_DEBUG
 //			if(tbl.at(grid.raw_value()) != grid[center])
@@ -207,7 +272,7 @@ private:
 				bool go_on = true;
 				for(bitcell_itr itr = grid.begin(); itr != grid.end() && go_on; ++itr)
 				{
-					go_on = ((*itr = (((*itr) + 1) % num_states)) == 0);
+					go_on = ((*itr = (((*itr) + 1) % b::num_states)) == 0);
 				}
 			}
 		}
@@ -219,20 +284,20 @@ public:
 	//! O(table)
 	void dump(std::ostream& stream) const
 	{
-		_table_hdr_t::dump(stream);
+		b::dump(stream);
 		stream.write((char*)table.data(), table.size() * 8);
 	}
 
 	_table_t(std::istream& stream) :
-		_table_hdr_t(stream),
-		table(fetch_tbl(stream, size_each, _n_in.size()))
+		b(stream),
+		table(fetch_tbl(stream, b::size_each, b::_n_in.size()))
 	{
 	}
 
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
 	_table_t(const char* equation, cell_t num_states = 0) :
-		_table_hdr_t(equation, num_states),
+		b(equation, num_states),
 		table(calculate_table())
 	{
 	}
@@ -247,14 +312,14 @@ public:
 		using grid_cell_t = typename GCT::cell_t;
 
 		(void)p; // for a ca, the coordinates are no cell input
-		bitgrid_t bitgrid(size_each, _n_in.get_dim(), 0);
+		bitgrid_t bitgrid(b::size_each, b::_n_in.get_dim(), 0);
 
 		grid_cell_t min = std::numeric_limits<grid_cell_t>::max(),
 			max = std::numeric_limits<grid_cell_t>::min(); // any better alternative?
 
 		for(const point& p2 : bitgrid.points())
 		{
-			const point offs = p2 - center;
+			const point offs = p2 - b::center;
 			const grid_cell_t* const ptr = cell_ptr + (grid_cell_t)(offs.y * dim.width() + offs.x);
 			bitgrid[p2] = *ptr;
 			min = std::min(min, *ptr);
@@ -262,7 +327,7 @@ public:
 		}
 
 		// todo: better hashing function for not exactly n bits?
-		const bool in_range = (min >= 0 && max < (int)own_num_states);
+		const bool in_range = (min >= 0 && max < (int)b::own_num_states);
 		return in_range
 			? table[bitgrid.raw_value()]
 			: *cell_ptr; // can not happen, except for border -> don't change
@@ -286,7 +351,7 @@ public:
 		stream.write((char*)vec.data(), vec.size() * 8); }
 };*/
 
-using table_t = _table_t<std::vector>;
+using table_t = _table_t<std::vector, def_coord_traits, def_cell_traits>;
 
 }}
 

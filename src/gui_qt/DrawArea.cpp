@@ -25,6 +25,7 @@
 //#include "asm_basic.h"
 #include "DrawArea.h"
 #include "ca.h"
+#include "ca_eqs.h"
 
 using eq_sim_t = sca::ca::simulator_t<sca::ca::eqsolver_t,
 	def_coord_traits, def_cell_traits>;

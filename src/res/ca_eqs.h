@@ -35,57 +35,54 @@ namespace sca { namespace ca {
 
 //#define CA_DEBUG
 
-template<class Traits, class CellTraits>
-class _eqsolver_t // TODO: can we move the private members to inheriting class?
+class eqsolver_t // TODO: can we move the private members to inheriting class?
 {
-	using dimension = _dimension<Traits>;
-	using point = _point<Traits>;
-	using cell_t = typename CellTraits::cell_t;
-	using coord_t = typename Traits::coord_t;
-	using u_coord_t = typename Traits::u_coord_t;
-public:
-	using n_t = _n_t<Traits, std::vector<point>>;
 private:
 	eqsolver::expression_ast ast;
 	int* helper_vars = nullptr; //!< @todo: auto/unique_ptr
 	std::size_t helpers_size;
 protected:
-	cell_t num_states;
+	unsigned num_states;
 //	n_t_const neighbourhood;
 
-	u_coord_t calc_border_width() const
+	template<class Traits>
+	typename Traits::u_coord_t calc_border_width() const
 	{
 		eqsolver::ast_area<eqsolver::variable_area_grid>
 			grid_solver;
 		return (int)grid_solver(ast);
 	}
 
-	n_t calc_n_in() const
+	template<class Traits>
+	_n_t<Traits,std::vector<_point<Traits>>> calc_n_in() const
 	{
+		using point = _point<Traits>;
 		eqsolver::ast_area_cont<eqsolver::variable_area_cont<std::set<point>>>
 			grid_solver_2(true);
 		std::set<point> res = grid_solver_2(ast);
 		std::vector<point> res_v;
 		std::move(res.begin(), res.end(), std::back_inserter(res_v));
-		return n_t(std::move(res_v));
+		return _n_t<Traits,std::vector<point>>(std::move(res_v));
 	}
 
-	n_t calc_n_out() const
+	template<class Traits>
+	_n_t<Traits,std::vector<_point<Traits>>> calc_n_out() const
 	{
+		using point = _point<Traits>;
 		eqsolver::ast_area_cont<eqsolver::variable_area_cont<std::set<point>>>
 			grid_solver_2(false);
 		std::set<point> res = grid_solver_2(ast);
 		std::vector<point> res_v;
 		std::move(res.begin(), res.end(), std::back_inserter(res_v));
-		return n_t(std::move(res_v));
+		return _n_t<Traits,std::vector<point>>(std::move(res_v));
 	}
 
 protected:
-	~_eqsolver_t() noexcept { delete[] helper_vars; }
+	~eqsolver_t() noexcept { delete[] helper_vars; }
 
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
-	_eqsolver_t(const char* equation, cell_t num_states = 0)
+	eqsolver_t(const char* equation, unsigned num_states = 0) // TODO: cpp file
 		: num_states(num_states)
 	{
 		//	debug("Building AST from equation...\n");
@@ -189,8 +186,6 @@ protected:
 		return solver(ast);
 	}
 };
-
-using eqsolver_t = _eqsolver_t<def_coord_traits, def_cell_traits>;
 
 }}
 

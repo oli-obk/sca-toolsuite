@@ -143,9 +143,9 @@ public:
 	// aka: : ast(private_build_ast), ...
 	_calculator_t(const char* equation, unsigned num_states = 0) :
 		Solver(equation, num_states),
-		_border_width(_base::calc_border_width()),
-		_n_in(_base::calc_n_in()),
-		_n_out(_base::calc_n_out()),
+		_border_width(_base::template calc_border_width<Traits>()),
+		_n_in(_base::template calc_n_in<Traits>()),
+		_n_out(_base::template calc_n_out<Traits>()),
 		cc_out(_n_out.get_center_cell()),
 		tmp_out_grid(_n_out.get_dim(), 0)
 	{
@@ -154,9 +154,9 @@ public:
 	//! tries to synch (TODO: better word) the CA from a file
 	_calculator_t(std::istream& stream) :
 		Solver(stream),
-		_border_width(_base::calc_border_width()),
-		_n_in(_base::calc_n_in()),
-		_n_out(_base::calc_n_out()),
+		_border_width(_base::template calc_border_width<Traits>()),
+		_n_in(_base::template calc_n_in<Traits>()),
+		_n_out(_base::template calc_n_out<Traits>()),
 		cc_out(_n_out.get_center_cell()),
 		tmp_out_grid(_n_out.get_dim(), 0)
 	{
@@ -374,6 +374,17 @@ public:
 	simulator_t(const char* equation,
 		bool async = false) :
 		simulator_t(equation, "v", async)
+	{
+	}
+
+	simulator_t(std::istream& stream, const char* input_equation = "v",
+		bool async = false) :
+		ca_calc(stream),
+		ca_input(input_equation, 0),
+		_grid{ca_calc.border_width(), ca_calc.border_width()},
+		n_in(ca_calc.n_in()),
+		n_out(ca_calc.n_out()),
+		async(async)
 	{
 	}
 

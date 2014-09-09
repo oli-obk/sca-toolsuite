@@ -592,6 +592,9 @@ public:
 };
 
 using n_t = _n_t<def_coord_traits, std::vector<point>>;
+template<class Traits>
+using _n_t_v = _n_t<Traits, std::vector<_point<Traits>>>;
+
 template<std::size_t N>
 using n_t_constexpr = _n_t<def_coord_traits, std::array<point, N>>;
 

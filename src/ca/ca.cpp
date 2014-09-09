@@ -18,10 +18,15 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
+#include <cstring>
+#include <climits>
+
 #include "simulate.h"
 #include "general.h"
 #include "io.h"
 #include "ca.h"
+#include "ca_eqs.h"
+#include "ca_table.h" // TODO: used?
 
 using namespace sca;
 
@@ -75,12 +80,21 @@ class MyProgram : public Program, sim::ulator
 		}
 
 //#define CA_TABLE_OPTIMIZATION
-#ifndef CA_TABLE_OPTIMIZATION
+#ifdef CA_TABLE_OPTIMIZATION
+		(void)in_fp;
+		using ca_sim_t = ca::simulator_t<ca::table_t, def_coord_traits, def_cell_traits>;
+
+		std::ifstream ifs(equation);
+		ca_sim_t simulator(ifs);
+		ifs.close();
+#else
 		using ca_sim_t = ca::simulator_t<ca::eqsolver_t, def_coord_traits, def_cell_traits>;
 		ca_sim_t simulator(equation, async);
 
 		simulator.grid().read(in_fp);
-#else
+#endif
+
+#if 0
 		(void)in_fp;
 		grid_t tmp_grid(std::cin, 0); // TODO: in_fp
 

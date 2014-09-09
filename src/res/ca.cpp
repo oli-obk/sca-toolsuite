@@ -23,9 +23,9 @@
 
 namespace sca { namespace ca {
 
-constexpr const uint32_t _table_hdr_t::version_t::id;
+constexpr const uint32_t tbl_detail::version_t::id;
 
-_table_hdr_t::size_check::size_check(int size)
+tbl_detail::size_check::size_check(int size)
 {
 	if(size < 0)
 	 throw "Error: Size negative (did you set num_states == 0?).";
@@ -33,7 +33,7 @@ _table_hdr_t::size_check::size_check(int size)
 	 throw "Error: This ca is too large for a table.";
 }
 
-_table_hdr_t::header_t::header_t(std::istream &stream)
+tbl_detail::header_t::header_t(std::istream &stream)
 {
 	char buf[9];
 	buf[8] = 0;
@@ -42,7 +42,7 @@ _table_hdr_t::header_t::header_t(std::istream &stream)
 	 throw "Error: This file has no ca_table header.";
 }
 
-_table_hdr_t::version_t::version_t(const uint32_t &i)
+tbl_detail::version_t::version_t(const uint32_t &i)
 {
 	if(i != id)
 	{
@@ -55,43 +55,6 @@ _table_hdr_t::version_t::version_t(const uint32_t &i)
 				  "read: " + std::to_string(i) +
 				  ", expected: " + std::to_string(id) + ".");
 	}
-}
-
-void _table_hdr_t::dump(std::ostream &stream) const
-{
-	header_t::dump(stream);
-	version_t::dump(stream);
-	uint32_t tmp = _n_in.size();
-	stream.write((char*)&tmp, 4);
-	tmp = own_num_states;
-	stream.write((char*)&tmp, 4);
-}
-
-_table_hdr_t::_table_hdr_t(const char *equation, _table_hdr_t::cell_t num_states) :
-	base(equation, num_states),
-//	n_w((base::calc_border_width()<<1) + 1),
-	own_num_states(base::num_states),
-	size_each((unsigned)ceil(log(own_num_states))), // TODO: use int arithm
-	_n_in(base::calc_n_in()),
-	_n_out(base::calc_n_out()),
-	center(base::calc_border_width(), base::calc_border_width()), // TODO: don't calc bw 3 times...
-	bw(_n_in.get_max_w())
-{
-}
-
-_table_hdr_t::_table_hdr_t(std::istream &stream) :
-	base("v", 0), // not reliable
-	header(stream),
-	version(fetch_32(stream)),
-//	n_w(fetch_32(stream)),
-	own_num_states(fetch_32(stream)),
-	size_each((unsigned)ceil(log(own_num_states))), // TODO: use int arithm
-//	center((n_w - 1)>>1, (n_w - 1)>>1),
-	_n_in(fetch_n(stream)),
-	_n_out(fetch_n(stream)),
-	center(_n_in.get_center_cell()),
-	bw(_n_in.get_max_w())
-{
 }
 
 } }

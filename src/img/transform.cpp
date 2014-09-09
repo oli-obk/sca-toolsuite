@@ -25,6 +25,7 @@
 #include "general.h"
 #include "geometry.h"
 #include "ca.h"
+#include "ca_eqs.h"
 
 std::vector<char> get_file_contents(std::istream& stream = std::cin)
 {

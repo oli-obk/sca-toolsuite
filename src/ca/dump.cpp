@@ -21,6 +21,7 @@
 #include "simulate.h"
 #include "general.h"
 #include "io.h"
+#include "ca_table.h"
 #include "ca.h"
 
 using namespace sca;
@@ -42,6 +43,7 @@ class MyProgram : public Program, sim::ulator
 		const it eos;
 		const std::string s(it(std::cin), eos);
 
+		// TODO: -> convert
 		const ca::table_t tbl(s.c_str(), 3); // TODO: 3
 		tbl.dump(std::cout);
 

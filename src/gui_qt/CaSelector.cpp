@@ -23,6 +23,7 @@
 
 #include "CaSelector.h"
 #include "ca.h"
+#include "ca_eqs.h"
 #include "equation_solver.h"
 
 enum ca_source

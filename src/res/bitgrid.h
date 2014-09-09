@@ -23,9 +23,6 @@
 
 #include "grid.h" // TODO: actually grid_alignment.h
 
-using bitgrid_traits = coord_traits<char>;
-using bitgrid_cell_traits = cell_traits<char>;
-
 class bit_reference_base
 {
 protected:
@@ -80,6 +77,9 @@ public:
 		return *this;
 	}
 };
+
+using bitgrid_traits = coord_traits<char>;
+using bitgrid_cell_traits = cell_traits<char>;
 
 class bitcell_itr_base
 {
@@ -176,7 +176,9 @@ class bitgrid_t : public grid_alignment_t<bitgrid_traits>
 		}
 	}
 public:
-	bitgrid_t(storage_t each, const dimension& dim, u_coord_t border_width, cell_t fill = 0, cell_t border_fill = 0) :
+	template<class Traits>
+	bitgrid_t(storage_t each, const _dimension<Traits>& dim,
+		u_coord_t border_width, cell_t fill = 0, cell_t border_fill = 0) :
 		grid_alignment_t(dim, border_width),
 		each(each),
 		bitmask((1<<each)-1),
@@ -201,13 +203,15 @@ public:
 		(void)border_fill;*/
 	}
 
-	bit_reference operator[](point p) noexcept
+	template<class Traits>
+	bit_reference operator[](_point<Traits> p) noexcept
 	{
 		//return (grid >> (index(p)*each)) & bitmask;
 		return bit_reference(grid, index_h(p)*each, bitmask);
 	}
 
-	const const_bit_reference operator[](point p) const noexcept
+	template<class Traits>
+	const const_bit_reference operator[](_point<Traits> p) const noexcept
 	{
 		return const_bit_reference(grid, index_h(p)*each, bitmask);
 		//return (grid >> (index(p)*each)) & bitmask;
