@@ -182,6 +182,22 @@ protected:
 			p
 			);
 	}
+
+	//! Runtime: depends on formula.
+	// TODO: bit storage grids?
+	template<class T, class = void>
+		int calculate_next_state_grids(uint64_t grid_int, uint64_t size_each,
+		const _point<T>& p, const _dimension<T>& dim) const
+	{
+		int eval_idx = dim.width() * p.y + p.x; // TODO: bw?
+		uint64_t _result = 0; // TODO: used?
+		calculate_next_state(
+			eqsolver::grid_storage_bits(grid_int, size_each, dim.width(), eval_idx),
+			eqsolver::grid_storage_bits(_result, size_each, dim.width(), eval_idx),
+			p
+			);
+		return _result;
+	}
 };
 
 }}

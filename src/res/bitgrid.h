@@ -178,11 +178,12 @@ class bitgrid_t : public grid_alignment_t<bitgrid_traits>
 public:
 	template<class Traits>
 	bitgrid_t(storage_t each, const _dimension<Traits>& dim,
-		u_coord_t border_width, cell_t fill = 0, cell_t border_fill = 0) :
+		u_coord_t border_width, cell_t fill, cell_t border_fill) :
 		grid_alignment_t(dim, border_width),
 		each(each),
 		bitmask((1<<each)-1),
 		grid(0) // start at zero and then or
+		// TODO: first redirect to raw ctor?
 	{
 		size_check();
 		// we do not know a more simple collective operation than this
@@ -201,6 +202,17 @@ public:
 
 	/*	(void)fill; // TODO
 		(void)border_fill;*/
+	}
+
+	//! constructs bitgrid from raw value. useful for serialization
+	template<class Traits>
+	bitgrid_t(storage_t each, const _dimension<Traits>& dim,
+		u_coord_t border_width, storage_t raw) :
+		grid_alignment_t(dim, border_width),
+		each(each),
+		bitmask((1<<each)-1),
+		grid(raw)
+	{
 	}
 
 	template<class Traits>

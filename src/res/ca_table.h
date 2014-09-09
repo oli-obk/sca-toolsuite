@@ -93,6 +93,7 @@ protected:
 	const u_coord_t size_each; // TODO: u_coord_t
 	const n_t _n_in, _n_out;
 	const point center;
+	const point center_out;
 
 	// data for outside:
 	const u_coord_t bw; // TODO: u_coord_t
@@ -170,6 +171,7 @@ protected:
 		_n_in(fetch_n(stream)),
 		_n_out(fetch_n(stream)),
 		center(_n_in.get_center_cell()),
+		center_out(_n_out.get_center_cell()), // TODO: correct?
 		bw(_n_in.get_max_w())
 	{
 	}
@@ -185,6 +187,7 @@ protected:
 		_n_out(base::calc_n_out<bitgrid_traits>()),
 		center(base::calc_border_width<bitgrid_traits>(),
 			base::calc_border_width<bitgrid_traits>()), // TODO: don't calc bw 3 times...
+		center_out(_n_out.get_center_cell()), // TODO: correct?
 		bw(_n_in.get_max_w())
 	{
 	}
@@ -232,6 +235,7 @@ private:
 	}
 
 	// TODO : static?
+	//! used to dump an in-memory-table from an equation
 	TblCont<uint64_t> calculate_table() const
 	{
 		TblCont<uint64_t> tbl;
@@ -252,7 +256,7 @@ private:
 		{
 			// evaluate
 			tbl.at(grid.raw_value()) = (b::
-				calculate_next_state(grid.raw_value(), b::size_each, b::center, dim));
+				calculate_next_state_grids(grid.raw_value(), b::size_each, b::center, dim));
 
 #ifdef SCA_DEBUG
 //			if(tbl.at(grid.raw_value()) != grid[center])
@@ -312,7 +316,7 @@ public:
 		using grid_cell_t = typename GCT::cell_t;
 
 		(void)p; // for a ca, the coordinates are no cell input
-		bitgrid_t bitgrid(b::size_each, b::_n_in.get_dim(), 0);
+		bitgrid_t bitgrid(b::size_each, b::_n_in.get_dim(), 0, 0, 0);
 
 		grid_cell_t min = std::numeric_limits<grid_cell_t>::max(),
 			max = std::numeric_limits<grid_cell_t>::min(); // any better alternative?
@@ -330,6 +334,51 @@ public:
 		const bool in_range = (min >= 0 && max < (int)b::own_num_states);
 		return in_range
 			? table[bitgrid.raw_value()]
+			: *cell_ptr; // can not happen, except for border -> don't change
+	}
+private:
+	//! version for multi-targets
+	template<class T, class CT>
+	int tar_write(const uint64_t& val, typename CT::cell_t *cell_tar,
+		const _dimension<T>& tar_dim) const {
+		bitgrid_t tar_grid(b::size_each, b::_n_in.get_dim(), 0, val);
+		for(const point& p : _n_out)
+		{
+			const auto ptr = cell_tar + (p.y * tar_dim.width()) + p.x;
+			*ptr = tar_grid[p];
+		}
+		return tar_grid[center_out];
+	}
+public:
+	//! version for multi-targets
+	template<class T, class GCT>
+	int calculate_next_state(const typename GCT::cell_t *cell_ptr,
+		const _point<T>& p, const _dimension<T>& dim, typename GCT::cell_t *cell_tar,
+		const _dimension<T>& tar_dim) const
+	{
+		// TODO: class member?
+		using grid_cell_t = typename GCT::cell_t;
+
+		(void)p; // for a ca, the coordinates are no cell input
+		bitgrid_t bitgrid(b::size_each, b::_n_in.get_dim(), 0, 0, 0);
+
+		grid_cell_t min = std::numeric_limits<grid_cell_t>::max(),
+			max = std::numeric_limits<grid_cell_t>::min(); // any better alternative?
+
+		for(const point& p2 : bitgrid.points())
+		{
+			const point offs = p2 - b::center;
+			const grid_cell_t* const ptr = cell_ptr + (grid_cell_t)(offs.y * dim.width() + offs.x);
+			bitgrid[p2] = *ptr;
+			min = std::min(min, *ptr);
+			max = std::max(max, *ptr);
+		}
+
+		// todo: better hashing function for not exactly n bits?
+		const bool in_range = (min >= 0 && max < (int)b::own_num_states);
+
+		return in_range
+			? tar_write<T, GCT>(table[bitgrid.raw_value()], cell_tar, tar_dim)
 			: *cell_ptr; // can not happen, except for border -> don't change
 	}
 
