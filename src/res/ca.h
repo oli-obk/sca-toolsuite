@@ -229,17 +229,17 @@ public:
 	//! @a result is set to the result in all cases
 	// TODO: overloads
 	// TODO: deprecated
-	bool is_cell_active(const grid_t& grid, const point& p, const grid_t* result = nullptr) const
+	bool is_cell_active(const grid_t& grid, const point& p, grid_t* result = nullptr) const
 	{
 		// TODO: might be redirected to Solver to save time, in many cases
-		result = &next_state_ref(grid, p);
+		*result = next_state_ref(grid, p); // TODO!!! result = &next ... ??
 		// TODO: linewise compare
 
 		bool equal = true;
 		for(auto itr = _n_out.cbegin();
 			equal && itr != _n_out.cend(); ++itr)
 		 equal = equal && (grid[*itr + p] == tmp_out_grid[*itr]);
-		return equal;
+		return !equal;
 	}
 
 };

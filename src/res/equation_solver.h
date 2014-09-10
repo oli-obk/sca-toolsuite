@@ -155,7 +155,7 @@ class grid_storage_base
 protected:
 	grid_storage_base(int width) : width(width) {}
 	template<bool Addr>
-	inline std::size_t idx(const vaddr::var_array<Addr>& _a) const {
+	inline int idx(const vaddr::var_array<Addr>& _a) const {
 		return _a.template x<1>() + _a.template x<2>() * width; // TODO: give var_array a constexpr cross product with (1,width)?
 	}
 };
@@ -208,9 +208,11 @@ class grid_storage_bits : grid_storage_base
 	using storage_t = int64_t;
 	const storage_t each, bitmask;
 	const storage_t grid;
-	char vpos;
+	char vpos; //!< position ("nth bit")
 public:
 	inline unsigned int operator()(vaddr::var_array<false> _a) const {
+		std::cerr << "reading: " << _a.x<1>() << "/ " << _a.x<2>()
+			<< " => " << idx(_a) << ": " << ((grid >> ((vpos + idx(_a)) * each)) & bitmask) << std::endl;
 		return (grid >> ((vpos + idx(_a)) * each)) & bitmask;
 	}
 	inline int* operator()(vaddr::var_array<true> ) const {
@@ -698,19 +700,18 @@ private:
 	}
 public:
 	template<class Ret, class ...Args>
-	inline result_type operator()(nary_op<Ret, Args...> const& expr) const {
+	inline result_type operator()(nary_op<Ret, Args...> const& expr) const
+	{
 		cont_t res;
 		if((void*)expr.fptr == (void*)f2i_asn) // TODO: this is not clean
 		{
-			// only apply left side
-			if(input)
-			 apply_fptr<nary_op<Ret, Args...> const&, 1>(res, expr);
-			else
-			{
+			if(!input)
+			{ // apply left side specially for output
 				allow = true;
 				res = boost::apply_visitor(*this, std::move(expr.subtrees[0].expr));
 				allow = false;
 			}
+			apply_fptr<nary_op<Ret, Args...> const&, 1>(res, expr); // ignore left side
 		}
 		else
 		 apply_fptr(res, expr, make_seq<sizeof...(Args)>());

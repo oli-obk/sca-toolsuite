@@ -79,7 +79,7 @@ class MyProgram : public Program, sim::ulator
 				break;
 		}
 
-//#define CA_TABLE_OPTIMIZATION
+#define CA_TABLE_OPTIMIZATION
 #ifdef CA_TABLE_OPTIMIZATION
 		(void)in_fp;
 		using ca_sim_t = ca::simulator_t<ca::table_t, def_coord_traits, def_cell_traits>;
@@ -90,9 +90,8 @@ class MyProgram : public Program, sim::ulator
 #else
 		using ca_sim_t = ca::simulator_t<ca::eqsolver_t, def_coord_traits, def_cell_traits>;
 		ca_sim_t simulator(equation, async);
-
-		simulator.grid().read(in_fp);
 #endif
+		simulator.grid().read(in_fp);
 
 #if 0
 		(void)in_fp;

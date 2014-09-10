@@ -171,7 +171,7 @@ protected:
 	//! Runtime: depends on formula.
 	// TODO: bit storage grids?
 	template<class T, class = void>
-		int calculate_next_state(uint64_t grid_int, uint64_t size_each,
+	int calculate_next_state(uint64_t grid_int, uint64_t size_each,
 		const _point<T>& p, const _dimension<T>& dim) const
 	{
 		int eval_idx = dim.width() * p.y + p.x; // TODO: bw?
@@ -185,18 +185,18 @@ protected:
 
 	//! Runtime: depends on formula.
 	// TODO: bit storage grids?
-	template<class T, class = void>
-		int calculate_next_state_grids(uint64_t grid_int, uint64_t size_each,
-		const _point<T>& p, const _dimension<T>& dim) const
+	template<class T, class CT>
+	void calculate_next_state_grids(uint64_t grid_int, uint64_t size_each,
+		const _point<T>& p, const _dimension<T>& dim,
+		CT* cell_res, const ::dimension& dim_tar) const
 	{
 		int eval_idx = dim.width() * p.y + p.x; // TODO: bw?
-		uint64_t _result = 0; // TODO: used?
 		calculate_next_state(
 			eqsolver::grid_storage_bits(grid_int, size_each, dim.width(), eval_idx),
-			eqsolver::grid_storage_bits(_result, size_each, dim.width(), eval_idx),
+			eqsolver::grid_storage_array(cell_res, dim_tar.width()),
 			p
 			);
-		return _result;
+		//return cell_res;
 	}
 };
 

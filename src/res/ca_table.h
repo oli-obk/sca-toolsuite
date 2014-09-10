@@ -77,9 +77,12 @@ public:
 	/*
 		table format:
 		header: ca_table (8 char)
-		version: 1 (uint_32)
-		nw (uint_32)
+		version: 2 (uint_32)
 		own_num_states (uint_32)
+		n_in size (uint_32)
+		n_in (each 2xuint_8)
+		n_out size
+		n_out
 		table (size_each * n_w * n_w * uint_64)
 	*/
 
@@ -113,24 +116,10 @@ protected:
 		return n_t(moore, point(bw, bw));
 	}*/
 
-	static unsigned fetch_8(std::istream& stream)
-	{
-		uint8_t res;
-		stream.read((char*)&res, 1);
-		return res;
-	}
+	static unsigned fetch_8(std::istream& stream);
 
-	n_t fetch_n(std::istream& stream) const
-	{
-		std::vector<point> v(fetch_32(stream));
-		for(std::size_t i = 0; i < v.size(); ++i)
-		{
-			coord_t x = fetch_8(stream);
-			coord_t y = fetch_8(stream);
-			v.push_back(point(x, y));
-		}
-		return n_t(std::move(v));
-	}
+	n_t fetch_n(std::istream& stream) const;
+	void put_n(std::ostream &stream, const n_t &n) const;
 
 public:
 /*	unsigned border_width() const noexcept { return bw; } // TODO: should ret reference
@@ -139,58 +128,16 @@ public:
 	}
 	const n_t& n_out() const noexcept {  }*/
 protected:
-	static unsigned fetch_32(std::istream& stream)
-	{
-		uint32_t res;
-		stream.read((char*)&res, 4);
-	//	const u_coord_t res_u = res; // TODO: ???
-	//	(void) res_u;
-	//	std::cout << "READ: " << res << std::endl;
-		return res;
-	}
+	static unsigned fetch_32(std::istream& stream);
 
 	//! O(1)
-	void dump(std::ostream& stream) const
-	{
-		tbl_detail::header_t::dump(stream);
-		tbl_detail::version_t::dump(stream);
-		uint32_t tmp = _n_in.size();
-		stream.write((char*)&tmp, 4);
-		tmp = own_num_states;
-		stream.write((char*)&tmp, 4);
-	}
+	void dump(std::ostream& stream) const;
 
-	_table_hdr_t(std::istream& stream) :
-		base("v", 0), // not reliable
-		header(stream),
-		version(fetch_32(stream)),
-		//	n_w(fetch_32(stream)),
-		own_num_states(fetch_32(stream)),
-		size_each((unsigned)ceil(log(own_num_states))), // TODO: use int arithm
-		//	center((n_w - 1)>>1, (n_w - 1)>>1),
-		_n_in(fetch_n(stream)),
-		_n_out(fetch_n(stream)),
-		center(_n_in.get_center_cell()),
-		center_out(_n_out.get_center_cell()), // TODO: correct?
-		bw(_n_in.get_max_w())
-	{
-	}
+	_table_hdr_t(std::istream& stream);
 
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
-	_table_hdr_t(const char* equation, cell_t num_states = 0) :
-		base(equation, num_states),
-		//	n_w((base::calc_border_width()<<1) + 1),
-		own_num_states(base::num_states),
-		size_each((unsigned)ceil(log(own_num_states))), // TODO: use int arithm
-		_n_in(base::calc_n_in<bitgrid_traits>()),
-		_n_out(base::calc_n_out<bitgrid_traits>()),
-		center(base::calc_border_width<bitgrid_traits>(),
-			base::calc_border_width<bitgrid_traits>()), // TODO: don't calc bw 3 times...
-		center_out(_n_out.get_center_cell()), // TODO: correct?
-		bw(_n_in.get_max_w())
-	{
-	}
+	_table_hdr_t(const char* equation, cell_t num_states = 0);
 
 	template<class Traits>
 	typename Traits::u_coord_t calc_border_width() const noexcept { return bw; }
@@ -242,9 +189,9 @@ private:
 	//	tbl.reserve(1 << (size_each * n_w * n_w)); // ctor can not reserve
 		tbl.resize(1 << (b::size_each * b::_n_in.size()));
 
-		const _dimension<bitgrid_traits> n_in_dim(b::_n_in.get_dim().dx(), b::_n_in.get_dim().dy());
+		const dimension n_in_dim(b::_n_in.get_dim().dx(), b::_n_in.get_dim().dy());
 		bitgrid_t grid(b::size_each, n_in_dim, 0, 0);
-		const _dimension<bitgrid_traits>& dim = grid.internal_dim();
+//		const dimension& dim = grid.internal_dim();
 		const std::size_t max = (int)pow(b::num_states, b::_n_in.size());
 
 		std::size_t percent = 0, cur;
@@ -252,18 +199,35 @@ private:
 		std::cerr << "Precalculating table, please wait..." << std::endl;
 		// odometer
 //		int last_val = -1;
+		bitgrid_t tbl_idx(b::size_each, dimension(_n_in.size(), 0), 0, 0);
+
+		dimension n_out_dim = _n_out.get_dim();
+		::grid_t tmp_result(::dimension(n_out_dim.dx(), n_out_dim.dy()), 0);
+		bitgrid_t bit_tmp_result(b::size_each, n_out_dim, 0, 0);
+
 		for(std::size_t i = 0; i < max; ++i)
 		{
 			// evaluate
-			tbl.at(grid.raw_value()) = (b::
-				calculate_next_state_grids(grid.raw_value(), b::size_each, b::center, dim));
+			// TODO: tmp_result should be bitgrid.
+			calculate_next_state_grids(grid.raw_value(), b::size_each,
+				/*::point(b::center.x, b::center.y)*/ b::center,
+				grid.internal_dim(),
+				&tmp_result[::point(center_out.x, center_out.y)],
+				::dimension(n_out_dim.dx(), n_out_dim.dy()));
+			for(const point& p : _n_out) {
+			 bit_tmp_result[center_out + p] = tmp_result[::point(center_out.x + p.x, center_out.y + p.y)];
+			 std::cerr << "Copying: " << center_out << std::endl;
+			}
+			tbl.at(tbl_idx.raw_value()) = bit_tmp_result.raw_value();
+
+			std::cerr << grid << " -> " << tmp_result << std::endl;
 
 #ifdef SCA_DEBUG
 //			if(tbl.at(grid.raw_value()) != grid[center])
 //			 std::cerr << grid << " => " << tbl.at(grid.raw_value()) << std::endl;
 #endif
 
-			cur = (i * 100) / max; // max can never be 0
+			cur = (i * 100) / max; // max can never be 0 // TODO: 100 / max = const
 			if(percent < cur)
 			{
 				percent = cur;
@@ -274,10 +238,26 @@ private:
 			// increase
 			{
 				bool go_on = true;
-				for(bitcell_itr itr = grid.begin(); itr != grid.end() && go_on; ++itr)
+
+				int digit = 0;
+				for(auto itr = _n_in.cbegin(); go_on && (itr != _n_in.cend()); ++itr)
+				{
+					const point& p = *itr;
+					std::cerr << "increasing: " << p << " = " << (center + p) << std::endl;
+
+					bit_reference r = grid[center + p];
+					go_on = ((r = ((r + 1) % b::num_states)) == 0);
+
+					bit_reference r2 = tbl_idx[point(digit, 0)];
+					r2 = ((r2 + 1) % b::num_states);
+
+					++digit;
+				}
+
+			/*	for(bitcell_itr itr = grid.begin(); itr != grid.end() && go_on; ++itr)
 				{
 					go_on = ((*itr = (((*itr) + 1) % b::num_states)) == 0);
-				}
+				}*/
 			}
 		}
 

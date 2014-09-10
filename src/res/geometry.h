@@ -450,8 +450,8 @@ public:
 	point lr() const { return _lr; }
 	_rect<Traits> rect() const { return _rect<Traits>(_ul, _lr); }
 	dimension dim() const {
-		return dimension { (u_coord_t) y_size(),
-			(u_coord_t) x_size() };
+		return dimension { (u_coord_t) x_size(),
+			(u_coord_t) y_size() };
 	}
 	u_coord_t coords_to_id(const point& p) const {
 		return (p.y - _ul.y) * y_size() + (p.x - _ul.x);

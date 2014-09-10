@@ -82,7 +82,8 @@ SOURCES += algo/relax.cpp \
     ca/dump.cpp \
     res/simulate.cpp \
     res/ca.cpp \
-    ca/scene.cpp
+    ca/scene.cpp \
+    res/ca_table.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL.txt \
 	../README.txt \
