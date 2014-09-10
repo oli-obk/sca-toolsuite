@@ -61,6 +61,9 @@ struct _point
 	bool operator<=(const _point& rhs) const {
 		return !operator>(rhs);
 	}
+	inline _point operator-() const {
+		return _point(-x, -y);
+	}
 	inline _point operator-(const _point& rhs) const {
 		return _point(x-rhs.x, y-rhs.y);
 	}

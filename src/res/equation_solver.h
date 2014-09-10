@@ -211,8 +211,6 @@ class grid_storage_bits : grid_storage_base
 	char vpos; //!< position ("nth bit")
 public:
 	inline unsigned int operator()(vaddr::var_array<false> _a) const {
-		std::cerr << "reading: " << _a.x<1>() << "/ " << _a.x<2>()
-			<< " => " << idx(_a) << ": " << ((grid >> ((vpos + idx(_a)) * each)) & bitmask) << std::endl;
 		return (grid >> ((vpos + idx(_a)) * each)) & bitmask;
 	}
 	inline int* operator()(vaddr::var_array<true> ) const {

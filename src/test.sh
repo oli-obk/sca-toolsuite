@@ -5,7 +5,7 @@ DO_OBLIGATORY="0"
 
 do_eval()
 {
-	eval $*
+	eval $* >/dev/null 2>/dev/null
 	if [ $? != 0 ]; then
 		echo "   FAILED"
 		exit 1;
@@ -103,8 +103,8 @@ call_test "Testing algo/super (1)" 1 "core/create 2 2 2 | algo/super | core/all_
 call_test "Testing algo/super (2)" 1 "core/create 2 2 3 | algo/super | core/all_equals 1"
 
 # ca
-call_test "Testing ca/ca (1)" 1 "core/create 20 20 0 | ca/ca 'v+2' end 4 | core/all_equals 8"
-call_test "Testing ca/ca (2)" 1 "core/create 20 20 4 | ca/ca 'v+(-4*(v>=4))+(a[-1,0]>=4)+(a[0,-1]>=4)+(a[1,0]>=4)+(a[0,1]>=4)' | core/diff2 'core/create 20 20 4 | algo/S'"
+call_test "Testing ca/ca (1)" 1 "core/create 20 20 0 | ca/ca 'v:=v+2' end 4 | core/all_equals 8"
+call_test "Testing ca/ca (2)" 1 "core/create 20 20 4 | ca/ca 'v:=v+(-4*(v>=4))+(a[-1,0]>=4)+(a[0,-1]>=4)+(a[1,0]>=4)+(a[0,1]>=4)' | core/diff2 'core/create 20 20 4 | algo/S'"
 
 # rotor stuff
 call_test "Testing rotor/rotor s" 1 "core/create 10 10 0 | rotor/rotor s 'core/create 10 10 100' | core/diff2 \"core/create 10 10 0 | algo/S | rotor/rotor s 'core/create 10 10 100'\""

@@ -229,17 +229,25 @@ public:
 	//! @a result is set to the result in all cases
 	// TODO: overloads
 	// TODO: deprecated
-	bool is_cell_active(const grid_t& grid, const point& p, grid_t* result = nullptr) const
+	bool is_cell_active(const grid_t& grid, const point& p, grid_t*& result) const
 	{
 		// TODO: might be redirected to Solver to save time, in many cases
-		*result = next_state_ref(grid, p); // TODO!!! result = &next ... ??
-		// TODO: linewise compare
+		next_state_ref(grid, p); // TODO!!! result = &next ... ??
+		result = &tmp_out_grid;
 
+		// TODO: linewise compare?
 		bool equal = true;
 		for(auto itr = _n_out.cbegin();
 			equal && itr != _n_out.cend(); ++itr)
 		 equal = equal && (grid[*itr + p] == tmp_out_grid[*itr]);
 		return !equal;
+	}
+
+	//! overload without result param
+	bool is_cell_active(const grid_t& grid, const point& p) const
+	{
+		grid_t* ptr;
+		return is_cell_active(grid, p, ptr);
 	}
 
 };
@@ -352,6 +360,8 @@ class simulator_t : /*private _ca_calculator_t<Solver>,*/ public input_ca
 	bool async; // TODO: const?
 	//using calc = _ca_calculator_t<Solver>;
 
+	static constexpr const char* def_in_eq = "v:=v";
+
 	void initialize_first() { run_once(); }
 public:
 	simulator_t(const char* equation, const char* input_equation,
@@ -373,11 +383,11 @@ public:
 
 	simulator_t(const char* equation,
 		bool async = false) :
-		simulator_t(equation, "v", async)
+		simulator_t(equation, def_in_eq, async)
 	{
 	}
 
-	simulator_t(std::istream& stream, const char* input_equation = "v",
+	simulator_t(std::istream& stream, const char* input_equation = def_in_eq,
 		bool async = false) :
 		ca_calc(stream),
 		ca_input(input_equation, 0),

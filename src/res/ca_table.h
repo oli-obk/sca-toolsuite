@@ -220,7 +220,7 @@ private:
 			}
 			tbl.at(tbl_idx.raw_value()) = bit_tmp_result.raw_value();
 
-			std::cerr << grid << " -> " << tmp_result << std::endl;
+//			std::cerr << grid << " -> " << tmp_result << std::endl;
 
 #ifdef SCA_DEBUG
 //			if(tbl.at(grid.raw_value()) != grid[center])
@@ -243,7 +243,7 @@ private:
 				for(auto itr = _n_in.cbegin(); go_on && (itr != _n_in.cend()); ++itr)
 				{
 					const point& p = *itr;
-					std::cerr << "increasing: " << p << " = " << (center + p) << std::endl;
+		//			std::cerr << "increasing: " << p << " = " << (center + p) << std::endl;
 
 					bit_reference r = grid[center + p];
 					go_on = ((r = ((r + 1) % b::num_states)) == 0);
@@ -320,8 +320,9 @@ private:
 	//! version for multi-targets
 	template<class T, class CT>
 	int tar_write(const uint64_t& val, typename CT::cell_t *cell_tar,
-		const _dimension<T>& tar_dim) const {
-		bitgrid_t tar_grid(b::size_each, b::_n_in.get_dim(), 0, val);
+		const _dimension<T>& tar_dim) const
+	{
+		const bitgrid_t tar_grid(b::size_each, b::_n_in.get_dim(), 0, val);
 		for(const point& p : _n_out)
 		{
 			const auto ptr = cell_tar + (p.y * tar_dim.width()) + p.x;
@@ -340,16 +341,27 @@ public:
 		using grid_cell_t = typename GCT::cell_t;
 
 		(void)p; // for a ca, the coordinates are no cell input
-		bitgrid_t bitgrid(b::size_each, b::_n_in.get_dim(), 0, 0, 0);
+	//	bitgrid_t bitgrid(b::size_each, b::_n_in.get_dim(), 0, 0, 0);
+		bitgrid_t bitgrid(b::size_each, dimension(b::_n_in.size(), 0), 0, 0, 0);
 
 		grid_cell_t min = std::numeric_limits<grid_cell_t>::max(),
 			max = std::numeric_limits<grid_cell_t>::min(); // any better alternative?
 
-		for(const point& p2 : bitgrid.points())
+	/*	for(const point& p2 : bitgrid.points())
 		{
 			const point offs = p2 - b::center;
 			const grid_cell_t* const ptr = cell_ptr + (grid_cell_t)(offs.y * dim.width() + offs.x);
 			bitgrid[p2] = *ptr;
+			min = std::min(min, *ptr);
+			max = std::max(max, *ptr);
+		}*/
+
+		for(const auto& _p : ca::counted(_n_in))
+		{
+			const point& p = _p;
+			const grid_cell_t* const ptr = cell_ptr + (grid_cell_t)(p.y * dim.width() + p.x);
+			bitgrid[point(_p.id(), 0)] = *ptr;
+			// TODO: if min is reset, it can maybe note be max? -> faster....
 			min = std::min(min, *ptr);
 			max = std::max(max, *ptr);
 		}
@@ -358,7 +370,7 @@ public:
 		const bool in_range = (min >= 0 && max < (int)b::own_num_states);
 
 		return in_range
-			? tar_write<T, GCT>(table[bitgrid.raw_value()], cell_tar, tar_dim)
+			? tar_write<T, GCT>(table.at(bitgrid.raw_value()), cell_tar, tar_dim)
 			: *cell_ptr; // can not happen, except for border -> don't change
 	}
 

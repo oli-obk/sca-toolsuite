@@ -146,7 +146,12 @@ public:
 	const dimension& internal_dim() const { return _dim; } // TODO: remove this?
 	dimension human_dim() const { return _human_dim(); }
 
-	rect human_rect() const { return human_dim() + point(bw, bw); }
+	rect human_rect() const {
+		return rect(
+			point(bw_2, bw_2),
+			point(_dim.width() - bw_2 + 1, _dim.height() - bw_2 + 1)
+		);
+	}
 
 	u_coord_t border_width() const { return bw; }
 

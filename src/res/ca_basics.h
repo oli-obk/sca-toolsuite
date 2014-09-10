@@ -34,7 +34,7 @@ namespace sca { namespace ca {
  * local transition function.
  *
  * Where these values are depends on a neighborhood class,
- * which s not a part of this struct.
+ * which is not a part of this struct.
  */
 class trans_t
 {
@@ -44,7 +44,7 @@ class trans_t
 	std::vector<int> input_vals; //!< function input values
 	std::vector<bool> input_set; //!< is the value a dontcare?
 	int input_count = 0; //!< number of set bits in input_set
-	int output; //! function output value
+	std::vector<int> output_vals; //! function output value
 
 public:
 	trans_t(const unsigned _neighbour_size)
@@ -62,18 +62,18 @@ public:
 		input_vals = other.input_vals;
 		input_set = other.input_set;
 		input_count = other.input_count;
-		output = other.output;
+		output_vals = other.output_vals;
 		return *this;
 	}
 
 	trans_t(
-		int _neighbour_size,
-		int output_val
+		int n_in_size,
+		int n_out_size
 		) : // TODO: 2ctors + reuse
-		neighbour_size(_neighbour_size),
-		input_vals(neighbour_size),
-		input_set(neighbour_size, false),
-		output(output_val)
+		neighbour_size(n_in_size),
+		input_vals(n_in_size),
+		input_set(n_in_size, false),
+		output_vals(n_out_size)
 	{
 	}
 
@@ -87,7 +87,13 @@ public:
 		}
 		else assert(false);
 	}
-	int get_output() const { return output; }
+
+	void set_output(int neighbour_id, int val)
+	{
+		output_vals[neighbour_id] = val;
+	}
+
+	const std::vector<int>& get_output() const { return output_vals; }
 	bool input(int neighbour_id, int* result) const {
 		bool is_set = input_set[neighbour_id];
 		if(is_set) *result = input_vals[neighbour_id];
@@ -120,9 +126,9 @@ public:
 
 	bool operator<(const trans_t& rhs) const
 	{
-		return (output == rhs.output)
+		return (output_vals == rhs.output_vals)
 			? _compare_by_input(*this, rhs)
-			: (output < rhs.output);
+			: (output_vals < rhs.output_vals);
 	}
 
 	bool operator==(const trans_t& rhs) const
@@ -157,7 +163,9 @@ public:
 			else
 			 stream << "- ";
 		}
-		stream << ") - > " << tf.output;
+		stream << ") ->";
+		for(const int& i : tf.output_vals)
+		 stream << i << " ";
 		return stream;
 	}
 };
@@ -250,6 +258,7 @@ protected:
 		*tfs = tf; // TODO: redundant
 	}
 
+public:
 	_bounding_box<Traits> get_bb() const
 	{
 		_bounding_box<Traits> _bb;
@@ -258,7 +267,6 @@ protected:
 		return _bb;
 	}
 
-public:
 	std::size_t pos(const point& p) const
 	{
 		return get_pos(neighbours, p);
@@ -270,6 +278,7 @@ public:
 		return point(-_bb.ul().x, -_bb.ul().y);
 	}
 
+	rect get_rect() const { return get_bb().rect(); }
 	dimension get_dim() const { return get_bb().dim(); }
 	u_coord_t get_max_w() const
 	{
@@ -342,6 +351,7 @@ public:
 
 
 	typedef typename Container::const_iterator const_iterator;
+	using iterator = const_iterator;
 	const_iterator begin() const { return neighbours.begin(); }
 	const_iterator end() const { return neighbours.end(); }
 	const_iterator cbegin() const { return begin(); }
@@ -498,16 +508,16 @@ class n_t_2 : public _n_t<T>
 			int elem = in_grid[id];
 			switch(elem)
 			{
-			case 0:
+			case 0: // center, but not input
 				//printf("%d\n",center_cell.x);
 				assert(center_cell.x < 0);
 				center_cell.set(x, y);
 				break;
-			case 1:
+			case 1: // center + input
 			//	printf("%d\n",center_cell.x);
 				assert(center_cell.x < 0);
 				center_cell.set(x, y);
-			case 2:
+			case 2: // not center, but input
 				neighbours.push_back(point(x,y));
 				break;
 			default: break;
@@ -524,24 +534,6 @@ class n_t_2 : public _n_t<T>
 		}
 	}
 public:
-	/**
-	 * @brief Reads neighborhood from grid.
-	 *
-	 * Cell values:
-	 *  - 0 center cell which is *no* part of the nh.
-	 *  - 1 center cell which *is* part of the nh.
-	 *  - 2 nh cell
-	 *  - 3 other cell (TODO: change: 2 grids of 0,1)
-	 *
-	 * @param in_grid
-	 * @param in_dim
-	 */
-	_n_t(const std::vector<int>& in_grid,
-		const dimension& in_dim)
-	{
-		// TODO: parameter in_dim is useless?
-		init(in_grid, in_dim);
-	}
 	_n_t(std::istream& stream) { stream >> *this; } // TODO: const ctor
 	_n_t() {}
 
@@ -558,6 +550,19 @@ public:
 			neighbours.push_back(p - _center_cell);
 			//bb.add_point(neighbours.back());
 		}
+	}
+
+	// TODO: make grid const!
+	_n_t(grid_t& grid, point _center_cell)
+	{
+		std::size_t reserve = 0;
+		for(const grid_t::value_type& c : grid)
+		 reserve += (c >= 0);
+		neighbours.reserve(reserve);
+
+		for(const point& p : grid.points())
+		if(grid[p])
+		 neighbours.push_back(p - _center_cell);
 	}
 
 	_n_t(const Container&& cont) : neighbours(cont) {}
