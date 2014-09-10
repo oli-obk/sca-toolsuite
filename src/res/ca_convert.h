@@ -24,6 +24,7 @@
 #define CA_CONVERT_H
 
 #include "ca.h"
+#include "ca_table.h"
 
 namespace sca { namespace ca {
 
@@ -369,6 +370,12 @@ public:
 
 	void dump_as_grids(std::ostream& stream) const
 	{
+		// TODO: count num of states?
+		{
+	//		_table_hdr_t hdr(3, n_in, n_out);
+	//		hdr.dump(stream);
+		}
+		(void)stream;
 
 	}
 };

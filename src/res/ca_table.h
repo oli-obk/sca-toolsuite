@@ -164,9 +164,46 @@ private:
 		return res;
 	}
 
+
+	class table_from_equation
+	{
+		eqsolver_t eqs;
+		const u_coord_t size_each;
+		const n_t _n_out;
+		const point center, center_out;
+	public:
+		table_from_equation(eqsolver_t&& eqs, u_coord_t size_each, const n_t& _n_out, const point& center) :
+			eqs(eqs),
+			size_each(size_each),
+			_n_out(_n_out),
+			center(center),
+			center_out(_n_out.get_center_cell())
+		{}
+
+		u_int64_t operator()(const bitgrid_t& grid) const
+		{
+			// TODO!! thread safety!
+			static dimension n_out_dim = _n_out.get_dim();
+			static ::grid_t tmp_result(::dimension(n_out_dim.dx(), n_out_dim.dy()), 0);
+
+			// TODO: tmp_result should be bitgrid.
+			bitgrid_t bit_tmp_result(size_each, n_out_dim, 0, 0);
+			eqs.calculate_next_state_grids(grid.raw_value(), size_each,
+				/*::point(center.x, center.y)*/ center,
+				grid.internal_dim(),
+				&tmp_result[::point(center_out.x, center_out.y)],
+				::dimension(n_out_dim.dx(), n_out_dim.dy()));
+			for(const point& p : _n_out)
+			 bit_tmp_result[center_out + p] = tmp_result[::point(center_out.x + p.x, center_out.y + p.y)];
+			return bit_tmp_result.raw_value();
+		}
+
+	};
+
 	// TODO : static?
 	//! used to dump an in-memory-table from an equation
-	TblCont<uint64_t> calculate_table() const
+	template<class Functor>
+	TblCont<uint64_t> calculate_table(const Functor& ftor) const
 	{
 		TblCont<uint64_t> tbl;
 		tbl.resize(1 << (size_each * _n_in.size())); // ctor can not reserve
@@ -176,28 +213,14 @@ private:
 		const std::size_t max = (int)pow(own_num_states, _n_in.size());
 
 		std::size_t percent = 0, cur;
-
 		std::cerr << "Precalculating table, please wait..." << std::endl;
-		// odometer
-//		int last_val = -1;
-		bitgrid_t tbl_idx(size_each, dimension(_n_in.size(), 0), 0, 0);
 
-		dimension n_out_dim = _n_out.get_dim();
-		::grid_t tmp_result(::dimension(n_out_dim.dx(), n_out_dim.dy()), 0);
-		bitgrid_t bit_tmp_result(size_each, n_out_dim, 0, 0);
+		bitgrid_t tbl_idx(size_each, dimension(_n_in.size(), 0), 0, 0);
 
 		for(std::size_t i = 0; i < max; ++i)
 		{
 			// evaluate
-			// TODO: tmp_result should be bitgrid.
-			eqsolver_t::calculate_next_state_grids(grid.raw_value(), size_each,
-				/*::point(center.x, center.y)*/ center,
-				grid.internal_dim(),
-				&tmp_result[::point(center_out.x, center_out.y)],
-				::dimension(n_out_dim.dx(), n_out_dim.dy()));
-			for(const point& p : _n_out)
-			 bit_tmp_result[center_out + p] = tmp_result[::point(center_out.x + p.x, center_out.y + p.y)];
-			tbl.at(tbl_idx.raw_value()) = bit_tmp_result.raw_value();
+			tbl.at(tbl_idx.raw_value()) = ftor(grid);
 
 //			std::cerr << grid << " -> " << tmp_result << std::endl;
 
@@ -206,14 +229,14 @@ private:
 //			 std::cerr << grid << " => " << tbl.at(grid.raw_value()) << std::endl;
 #endif
 
+			// stats
 			cur = (i * 100) / max; // max can never be 0 // TODO: 100 / max = const
 			if(percent < cur)
 			{
 				percent = cur;
 				std::cerr << "..." << percent << " percent" << std::endl;
 			}
-//			if((last_val != -1) && (last_val != (int)grid.raw_value() - 1)) exit(1);
-//last_val = grid.raw_value();
+
 			// increase
 			{
 				bool go_on = true;
@@ -238,6 +261,15 @@ private:
 		return tbl;
 	}
 
+
+	//! used to dump an in-memory-table from an equation
+	TblCont<uint64_t> calculate_table_eq(eqsolver_t&& eqs) const
+	{
+		return calculate_table(
+			table_from_equation(std::move(eqs),
+				size_each, _n_out, center));
+	}
+
 public:
 	// avoid conflicts
 	using _table_hdr_t::calc_border_width;
@@ -260,14 +292,24 @@ public:
 
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
-	_table_t(const char* equation, cell_t num_states = 0) :
+/*	_table_t(const char* equation, cell_t num_states = 0) :
 		eqsolver_t(equation, num_states),
 		_table_hdr_t(num_states,
 			eqsolver_t::calc_n_in<bitgrid_traits>(),
 			eqsolver_t::calc_n_out<bitgrid_traits>()),
 		table(calculate_table())
 	{
+	}*/
+
+	_table_t(eqsolver_t _eqs, cell_t num_states = 0) :
+		eqsolver_t(_eqs),
+		_table_hdr_t(num_states,
+			eqsolver_t::calc_n_in<bitgrid_traits>(),
+			eqsolver_t::calc_n_out<bitgrid_traits>()),
+		table(calculate_table_eq(std::move(_eqs)))
+	{
 	}
+
 
 	//! Note: the type traits here can be different than ours
 	//! Runtime: O(N)
