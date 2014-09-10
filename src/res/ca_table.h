@@ -101,21 +101,6 @@ protected:
 	// data for outside:
 	const u_coord_t bw; // TODO: u_coord_t
 
-//	const n_t neighbourhood;
-
-/*	u_coord_t compute_bw() const noexcept
-	{
-		return (n_w - 1)>>1;
-	}
-
-	n_t compute_neighbourhood() const
-	{
-		u_coord_t bw = border_width();
-		u_coord_t n_width = (bw<<1) + 1;
-		dimension moore = { n_width, n_width };
-		return n_t(moore, point(bw, bw));
-	}*/
-
 	static unsigned fetch_8(std::istream& stream);
 
 	n_t fetch_n(std::istream& stream) const;
@@ -186,12 +171,10 @@ private:
 	TblCont<uint64_t> calculate_table() const
 	{
 		TblCont<uint64_t> tbl;
-	//	tbl.reserve(1 << (size_each * n_w * n_w)); // ctor can not reserve
-		tbl.resize(1 << (b::size_each * b::_n_in.size()));
+		tbl.resize(1 << (b::size_each * b::_n_in.size())); // ctor can not reserve
 
 		const dimension n_in_dim(b::_n_in.get_dim().dx(), b::_n_in.get_dim().dy());
 		bitgrid_t grid(b::size_each, n_in_dim, 0, 0);
-//		const dimension& dim = grid.internal_dim();
 		const std::size_t max = (int)pow(b::num_states, b::_n_in.size());
 
 		std::size_t percent = 0, cur;
@@ -214,10 +197,8 @@ private:
 				grid.internal_dim(),
 				&tmp_result[::point(center_out.x, center_out.y)],
 				::dimension(n_out_dim.dx(), n_out_dim.dy()));
-			for(const point& p : _n_out) {
+			for(const point& p : _n_out)
 			 bit_tmp_result[center_out + p] = tmp_result[::point(center_out.x + p.x, center_out.y + p.y)];
-			 std::cerr << "Copying: " << center_out << std::endl;
-			}
 			tbl.at(tbl_idx.raw_value()) = bit_tmp_result.raw_value();
 
 //			std::cerr << grid << " -> " << tmp_result << std::endl;
@@ -253,11 +234,6 @@ private:
 
 					++digit;
 				}
-
-			/*	for(bitcell_itr itr = grid.begin(); itr != grid.end() && go_on; ++itr)
-				{
-					go_on = ((*itr = (((*itr) + 1) % b::num_states)) == 0);
-				}*/
 			}
 		}
 
@@ -346,15 +322,6 @@ public:
 
 		grid_cell_t min = std::numeric_limits<grid_cell_t>::max(),
 			max = std::numeric_limits<grid_cell_t>::min(); // any better alternative?
-
-	/*	for(const point& p2 : bitgrid.points())
-		{
-			const point offs = p2 - b::center;
-			const grid_cell_t* const ptr = cell_ptr + (grid_cell_t)(offs.y * dim.width() + offs.x);
-			bitgrid[p2] = *ptr;
-			min = std::min(min, *ptr);
-			max = std::max(max, *ptr);
-		}*/
 
 		for(const auto& _p : ca::counted(_n_in))
 		{

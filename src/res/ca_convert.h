@@ -88,19 +88,20 @@ class tv_ctor
 		int symm) const
 	{
 		trans_t tf(n_in.size(), n_out.size());
-/*#ifdef SCA_DEBUG
+#ifdef SCA_DEBUG
 		std::cerr << "Adding rotation: " << symm << std::endl;
-#endif*/
+#endif
 		for(unsigned i = 0; i < n_in.size(); ++i) {
 			// TODO: use center_in, center_out?
 			//tf.set_neighbour(i, input_grid[bb.coords_to_id(idx(i, symm)/*+center_cell*/)]);
+			std::cerr << idx(i, symm, n_in) << ", " << p_out << std::endl;
 			tf.set_neighbour(i, input_grid[idx(i, symm, n_in) + p_in/*- bb.ul()+center_cell*/]);
 		}
 
 		for(unsigned i = 0; i < n_out.size(); ++i) {
 
 			//tf.set_neighbour(i, input_grid[bb.coords_to_id(idx(i, symm)/*+center_cell*/)]);
-		//	std::cout << idx(i, symm) << ", " << p_out << std::endl;
+		//	std::cout << idx(i, symm, n_out) << ", " << p_out << std::endl;
 			tf.set_output(i, output_grid[idx(i, symm, n_out) + p_out/*- bb.ul()+center_cell*/]);
 		}
 
@@ -177,40 +178,6 @@ public:
 #endif
 	}
 
-/*	void add_direct(const grid_t& in, const grid_t& out, const point& p) {
-		add_transition_functions(in, out, p);
-	}*/
-
-/*	void add_m2(const grid_t& in_grid, const grid_t& out_grid)
-	{
-		assert((2 + out_grid.human_dim().dx())
-			== in_grid.human_dim().dx());
-		assert((2 + out_grid.human_dim().dy())
-			== in_grid.human_dim().dy());
-
-		const point ul = *in_grid.points().end();
-		const dimension rc(ul.x-2, ul.y-2);
-		for(const point& p : rc)
-		{
-			in_grid.copy_to_int(_in_grid, n_dim + p);
-			add_direct(_in_grid, out_grid[p]);
-		}
-	}
-
-	void add_eq(const grid_t& in_grid, const grid_t& out_grid)
-	{
-		assert((out_grid.human_dim())
-			== in_grid.human_dim());
-
-		const point ul = *in_grid.points().end(), one(1, 1);
-		const rect rc(one, ul-one);
-		for(const point& p : rc)
-		{
-			in_grid.copy_to_int(_in_grid, n_dim + (p-point(1,1)));
-			add_direct(_in_grid, out_grid[p]);
-		}
-	}*/
-
 	void add(const grid_t& in_grid, const grid_t& out_grid, bool rot, bool mirr)
 	{
 		// TODO: read rot, mirr from file
@@ -221,18 +188,6 @@ public:
 			fit,
 			invalid
 		};
-
-
-	/*	int = dim_diff_x(in_grid.human_dim().dx() - out_grid.human_dim().dx();
-		int = dim_diff_y(in_grid.human_dim().dy() - out_grid.human_dim().dy();
-
-		if(dim_diff_x == 0 && dim_diff_y == 0)
-		 mode = mode_t::equal;
-		else if(fits(in_grid.human_dim(), out_grid.human_dim()))
-		{
-
-
-		}*/
 
 		mode_t mode = (in_grid.human_dim() == out_grid.human_dim())
 			? mode_t::equal
@@ -275,7 +230,7 @@ public:
 
 class trans_vector_t
 {
-	ca::n_t neighbours;
+	ca::n_t n_in, n_out;
 	using table_t = std::vector<ca::trans_t>;
 	table_t table; //!< sorted by input (first)
 
@@ -300,30 +255,19 @@ class trans_vector_t
 public:
 	trans_vector_t() {}
 	trans_vector_t(tv_ctor&& cons) :
-		neighbours(std::move(cons.n_in)),
+		n_in(std::move(cons.n_in)),
+		n_out(std::move(cons.n_out)),
 		table(get_table_from_cons(std::move(cons.table)))
 	{}
 
-	void dump_as_formula(std::ostream& stream) const
+	void dump_as_formula_at(std::ostream& stream, int output_idx) const
 	{
-		int output_idx = 0;
-
 		// write to out // TODO: redundant?
 		std::vector<ca::trans_t> table_copy = table;
 		std::sort(table_copy.begin(), table_copy.end()); // compares only by output
 
 		{
 			std::size_t braces = 0;
-
-			// print helper vars
-			for(std::size_t i = 0; i < neighbours.size(); i++)
-			{
-				point p = neighbours[i];
-				//printf("h[%lu]:=a[%d,%d],\n",
-				//	i, p.x, p.y);
-				stream << "h[" << i << "]:=a["
-					<< p.x << "," << p.y << "],\n";
-			}
 
 			int recent_output = table_copy[0].get_output()[output_idx];
 			stream << "(" << std::endl;
@@ -340,7 +284,7 @@ public:
 					recent_output = tf.get_output()[output_idx];
 				}
 
-				for(unsigned i = 0; i < neighbours.size(); i++)
+				for(unsigned i = 0; i < n_in.size(); i++)
 				{
 					int input_val;
 					const bool is_set = tf.input(i, &input_val);
@@ -361,6 +305,29 @@ public:
 			 //printf(")");
 			stream << std::endl;
 		}
+	}
+
+	void dump_as_formula(std::ostream& stream) const
+	{
+		// print helper vars
+		for(std::size_t i = 0; i < n_in.size(); i++)
+		{
+			point p = n_in[i];
+			//printf("h[%lu]:=a[%d,%d],\n",
+			//	i, p.x, p.y);
+			stream << "h[" << i << "]:=a["
+				<< p.x << "," << p.y << "],\n";
+		}
+
+		for(const auto& _p : ca::counted(n_out))
+		{
+			const point& p = _p;
+			stream << "(a[" << p.x << "," << p.y << "]:=" << std::endl;
+			dump_as_formula_at(stream, _p.id());
+			stream << ")," << std::endl;
+		}
+
+		stream << "v";
 	}
 
 };

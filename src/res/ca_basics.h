@@ -221,42 +221,6 @@ protected:
 	//! neighbour positions, relative to center cell
 	//! @invariant The points are always sorted (linewise)
 	Container neighbours;
-	//! positive offset of center cell
-	//! this cell is obviously needed
-
-	point idx(int idx, int symm) const
-	{
-		point p = operator[](idx);
-		const int rot = symm & 3;
-		const int refl = symm >> 2;
-
-		static const matrix rot_mat(0, -1, 1, 0);
-		static const matrix rot_mats[] =
-		 { matrix::id, rot_mat, rot_mat^2, rot_mat^3 };
-		static const matrix mirror_mats[] =
-		 { matrix::id, matrix(1, 0, 0, -1) };
-
-		const point new_point
-		= rot_mats[rot] * (mirror_mats[refl] * p);
-		return new_point;
-	}
-
-	template<class CellTraits>
-	void add_single_tf(
-		trans_t* tfs,
-		const point& center_cell,
-		const _grid_t<Traits, CellTraits>& input_grid,
-		int output_val,
-		int symm) const
-	{
-		trans_t tf(size(), output_val);
-		for(unsigned i = 0; i < size(); ++i) {
-
-			//tf.set_neighbour(i, input_grid[bb.coords_to_id(idx(i, symm)/*+center_cell*/)]);
-			tf.set_neighbour(i, input_grid[idx(i, symm) + center_cell/*- bb.ul()+center_cell*/]);
-		}
-		*tfs = tf; // TODO: redundant
-	}
 
 public:
 	_bounding_box<Traits> get_bb() const
@@ -293,30 +257,6 @@ public:
 
 	point operator[](unsigned i) const { return neighbours[i]; }
 	unsigned size() const { return neighbours.size(); }
-
-	template<class CellTraits>
-	void add_transition_functions(
-		std::vector<trans_t>& tf_vector,
-		const point& center_cell,
-		const _grid_t<Traits, CellTraits>& input_grid,
-		int output_val) const
-	{
-		// family of 8 trans functions, subgroup of D4
-		static trans_t tfs[8]
-		 = {size(), size(), size(), size(),
-			size(), size(), size(), size()};
-	//	assert(bb.x_size() == input_grid.dim().width());
-	//	assert(bb.y_size() == input_grid.dim().height());
-
-		// TODO: unroll?
-		for(int i = 0; i < 8; ++i)
-		 add_single_tf(tfs+i, center_cell, input_grid, output_val, i);
-
-		std::sort(tfs, tfs+8);
-		for(int i = 0; i < 8; ++i)
-		 if((i==0) || (tfs[i-1] != tfs[i]))
-		  tf_vector.push_back(tfs[i]);
-	}
 
 	/*neighbourhood(const dim_cont& _dim, point _center_cell = {0,0})
 		: center_cell(_center_cell),
