@@ -45,6 +45,7 @@ protected:
 	unsigned num_states;
 //	n_t_const neighbourhood;
 
+public:
 	template<class Traits>
 	typename Traits::u_coord_t calc_border_width() const
 	{
@@ -77,7 +78,6 @@ protected:
 		return _n_t<Traits,std::vector<point>>(std::move(res_v));
 	}
 
-protected:
 	~eqsolver_t() noexcept { delete[] helper_vars; }
 
 	// TODO: single funcs to initialize and make const?

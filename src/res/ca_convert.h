@@ -260,6 +260,43 @@ public:
 		table(get_table_from_cons(std::move(cons.table)))
 	{}
 
+	static trans_vector_t from_stream(std::istream& in = std::cin,
+		bool rot = true, bool mirr = true)
+	{
+		point center;
+		std::size_t center_count = 0;
+		grid_t center_grid(in, 0);
+		for(const point& p : center_grid.points())
+		if(center_grid[p])
+		{
+			center = p;
+			++center_count;
+		}
+
+		if(center_count != 1)
+		 throw "Expected exactly 1 center cell.";
+
+		grid_t center_grid_2(in, 0);
+	//	in >> center_grid; // TODO: bug
+	//	std::cout <<  center_grid << std::endl;
+		ca::n_t n_in(center_grid_2, center);
+
+	//	in >> center_grid;
+	//	std::cout <<  center_grid << std::endl;
+		grid_t center_grid_3(in, 0);
+		ca::n_t n_out(center_grid_3, center);
+
+		tv_ctor cons(n_in, n_out);
+		while(in.good())
+		{
+			const grid_t in_grid(in, 0);
+			const grid_t out_grid(in, 0);
+			cons.add(in_grid, out_grid, rot, mirr);
+		}
+
+		return trans_vector_t(std::move(cons));
+	}
+
 	void dump_as_formula_at(std::ostream& stream, int output_idx) const
 	{
 		// write to out // TODO: redundant?
@@ -330,6 +367,10 @@ public:
 		stream << "v";
 	}
 
+	void dump_as_grids(std::ostream& stream) const
+	{
+
+	}
 };
 
 enum class type
@@ -375,38 +416,20 @@ struct converter<type::grids, type::formula> : converter_base
 	void operator()(in_t& in = std::cin, out_t& out = std::cout,
 		bool rot = true, bool mirr = true) const
 	{
-		point center;
-		std::size_t center_count = 0;
-		grid_t center_grid(in, 0);
-		for(const point& p : center_grid.points())
-		if(center_grid[p])
-		{
-			center = p;
-			++center_count;
-		}
+		const trans_vector_t tv = trans_vector_t::
+			from_stream(in, rot, mirr);
+		tv.dump_as_formula(out);
+	}
+};
 
-		if(center_count != 1)
-		 throw "Expected exactly 1 center cell.";
-
-		grid_t center_grid_2(in, 0);
-	//	in >> center_grid; // TODO: bug
-	//	std::cout <<  center_grid << std::endl;
-		ca::n_t n_in(center_grid_2, center);
-
-	//	in >> center_grid;
-	//	std::cout <<  center_grid << std::endl;
-		grid_t center_grid_3(in, 0);
-		ca::n_t n_out(center_grid_3, center);
-
-		tv_ctor cons(n_in, n_out);
-		while(in.good())
-		{
-			const grid_t in_grid(in, 0);
-			const grid_t out_grid(in, 0);
-			cons.add(in_grid, out_grid, rot, mirr);
-		}
-
-		const trans_vector_t tv(std::move(cons));
+template<>
+struct converter<type::grids, type::table> : converter_base
+{
+	void operator()(in_t& in = std::cin, out_t& out = std::cout,
+		bool rot = true, bool mirr = true) const
+	{
+		const trans_vector_t tv = trans_vector_t::
+			from_stream(in, rot, mirr);
 		tv.dump_as_formula(out);
 	}
 };

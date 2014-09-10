@@ -114,7 +114,6 @@ void _table_hdr_t::dump(std::ostream &stream) const
 }
 
 _table_hdr_t::_table_hdr_t(std::istream &stream) :
-	base("v", 0), // not reliable
 	header(stream),
 	version(fetch_32(stream)),
 	//	n_w(fetch_32(stream)),
@@ -132,13 +131,13 @@ _table_hdr_t::_table_hdr_t(std::istream &stream) :
 	std::cerr << "N out: " << _n_out << std::endl;
 }
 
-_table_hdr_t::_table_hdr_t(const char *equation, _table_hdr_t::cell_t num_states) :
-	base(equation, num_states),
+// TODO: pass n via && ?
+_table_hdr_t::_table_hdr_t(_table_hdr_t::cell_t num_states, const n_t& _n_in, const n_t& _n_out) :
 	//	n_w((base::calc_border_width()<<1) + 1),
-	own_num_states(base::num_states),
+	own_num_states(num_states),
 	size_each((unsigned)ceil(log(own_num_states))), // TODO: use int arithm
-	_n_in(base::calc_n_in<bitgrid_traits>()),
-	_n_out(base::calc_n_out<bitgrid_traits>()),
+	_n_in(_n_in),
+	_n_out(_n_out),
 	center(_n_in.get_center_cell()),
 	//	base::calc_border_width<bitgrid_traits>()), // TODO: don't calc bw 3 times...
 	center_out(_n_out.get_center_cell()), // TODO: correct?

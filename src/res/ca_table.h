@@ -60,11 +60,9 @@ struct version_t
 }
 
 //! header structure and basic utils for a table file
-class _table_hdr_t : public eqsolver_t // TODO: make base a template?
+class _table_hdr_t// : public eqsolver_t // TODO: make base a template?
 {
 protected:
-	using base = eqsolver_t;
-
 	using u_coord_t = typename bitgrid_traits::u_coord_t;
 	using cell_t = typename bitgrid_cell_traits::cell_t;
 
@@ -122,12 +120,12 @@ protected:
 
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
-	_table_hdr_t(const char* equation, cell_t num_states = 0);
+	_table_hdr_t(_table_hdr_t::cell_t num_states, const n_t& _n_in, const n_t& _n_out);
 
 	template<class Traits>
 	typename Traits::u_coord_t calc_border_width() const noexcept { return bw; }
 	template<class Traits>
-	_n_t_v<Traits> calc_n_in() const noexcept {
+	_n_t_v<Traits> calc_n_in() const {
 		using point = _point<Traits>;
 		std::vector<point> res_v;
 		for(const auto& p : _n_in)
@@ -135,7 +133,7 @@ protected:
 		return _n_t_v<Traits>(std::move(res_v));
 	}
 	template<class Traits>
-	_n_t_v<Traits> calc_n_out() const noexcept {
+	_n_t_v<Traits> calc_n_out() const {
 		using point = _point<Traits>;
 		std::vector<point> res_v;
 		for(const auto& p : _n_out)
@@ -145,7 +143,7 @@ protected:
 };
 
 template<template<class ...> class TblCont, class Traits, class CellTraits>
-class _table_t : public _table_hdr_t // TODO: only for reading?
+class _table_t : eqsolver_t, public _table_hdr_t // TODO: only for reading?
 {
 private:
 	// TODO!!! table can use uint8_t in many cases!
@@ -154,9 +152,9 @@ private:
 	using storage_t = uint64_t;
 
 
-	using b = _table_hdr_t; // TODO: remove b everywhere
-	using typename b::cell_t;
-	using typename b::point;
+//	using b = _table_hdr_t; // TODO: remove b everywhere
+//	using typename b::cell_t;
+//	using typename b::point;
 
 private:
 	static TblCont<uint64_t> fetch_tbl(std::istream& stream, unsigned size_each, unsigned n_size)
@@ -171,29 +169,29 @@ private:
 	TblCont<uint64_t> calculate_table() const
 	{
 		TblCont<uint64_t> tbl;
-		tbl.resize(1 << (b::size_each * b::_n_in.size())); // ctor can not reserve
+		tbl.resize(1 << (size_each * _n_in.size())); // ctor can not reserve
 
-		const dimension n_in_dim(b::_n_in.get_dim().dx(), b::_n_in.get_dim().dy());
-		bitgrid_t grid(b::size_each, n_in_dim, 0, 0);
-		const std::size_t max = (int)pow(b::num_states, b::_n_in.size());
+		const dimension n_in_dim(_n_in.get_dim().dx(), _n_in.get_dim().dy());
+		bitgrid_t grid(size_each, n_in_dim, 0, 0);
+		const std::size_t max = (int)pow(own_num_states, _n_in.size());
 
 		std::size_t percent = 0, cur;
 
 		std::cerr << "Precalculating table, please wait..." << std::endl;
 		// odometer
 //		int last_val = -1;
-		bitgrid_t tbl_idx(b::size_each, dimension(_n_in.size(), 0), 0, 0);
+		bitgrid_t tbl_idx(size_each, dimension(_n_in.size(), 0), 0, 0);
 
 		dimension n_out_dim = _n_out.get_dim();
 		::grid_t tmp_result(::dimension(n_out_dim.dx(), n_out_dim.dy()), 0);
-		bitgrid_t bit_tmp_result(b::size_each, n_out_dim, 0, 0);
+		bitgrid_t bit_tmp_result(size_each, n_out_dim, 0, 0);
 
 		for(std::size_t i = 0; i < max; ++i)
 		{
 			// evaluate
 			// TODO: tmp_result should be bitgrid.
-			calculate_next_state_grids(grid.raw_value(), b::size_each,
-				/*::point(b::center.x, b::center.y)*/ b::center,
+			eqsolver_t::calculate_next_state_grids(grid.raw_value(), size_each,
+				/*::point(center.x, center.y)*/ center,
 				grid.internal_dim(),
 				&tmp_result[::point(center_out.x, center_out.y)],
 				::dimension(n_out_dim.dx(), n_out_dim.dy()));
@@ -227,10 +225,10 @@ private:
 		//			std::cerr << "increasing: " << p << " = " << (center + p) << std::endl;
 
 					bit_reference r = grid[center + p];
-					go_on = ((r = ((r + 1) % b::num_states)) == 0);
+					go_on = ((r = ((r + 1) % own_num_states)) == 0);
 
 					bit_reference r2 = tbl_idx[point(digit, 0)];
-					r2 = ((r2 + 1) % b::num_states);
+					r2 = ((r2 + 1) % own_num_states);
 
 					++digit;
 				}
@@ -241,23 +239,32 @@ private:
 	}
 
 public:
+	// avoid conflicts
+	using _table_hdr_t::calc_border_width;
+	using _table_hdr_t::calc_n_in;
+	using _table_hdr_t::calc_n_out;
+
 	//! O(table)
 	void dump(std::ostream& stream) const
 	{
-		b::dump(stream);
+		dump(stream);
 		stream.write((char*)table.data(), table.size() * 8);
 	}
 
 	_table_t(std::istream& stream) :
-		b(stream),
-		table(fetch_tbl(stream, b::size_each, b::_n_in.size()))
+		eqsolver_t("v", 0),
+		_table_hdr_t(stream),
+		table(fetch_tbl(stream, size_each, _n_in.size()))
 	{
 	}
 
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
 	_table_t(const char* equation, cell_t num_states = 0) :
-		b(equation, num_states),
+		eqsolver_t(equation, num_states),
+		_table_hdr_t(num_states,
+			eqsolver_t::calc_n_in<bitgrid_traits>(),
+			eqsolver_t::calc_n_out<bitgrid_traits>()),
 		table(calculate_table())
 	{
 	}
@@ -272,14 +279,14 @@ public:
 		using grid_cell_t = typename GCT::cell_t;
 
 		(void)p; // for a ca, the coordinates are no cell input
-		bitgrid_t bitgrid(b::size_each, b::_n_in.get_dim(), 0, 0, 0);
+		bitgrid_t bitgrid(size_each, _n_in.get_dim(), 0, 0, 0);
 
 		grid_cell_t min = std::numeric_limits<grid_cell_t>::max(),
 			max = std::numeric_limits<grid_cell_t>::min(); // any better alternative?
 
 		for(const point& p2 : bitgrid.points())
 		{
-			const point offs = p2 - b::center;
+			const point offs = p2 - center;
 			const grid_cell_t* const ptr = cell_ptr + (grid_cell_t)(offs.y * dim.width() + offs.x);
 			bitgrid[p2] = *ptr;
 			min = std::min(min, *ptr);
@@ -287,7 +294,7 @@ public:
 		}
 
 		// todo: better hashing function for not exactly n bits?
-		const bool in_range = (min >= 0 && max < (int)b::own_num_states);
+		const bool in_range = (min >= 0 && max < (int)own_num_states);
 		return in_range
 			? table[bitgrid.raw_value()]
 			: *cell_ptr; // can not happen, except for border -> don't change
@@ -298,7 +305,7 @@ private:
 	int tar_write(const uint64_t& val, typename CT::cell_t *cell_tar,
 		const _dimension<T>& tar_dim) const
 	{
-		const bitgrid_t tar_grid(b::size_each, b::_n_in.get_dim(), 0, val);
+		const bitgrid_t tar_grid(size_each, _n_in.get_dim(), 0, val);
 		for(const point& p : _n_out)
 		{
 			const auto ptr = cell_tar + (p.y * tar_dim.width()) + p.x;
@@ -317,8 +324,8 @@ public:
 		using grid_cell_t = typename GCT::cell_t;
 
 		(void)p; // for a ca, the coordinates are no cell input
-	//	bitgrid_t bitgrid(b::size_each, b::_n_in.get_dim(), 0, 0, 0);
-		bitgrid_t bitgrid(b::size_each, dimension(b::_n_in.size(), 0), 0, 0, 0);
+	//	bitgrid_t bitgrid(size_each, _n_in.get_dim(), 0, 0, 0);
+		bitgrid_t bitgrid(size_each, dimension(_n_in.size(), 0), 0, 0, 0);
 
 		grid_cell_t min = std::numeric_limits<grid_cell_t>::max(),
 			max = std::numeric_limits<grid_cell_t>::min(); // any better alternative?
@@ -334,7 +341,7 @@ public:
 		}
 
 		// todo: better hashing function for not exactly n bits?
-		const bool in_range = (min >= 0 && max < (int)b::own_num_states);
+		const bool in_range = (min >= 0 && max < (int)own_num_states);
 
 		return in_range
 			? tar_write<T, GCT>(table.at(bitgrid.raw_value()), cell_tar, tar_dim)
