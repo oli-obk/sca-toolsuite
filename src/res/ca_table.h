@@ -143,7 +143,7 @@ protected:
 };
 
 template<template<class ...> class TblCont, class Traits, class CellTraits>
-class _table_t : eqsolver_t, public _table_hdr_t // TODO: only for reading?
+class _table_t : public _table_hdr_t // TODO: only for reading?
 {
 private:
 	// TODO!!! table can use uint8_t in many cases!
@@ -271,11 +271,6 @@ private:
 	}
 
 public:
-	// avoid conflicts
-	using _table_hdr_t::calc_border_width;
-	using _table_hdr_t::calc_n_in;
-	using _table_hdr_t::calc_n_out;
-
 	//! O(table)
 	void dump(std::ostream& stream) const
 	{
@@ -284,7 +279,6 @@ public:
 	}
 
 	_table_t(std::istream& stream) :
-		eqsolver_t("v", 0),
 		_table_hdr_t(stream),
 		table(fetch_tbl(stream, size_each, _n_in.size()))
 	{
@@ -302,10 +296,9 @@ public:
 	}*/
 
 	_table_t(eqsolver_t _eqs, cell_t num_states = 0) :
-		eqsolver_t(_eqs),
 		_table_hdr_t(num_states,
-			eqsolver_t::calc_n_in<bitgrid_traits>(),
-			eqsolver_t::calc_n_out<bitgrid_traits>()),
+			_eqs.calc_n_in<bitgrid_traits>(),
+			_eqs.calc_n_out<bitgrid_traits>()),
 		table(calculate_table_eq(std::move(_eqs)))
 	{
 	}
