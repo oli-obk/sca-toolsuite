@@ -165,14 +165,14 @@ private:
 	}
 
 
-	class table_from_equation
+	class from_equation
 	{
 		eqsolver_t eqs;
 		const u_coord_t size_each;
 		const n_t _n_out;
 		const point center, center_out;
 	public:
-		table_from_equation(eqsolver_t&& eqs, u_coord_t size_each, const n_t& _n_out, const point& center) :
+		from_equation(eqsolver_t&& eqs, u_coord_t size_each, const n_t& _n_out, const point& center) :
 			eqs(eqs),
 			size_each(size_each),
 			_n_out(_n_out),
@@ -195,6 +195,67 @@ private:
 				::dimension(n_out_dim.dx(), n_out_dim.dy()));
 			for(const point& p : _n_out)
 			 bit_tmp_result[center_out + p] = tmp_result[::point(center_out.x + p.x, center_out.y + p.y)];
+			return bit_tmp_result.raw_value();
+		}
+
+	};
+
+	class from_trans
+	{
+		const std::vector<trans_t>& tf;
+		mutable std::vector<trans_t>::const_iterator itr;
+		const u_coord_t size_each;
+		const n_t _n_in, _n_out;
+		const point center, center_out;
+
+		template<class Grid, class Conf>
+		bool grid_has_conf(const Grid& g, const Conf& c) const
+		{
+			conf_t::const_iterator citr = c.cbegin();
+			const auto cb = [&](const point& p) {
+				return ((int)g[p]) == *(citr++);
+			};
+			return _n_in.for_each_bool(center, cb);
+		}
+	public:
+		from_trans(const std::vector<trans_t>& tf, u_coord_t size_each, const n_t& _n_in, const n_t& _n_out, const point& center) :
+			tf(tf),
+			itr(tf.cbegin()),
+			size_each(size_each),
+			_n_in(_n_in),
+			_n_out(_n_out),
+			center(center),
+			center_out(_n_out.get_center_cell())
+		{}
+
+		u_int64_t operator()(const bitgrid_t& grid) const
+		{
+			// TODO!! thread safety!
+			static dimension n_out_dim = _n_out.get_dim();
+
+			bitgrid_t bit_tmp_result(size_each, n_out_dim, 0, 0);
+
+			if(itr != tf.cend() &&
+				grid_has_conf(grid, itr->get_full_input()))
+			{
+		//		std::cerr << "equal:" << grid << ", " << *itr << std::endl;
+
+				for(const auto& p : ca::counted(_n_out))
+				 bit_tmp_result[center_out + p] = itr->get_output()[p.id()];
+
+				++itr;
+			}
+			else
+			{
+		/*		if(itr == tf.cend())
+				 std::cerr << "differ:" << grid << ", " << "(end)" << std::endl;
+				else
+				 std::cerr << "differ:" << grid << ", " << *itr << std::endl;*/
+
+				for(const auto& p : ca::counted(_n_out))
+				 bit_tmp_result[center_out + p] = grid[center + p];
+			}
+
 			return bit_tmp_result.raw_value();
 		}
 
@@ -266,15 +327,23 @@ private:
 	TblCont<uint64_t> calculate_table_eq(eqsolver_t&& eqs) const
 	{
 		return calculate_table(
-			table_from_equation(std::move(eqs),
+			from_equation(std::move(eqs),
 				size_each, _n_out, center));
+	}
+
+	//! used to dump an in-memory-table from a vector of transitions
+	TblCont<uint64_t> calculate_table_trans(const std::vector<trans_t>& tf) const
+	{
+		return calculate_table(
+			from_trans(tf,
+				size_each, _n_in, _n_out, center));
 	}
 
 public:
 	//! O(table)
 	void dump(std::ostream& stream) const
 	{
-		dump(stream);
+		_table_hdr_t::dump(stream);
 		stream.write((char*)table.data(), table.size() * 8);
 	}
 
@@ -286,20 +355,20 @@ public:
 
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
-/*	_table_t(const char* equation, cell_t num_states = 0) :
-		eqsolver_t(equation, num_states),
-		_table_hdr_t(num_states,
-			eqsolver_t::calc_n_in<bitgrid_traits>(),
-			eqsolver_t::calc_n_out<bitgrid_traits>()),
-		table(calculate_table())
-	{
-	}*/
-
 	_table_t(eqsolver_t _eqs, cell_t num_states = 0) :
 		_table_hdr_t(num_states,
 			_eqs.calc_n_in<bitgrid_traits>(),
 			_eqs.calc_n_out<bitgrid_traits>()),
 		table(calculate_table_eq(std::move(_eqs)))
+	{
+	}
+
+	_table_t(const std::vector<trans_t>& tf,
+		cell_t num_states,
+		const n_t& n_in,
+		const n_t& n_out) :
+		_table_hdr_t(num_states, n_in, n_out),
+		table(calculate_table_trans(tf))
 	{
 	}
 

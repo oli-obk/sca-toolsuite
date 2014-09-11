@@ -98,6 +98,12 @@ struct _point
 };
 using point = _point<def_coord_traits>;
 
+template<class TDest, class TSrc>
+inline _point<TDest> convert(const _point<TSrc>& src)
+{
+	return _point<TDest>(src.x, src.y);
+}
+
 template<class Traits>
 struct _point_itr
 {

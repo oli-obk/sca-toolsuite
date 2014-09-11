@@ -94,6 +94,8 @@ public:
 	}
 
 	const std::vector<int>& get_output() const { return output_vals; }
+	//! TODO: does not check for input_set!
+	const std::vector<int>& get_full_input() const { return input_vals; }
 	bool input(int neighbour_id, int* result) const {
 		bool is_set = input_set[neighbour_id];
 		if(is_set) *result = input_vals[neighbour_id];
@@ -534,7 +536,42 @@ public:
 			{0, 1},
 		}};
 	}
+
+	template<class TDest, class CDest, class TSrc, class CSrc>
+	inline friend _n_t<TDest, CDest> convert(const _n_t<TSrc, CSrc>& src);
+
+	template<class TDest, class CDest, class TSrc, class CSrc>
+	inline friend _n_t<TDest, CDest> move(_n_t<TSrc, CSrc>&& src);
 };
+
+template<class TDest, class CDest, class TSrc, class CSrc>
+inline _n_t<TDest, CDest> convert(const _n_t<TSrc, CSrc>& src)
+{
+	CDest dest_cont;
+	for(const auto& p : src)
+	 dest_cont.insert(dest_cont.end(), convert<TDest>(p));
+	return _n_t<TDest, CDest>(std::move(dest_cont));
+}
+
+template<class TDest, class TSrc, class CSrc>
+inline _n_t<TDest, std::vector<_point<TDest>>>
+	convert(const _n_t<TSrc, CSrc>& src)
+{
+	using v_t = std::vector<_point<TDest>>;
+	return convert<TDest, v_t, TSrc, CSrc>(src);
+}
+
+/*template<class TDest, class CDest, class TSrc, class CSrc>
+inline _n_t<TDest, CDest> move(_n_t<TSrc, CSrc>&& src)
+{
+	CDest dest_cont;
+	std::move(src.neighbours.cbegin(), src.neighbours.cend(),
+		std::inserter(dest_cont, dest_cont.end()));
+	return _n_t<TDest, CDest>(std::move(dest_cont));
+}*/
+
+
+
 
 using n_t = _n_t<def_coord_traits, std::vector<point>>;
 template<class Traits>

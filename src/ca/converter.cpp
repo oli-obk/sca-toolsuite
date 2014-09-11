@@ -18,45 +18,54 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#ifndef TRAITS_H
-#define TRAITS_H
+#include "simulate.h"
+#include "general.h"
+#include "io.h"
+#include "ca_convert.h"
 
-#include <type_traits>
-#include <cstdint>
+using namespace sca;
 
-template<class T>
-struct area_class { using type = unsigned int; };
-template<>
-struct area_class<char> { using type = unsigned short; };
-template<>
-struct area_class<int8_t> { using type = unsigned short; };
-template<>
-struct area_class<uint8_t> { using type = unsigned short; };
-
-//! @arg Coord The type for using coords. signed or unsigned
-template<class Coord, class Area = typename area_class<Coord>::type> // TODO: def for area
-struct coord_traits
+// TODO: own sim type class, inherit
+class MyProgram : public Program, sim::ulator
 {
-	using coord_t = Coord;
-	using u_coord_t = typename std::make_unsigned<coord_t>::type; // TODO...
-	using area_t = typename std::make_unsigned<Area>::type;
+	exit_t main()
+	{
+		bool rot = false;
+		bool mirr = false;
+
+		switch(argc)
+		{
+			case 3:
+				mirr = atoi(argv[2]);
+			case 2:
+				rot = atoi(argv[1]);
+			case 1:
+				break;
+			default:
+				exit_usage();
+		}
+
+		ca::converter<ca::type::grids, ca::type::table> c;
+		c(std::cin, std::cout, rot, mirr);
+
+		return exit_t::success;
+	}
 };
 
-template<class Cell>
-struct cell_traits
+int main(int argc, char** argv)
 {
-	using cell_t = Cell;
-};
+	HelpStruct help;
+	help.syntax = "ca/dump"
+		"";
+	help.description = "Dumps a cellular automaton (ca).\n"
+		"The number of states is always 3 (0-2).\n"
+		"This can be changed in the future.";
+	help.input = "equation string, describing the local tf";
+	help.output = "table for the local tf";
 
-using def_coord_traits = coord_traits<int>;
-using def_cell_traits = cell_traits<int>;
-using def_cell_const_traits = cell_traits<const int>;
-
-//!< default converter
-template<class Dest, class Src>
-Dest convert(const Src& src)
-{
-	return static_cast<Dest>(src);
+	MyProgram p;
+	return p.run(argc, argv, &help);
 }
 
-#endif // TRAITS_H
+
+

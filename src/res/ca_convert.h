@@ -232,10 +232,10 @@ public:
 class trans_vector_t
 {
 	ca::n_t n_in, n_out;
-	using table_t = std::vector<ca::trans_t>;
-	table_t table; //!< sorted by input (first)
+	using table_v = std::vector<ca::trans_t>;
+	table_v table; //!< sorted by input (first)
 
-	static table_t get_table_from_cons(table_t&& _tbl)
+	static table_v get_table_from_cons(table_v&& _tbl)
 	{
 		assert(_tbl.size() > 0);
 
@@ -243,7 +243,7 @@ class trans_vector_t
 		std::sort(_tbl.begin(), _tbl.end(), ca::compare_by_input);
 		const ca::trans_t* recent = &(_tbl[0]);
 
-		for(table_t::const_iterator itr
+		for(table_v::const_iterator itr
 			= (++_tbl.begin()); itr != _tbl.end(); ++itr)
 		{
 			assert(*itr != *recent);
@@ -368,14 +368,18 @@ public:
 		stream << "v";
 	}
 
-	void dump_as_grids(std::ostream& stream) const
+	void dump_as_table(std::ostream& stream) const
 	{
 		// TODO: count num of states?
 		{
 	//		_table_hdr_t hdr(3, n_in, n_out);
 	//		hdr.dump(stream);
 		}
-		(void)stream;
+
+
+		table_t t(table, 3, convert<bitgrid_traits>(n_in),
+			convert<bitgrid_traits>(n_out));
+		t.dump(stream);
 
 	}
 };
@@ -437,7 +441,7 @@ struct converter<type::grids, type::table> : converter_base
 	{
 		const trans_vector_t tv = trans_vector_t::
 			from_stream(in, rot, mirr);
-		tv.dump_as_formula(out);
+		tv.dump_as_table(out);
 	}
 };
 
