@@ -239,7 +239,9 @@ public:
 		bool equal = true;
 		for(auto itr = _n_out.cbegin();
 			equal && itr != _n_out.cend(); ++itr)
-		 equal = equal && (grid[*itr + p] == tmp_out_grid[*itr]);
+		{
+			equal = equal && (grid[p + *itr] == tmp_out_grid[cc_out + *itr]);
+		}
 		return !equal;
 	}
 
@@ -349,7 +351,7 @@ class simulator_t : /*private _ca_calculator_t<Solver>,*/ public input_ca
 	calc_class ca_calc;
 	input_class ca_input;
 
-	grid_t _grid[2];
+	grid_t _grid[3];
 	grid_t *old_grid = _grid, *new_grid = _grid; // TODO: old grid const?
 	typename calc_class::n_t n_in, n_out; // TODO: const?
 	std::vector<point> //recent_active_cells(old_grid->size()),
@@ -363,12 +365,15 @@ class simulator_t : /*private _ca_calculator_t<Solver>,*/ public input_ca
 	static constexpr const char* def_in_eq = "v:=v";
 
 	void initialize_first() { run_once(); }
+
 public:
 	simulator_t(const char* equation, const char* input_equation,
 		unsigned num_states, bool async = false) :
 		ca_calc(equation, num_states),
 		ca_input(input_equation, num_states),
-		_grid{ca_calc.border_width(), ca_calc.border_width()},
+		_grid{ca_calc.border_width(),
+			ca_calc.border_width(),
+			ca_calc.border_width()},
 		n_in(ca_calc.n_in()),
 		n_out(ca_calc.n_out()),
 		async(async)
@@ -449,10 +454,11 @@ public:
 	{
 		// incorrect if we finalize later? (what is 0 and 1?)
 		_grid[1] = _grid[0]; // fit borders
+		_grid[2] = _grid[0], _grid[2].reset(0);
 
 		// make all cells active, but not those close to the border
 		// TODO: make this generic for arbitrary neighbourhoods
-		new_changed_cells.reserve(sim_rect.area());
+	//	new_changed_cells.reserve(sim_rect.area());
 		for( const point &p : sim_rect ) {
 			// TODO: use active criterion if possible
 			// TODO: otherwise, invariant can be broken...
@@ -475,6 +481,7 @@ public:
 	void _run_once(const rect& sim_rect,
 		const Asynchronicity& async = synchronous())
 	{
+		// switch grids
 		old_grid = _grid + ((round+1)&1);
 		new_grid = _grid + ((round)&1);
 
@@ -483,14 +490,23 @@ public:
 		for(const point& np : n_in)
 		{
 			const point p = ap + np;
-			if(sim_rect.is_inside(p)) // TODO: intsct?
+			// note: is_cell_active is just a lookup in new_grid
+			// note: async(2) means that active cells can be activated or not
+
+			if(sim_rect.is_inside(p) /*&& is_cell_active(p)*/ && async(2)) // TODO: intsct?
 		//	if(!_grid->point_is_on_border(p))
+			{
 			 cells_to_check.insert(p);
+			} // TODO:active check here?
+		/*	else
+			{
+				std::cout << "is" << p << "<< active? " << is_cell_active(p) << std::endl;
+			}*/
 		}
 		new_changed_cells.clear();
 
 		// try to find neighbours that do not overwrite each other
-		std::set<point> try_change;
+		/*std::set<point> try_change;
 		bool this_ok;
 		do // TODO: this is slow...
 		{
@@ -504,13 +520,42 @@ public:
 				else
 				 this_ok = false;
 			}
-		} while(!this_ok);
+		} while(!this_ok);*/
 
-		*new_grid = *old_grid; // TODO: necessary?
+		std::vector<point> change_order;
+		std::copy(cells_to_check.begin(), cells_to_check.end(), std::back_inserter(change_order));
+
+		std::random_device rd;
+		std::mt19937 g(rd());
+		std::shuffle(change_order.begin(), change_order.end(), g);
+
+		_grid[2].reset(0); // TODO: reset all?
+
+		// TODO: the log factor would be avoidable...
+		for(point& cp : change_order)
+		{
+			const auto point_avail = [&](const point& p){
+			//	std::cout << p << ": " << _grid[2][p] << std::endl;
+				return !_grid[2][p]; };
+			if(n_out.for_each_bool(cp, point_avail)) {
+				const auto reserve_point = [&](const point& p){ _grid[2][p] = 1; };
+				n_out.for_each(cp, reserve_point);
+				//_grid[2][n_out.neighbours()] = 1; // reserve
+			}
+			else {
+				std::cout << "rejected: "<< cp <<std::endl;
+				cp = point(-1, -1);
+			}
+		//	std::cout <<
+		}
+
+		std::sort(change_order.begin(), change_order.end());
+
+		*new_grid = *old_grid; // TODO: necessary to copy _all_ points?
 
 	//	for(const point& p : cells_to_check )
 	//	if(try_change.find(p) != try_change.end())
-		for(const point& p : try_change )
+		for(const point& p : change_order )
 		// TODO: use bool async template here to increase speed?
 		// plus: exploit code duplication?
 		{
@@ -526,6 +571,10 @@ public:
 				new_changed_cells.push_back(p);
 			}
 #else
+		if(p.x > -1)
+		{
+
+			// compute next state on advance
 			(*new_grid)[p] = ca_calc.next_state
 					(&((*old_grid)[p]),
 						p, _grid->internal_dim(),
@@ -537,8 +586,8 @@ public:
 
 			n_out.for_each(p, on_changed);
 			on_changed(p); // backwards compatibility
+		}
 #endif
-
 
 		//	std::cout << "at " << p << ": " << new_value
 		//		<< ", " << old_value << std::endl;

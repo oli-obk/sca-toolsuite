@@ -410,9 +410,10 @@ private:
 		const _dimension<T>& tar_dim) const
 	{
 		const bitgrid_t tar_grid(size_each, _n_in.get_dim(), 0, val);
+		// copy tar_grid's result to *ptr
 		for(const point& p : _n_out)
 		{
-			const auto ptr = cell_tar + (p.y * tar_dim.width()) + p.x;
+			const auto ptr = cell_tar + (p.y * (coord_t)tar_dim.width()) + p.x;
 			*ptr = tar_grid[p];
 		}
 		return tar_grid[center_out];
@@ -446,7 +447,6 @@ public:
 
 		// todo: better hashing function for not exactly n bits?
 		const bool in_range = (min >= 0 && max < (int)own_num_states);
-
 		return in_range
 			? tar_write<T, GCT>(table.at(bitgrid.raw_value()), cell_tar, tar_dim)
 			: *cell_ptr; // can not happen, except for border -> don't change

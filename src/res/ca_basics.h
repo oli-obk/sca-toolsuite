@@ -222,20 +222,20 @@ protected:
 #endif
 	//! neighbour positions, relative to center cell
 	//! @invariant The points are always sorted (linewise)
-	Container neighbours;
+	Container _n;
 
 public:
 	_bounding_box<Traits> get_bb() const
 	{
 		_bounding_box<Traits> _bb;
-		for(const point& p : neighbours)
+		for(const point& p : _n)
 		 _bb.add_point( p );
 		return _bb;
 	}
 
 	std::size_t pos(const point& p) const
 	{
-		return get_pos(neighbours, p);
+		return get_pos(_n, p);
 	}
 
 	point get_center_cell() const
@@ -257,8 +257,8 @@ public:
 		);
 	}
 
-	point operator[](unsigned i) const { return neighbours[i]; }
-	unsigned size() const { return neighbours.size(); }
+	point operator[](unsigned i) const { return _n[i]; }
+	unsigned size() const { return _n.size(); }
 
 	/*neighbourhood(const dim_cont& _dim, point _center_cell = {0,0})
 		: center_cell(_center_cell),
@@ -285,7 +285,7 @@ public:
 #endif
 
 	bool contains(const point& p) const {
-		for( const point& np : neighbours )
+		for( const point& np : _n )
 		 if( p == np ) // :)
 		  return true;
 		return false;
@@ -294,8 +294,8 @@ public:
 
 	typedef typename Container::const_iterator const_iterator;
 	using iterator = const_iterator;
-	const_iterator begin() const { return neighbours.begin(); }
-	const_iterator end() const { return neighbours.end(); }
+	const_iterator begin() const { return _n.begin(); }
+	const_iterator end() const { return _n.end(); }
 	const_iterator cbegin() const { return begin(); }
 	const_iterator cend() const { return end(); }
 
@@ -312,15 +312,15 @@ public:
 	{
 		std::set<point> neighbour_set;
 
-		for( const point& p : neighbours ) // TODO: const in all fors
+		for( const point& p : _n ) // TODO: const in all fors
 		{
-			for(unsigned i = 0; i < rhs.neighbours.size(); ++i)
+			for(unsigned i = 0; i < rhs._n.size(); ++i)
 			{
-				neighbour_set.insert( p + rhs.neighbours[i] );
+				neighbour_set.insert( p + rhs._n[i] );
 			}
 		}
 
-		neighbours.assign(neighbour_set.begin(), neighbour_set.end());
+		_n.assign(neighbour_set.begin(), neighbour_set.end());
 
 		return *this;
 	}
@@ -329,10 +329,10 @@ public:
 	{
 		// we use a new set because erasing from a vector
 		// causes reallocations
-		std::set<point> n_set(neighbours.begin(), neighbours.end());
-		for(const point& p : rhs.neighbours)
+		std::set<point> n_set(_n.begin(), _n.end());
+		for(const point& p : rhs._n)
 		 n_set.erase(p);
-		neighbours.assign(n_set.begin(), n_set.end());
+		_n.assign(n_set.begin(), n_set.end());
 
 		return *this;
 	}
@@ -340,7 +340,7 @@ public:
 	template<class Point>
 	_n_t& operator+=(const Point& rhs)
 	{
-		for(point& p : neighbours)
+		for(point& p : _n)
 		 p += rhs;
 		return *this;
 	}
@@ -353,25 +353,25 @@ public:
 		return tmp += rhs;
 	}
 
-	//! complexity: O(neighbours)
+	//! complexity: O(_n)
 	template<class T>
 	std::vector<_point<T>> operator()(const _point<T>& rhs) const
 	{
 		std::vector<_point<T>> result;
-		result.reserve(neighbours.size());
-		for(const point& np : neighbours)
+		result.reserve(_n.size());
+		for(const point& np : _n)
 		 result.push_back(rhs + _point<T>(np.x, np.y));
 		return result;
 	}
 
-	//! complexity: theoretically O(neighbours), but we implemented it too slow
+	//! complexity: theoretically O(_n), but we implemented it too slow
 	template<class Cont>
 	std::set<typename Cont::value_type> operator()(const Cont& rhs) const
 	{
 		using point_type = typename Cont::value_type;
 		std::set<point_type> result;
 		for(const point_type& p : rhs)
-		for(const point& np : neighbours)
+		for(const point& np : _n)
 		 result.insert(p + point_type(np.x, np.y));
 		return result;
 	}
@@ -379,7 +379,7 @@ public:
 	template<class Functor>
 	void for_each(const point& p, const Functor& ftor) const
 	{
-		for(const point& np : neighbours)
+		for(const point& np : _n)
 		 ftor(p + np);
 	}
 
@@ -387,7 +387,7 @@ public:
 	bool for_each_bool(const point& p, const Functor& ftor) const
 	{
 		bool ok = true;
-		for(auto itr = neighbours.cbegin(); itr != neighbours.cend() && ok; ++itr)
+		for(auto itr = _n.cbegin(); itr != _n.cend() && ok; ++itr)
 		 ok = ok && ftor(p + *itr);
 		return ok;
 	}
@@ -395,7 +395,7 @@ public:
 	friend std::ostream& operator<< (std::ostream& stream,
 		const _n_t& n) {
 		stream << "Neighbourhood: (";
-		for( const point& p : n.neighbours) { stream << p << ", "; }
+		for( const point& p : n._n) { stream << p << ", "; }
 		stream << ")";
 		return stream;
 	}
@@ -410,7 +410,7 @@ public:
 
 	bool is_neighbour_of(const point& p1, const point& p2) const
 	{
-		return std::binary_search(neighbours.begin(), neighbours.end(), p1-p2);
+		return std::binary_search(_n.begin(), _n.end(), p1-p2);
 	}
 
 /*	void shift(const point& p)
@@ -460,14 +460,14 @@ class n_t_2 : public _n_t<T>
 				assert(center_cell.x < 0);
 				center_cell.set(x, y);
 			case 2: // not center, but input
-				neighbours.push_back(point(x,y));
+				_n.push_back(point(x,y));
 				break;
 			default: break;
 			}
 		}
 
 		// make it all relative to center_cell
-		for(point& p : neighbours)
+		for(point& p : _n)
 		{
 			// TODO: can be computed from dim?
 			// TODO: but do not remove p-=...
@@ -485,11 +485,11 @@ public:
 		//: //center_cell(_center_cell),
 		//dim(_dim)
 	{
-		neighbours.reserve(_dim.area());
+		_n.reserve(_dim.area());
 		_dim_cont<Traits> cont(_dim.height(), _dim.width(), 0);
 		for( const point& p : cont )
 		{
-			neighbours.push_back(p - _center_cell);
+			_n.push_back(p - _center_cell);
 			//bb.add_point(neighbours.back());
 		}
 	}
@@ -500,19 +500,21 @@ public:
 		std::size_t reserve = 0;
 		for(const grid_t::value_type& c : grid)
 		 reserve += (c >= 0);
-		neighbours.reserve(reserve);
+		_n.reserve(reserve);
 
 		for(const point& p : grid.points())
 		if(grid[p])
-		 neighbours.push_back(p - _center_cell);
+		 _n.push_back(p - _center_cell);
 	}
 
-	_n_t(const Container&& cont) : neighbours(cont) {}
+	_n_t(const Container&& cont) : _n(cont) {}
+
+	const Container& neighbours() const noexcept { return _n; }
 
 	//! assumes that no borders exist
 	template<std::size_t N>
 	constexpr _n_t(const std::array<point, N>& arr)
-		: neighbours(arr)
+		: _n(arr)
 	{
 	}
 
