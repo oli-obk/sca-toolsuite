@@ -316,8 +316,10 @@ public:
 	}
 
 	bool operator<(const _grid_t& rhs) const { return _data < rhs._data; }
-	bool operator==(const _grid_t& rhs) const {
+	bool operator==(const _grid_t& rhs) const { // TODO! compare dimension, too!
 		return _data == rhs._data; }
+	bool operator!=(const _grid_t& rhs) const { // TODO! compare dimension, too!
+		return ! (*this == rhs); }
 
 	const std::vector<cell_t>& data() const { return _data; }
 	std::vector<cell_t>& data() { return _data; } // TODO: remove this soon

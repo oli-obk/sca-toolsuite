@@ -36,7 +36,8 @@ HEADERS += res/io.h res/stack_algorithm.h \
     res/ca_table.h \
     res/bitgrid.h \
     res/ca_eqs.h \
-    res/traits.h
+    res/traits.h \
+    res/util.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \

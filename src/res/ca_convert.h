@@ -36,6 +36,7 @@ class tv_ctor
 
 	using u_coord_t = typename def_coord_traits::u_coord_t;
 
+	bool _rot, _mirr;
 	const ca::n_t n_in, n_out;
 	const point center_in, center_out;
 	const dimension n_dim;
@@ -43,14 +44,6 @@ class tv_ctor
 	const rect rect_max;
 	grid_t _in_grid;
 	std::vector<ca::trans_t> table; //!< unsorted
-
-	rect get_rect_max() const
-	{
-		return rect(point(std::min(rect_in.ul().x, rect_out.ul().x),
-				std::min(rect_in.ul().y, rect_out.ul().y)),
-			point(std::max(rect_in.lr().x, rect_out.lr().x),
-				std::max(rect_in.lr().y, rect_out.lr().y)));
-	}
 
 	bool fits(const dimension& in_dim, const dimension& out_dim)
 	{
@@ -112,9 +105,9 @@ class tv_ctor
 	//! family of 8 trans functions, subgroup of D4
 	mutable trans_t tmp_tfs[8];
 
-	bool index_ok(int idx, bool rot, bool mirr)
+	bool index_ok(int idx)
 	{
-		return (mirr || !(idx&4)) && (rot || !(idx&3));
+		return (_mirr || !(idx&4)) && (_rot || !(idx&3));
 	}
 
 	template<class Traits, class CellTraits>
@@ -122,9 +115,7 @@ class tv_ctor
 		const _grid_t<Traits, CellTraits>& input_grid,
 		const _grid_t<Traits, CellTraits>& output_grid,
 		const point& p_in,
-		const point& p_out,
-		bool rot,
-		bool mirr)
+		const point& p_out)
 	{
 		// family of 8 trans functions, subgroup of D4
 	//	assert(bb.x_size() == input_grid.dim().width());
@@ -133,7 +124,7 @@ class tv_ctor
 		// TODO: unroll?
 		int used = 0;
 		for(int i = 0; i < 8; ++i)
-		if(index_ok(i, rot, mirr))
+		if(index_ok(i))
 		{
 			++used;
 			add_single_tf(tmp_tfs + i, p_in, p_out, input_grid, output_grid, i);
@@ -152,7 +143,10 @@ class tv_ctor
 	}
 
 public:
-	tv_ctor(const ca::n_t& n_in, const ca::n_t& n_out) :
+	tv_ctor(const ca::n_t& n_in, const ca::n_t& n_out,
+		bool _rot, bool _mirr) :
+		_rot(_rot),
+		_mirr(_mirr),
 		n_in(n_in),
 		n_out(n_out),
 		center_in(n_in.get_center_cell()),
@@ -160,7 +154,7 @@ public:
 		n_dim(n_in.get_dim()),
 		rect_in(n_in.get_rect()),
 		rect_out(n_out.get_rect()),
-		rect_max(get_rect_max()),
+		rect_max(rect_cover(rect_in, rect_out)),
 		_in_grid(n_dim, 0),
 		tmp_tfs {
 			trans_t(n_in.size(), n_out.size()),
@@ -179,10 +173,8 @@ public:
 #endif
 	}
 
-	void add(const grid_t& in_grid, const grid_t& out_grid, bool rot, bool mirr)
+	void add(const grid_t& in_grid, const grid_t& out_grid)
 	{
-		// TODO: read rot, mirr from file
-
 		enum class mode_t
 		{
 			equal,
@@ -206,7 +198,7 @@ public:
 				std::cerr << "Scanning rect: " << rc << std::endl;
 #endif
 				for(const point& p_in : rc)
-				 add_transition_functions(in_grid, out_grid, p_in, p_in, rot, mirr);
+				 add_transition_functions(in_grid, out_grid, p_in, p_in);
 			}
 				break;
 			case mode_t::fit:
@@ -219,7 +211,7 @@ public:
 				auto itr_out = rc_out.begin();
 
 				for( ; itr_in != rc_in.end(); ++itr_in, ++itr_out)
-				 add_transition_functions(in_grid, out_grid, *itr_in, *itr_out, rot, mirr);
+				 add_transition_functions(in_grid, out_grid, *itr_in, *itr_out);
 			}
 				break;
 			default:
@@ -261,11 +253,17 @@ public:
 		table(get_table_from_cons(std::move(cons.table)))
 	{}
 
-	static trans_vector_t from_stream(std::istream& in = std::cin,
-		bool rot = true, bool mirr = true)
+	static trans_vector_t from_stream(std::istream& in = std::cin)
 	{
 		point center;
 		std::size_t center_count = 0;
+
+		bool _rot, _mirr;
+		in >> _rot;
+		in >> _mirr;
+
+		std::cerr << _rot << _mirr << std::endl;
+
 		grid_t center_grid(in, 0);
 		for(const point& p : center_grid.points())
 		if(center_grid[p])
@@ -287,12 +285,12 @@ public:
 		grid_t center_grid_3(in, 0);
 		ca::n_t n_out(center_grid_3, center);
 
-		tv_ctor cons(n_in, n_out);
+		tv_ctor cons(n_in, n_out, _rot, _mirr);
 		while(in.good())
 		{
 			const grid_t in_grid(in, 0);
 			const grid_t out_grid(in, 0);
-			cons.add(in_grid, out_grid, rot, mirr);
+			cons.add(in_grid, out_grid);
 		}
 
 		return trans_vector_t(std::move(cons));
@@ -371,25 +369,67 @@ public:
 	void dump_as_table(std::ostream& stream) const
 	{
 		// TODO: count num of states?
-		{
-	//		_table_hdr_t hdr(3, n_in, n_out);
-	//		hdr.dump(stream);
-		}
-
-
 		table_t t(table, 3, convert<bitgrid_traits>(n_in),
 			convert<bitgrid_traits>(n_out));
 		t.dump(stream);
-
 	}
 };
+
+// TODO: inside name_type_map_t?
+template<class Enum>
+struct name_type_pair
+{
+	const char* name;
+	Enum e;
+};
+
+template<std::size_t N, class Enum, Enum False>
+struct name_type_map_t
+{
+	// TODO: binary tree using map's stack allocator?
+	name_type_pair<Enum> map[N];
+
+	using pair_t = name_type_pair<Enum>;
+
+	// TODO: private stuff?
+	Enum operator[](const char* _name) const
+	{
+		const pair_t* const end = map + N;
+		Enum result = False;
+		for(const pair_t* ptr = map;
+			result == False && ptr != end; ++ptr)
+		if(!strcmp(ptr->name, _name))
+		 result = ptr->e;
+		return result;
+	}
+
+	void dump_formats(std::ostream& stream) const
+	{
+		const pair_t* const end = map + N;
+		for(const pair_t* ptr = map; ptr != end; ++ptr)
+		 stream << " * " << ptr->name << std::endl;
+	}
+};
+
+
+
+
 
 enum class type
 {
 	formula,
 	table,
-	grids
+	grids,
+	invalid
 };
+
+
+name_type_map_t<3, type, type::invalid> name_type_map = {{
+	{ "formula", type::formula },
+	{ "table", type::table },
+	{ "grids", type::grids }
+}};
+
 
 class converter_base {
 protected:
@@ -400,11 +440,11 @@ protected:
 template<type in, type out>
 class converter
 {
-	dont_instantiate_me_id<type, in> d;
+	util::dont_instantiate_me_id<type, in> d;
 };
 
 template<type T>
-class converter<T, T>
+struct converter<T, T>
 {
 	void operator()(std::istream& i, std::ostream& o){
 		o << i.rdbuf();
@@ -424,11 +464,10 @@ class converter<type::table, type::grids>
 template<>
 struct converter<type::grids, type::formula> : converter_base
 {
-	void operator()(in_t& in = std::cin, out_t& out = std::cout,
-		bool rot = true, bool mirr = true) const
+	void operator()(in_t& in = std::cin, out_t& out = std::cout) const
 	{
 		const trans_vector_t tv = trans_vector_t::
-			from_stream(in, rot, mirr);
+			from_stream(in);
 		tv.dump_as_formula(out);
 	}
 };
@@ -436,14 +475,102 @@ struct converter<type::grids, type::formula> : converter_base
 template<>
 struct converter<type::grids, type::table> : converter_base
 {
-	void operator()(in_t& in = std::cin, out_t& out = std::cout,
-		bool rot = true, bool mirr = true) const
+	void operator()(in_t& in = std::cin, out_t& out = std::cout) const
 	{
 		const trans_vector_t tv = trans_vector_t::
-			from_stream(in, rot, mirr);
+			from_stream(in);
 		tv.dump_as_table(out);
 	}
 };
+
+template<>
+struct converter<type::table, type::grids> : converter_base
+{
+	void operator()(in_t& in = std::cin, out_t& out = std::cout
+		) const
+	{
+		// need to read the whole table for mirroring...
+		// (mirroring is unimpl)
+		const table_t tbl(in);
+		tbl.dump_as_grids(out);
+	}
+};
+
+template<>
+struct converter<type::table, type::formula> : converter_base
+{
+	void operator()(in_t&  = std::cin, out_t&  = std::cout
+		) const {
+		throw "Sorry, unimplemented.\n"
+			"Please use this order: table -> grids -> formula.";
+	}
+};
+
+template<>
+struct converter<type::formula, type::table> : converter_base
+{
+	void operator()(in_t&  = std::cin, out_t&  = std::cout
+		) const {
+		throw "Sorry, unimplemented.\n"
+			"Coming soon...";
+	}
+};
+
+template<>
+struct converter<type::formula, type::grids> : converter_base
+{
+	void operator()(in_t&  = std::cin, out_t&  = std::cout
+		) const {
+		throw "Sorry, unimplemented.";
+	}
+};
+
+template<type t_in, type t_out>
+void convert(std::istream& in = std::cin,
+	std::ostream& out = std::cout)
+{
+	converter<t_in, t_out> c; c(in, out);
+}
+
+template<type T1>
+void _convert_dynamic(type t2, std::istream& in, std::ostream& out)
+{
+	switch(t2)
+	{
+		case type::formula:
+			convert<T1, type::formula>(in, out); break;
+		case type::table:
+			convert<T1, type::table>(in, out); break;
+		case type::grids:
+			convert<T1, type::grids>(in, out); break;
+		default: throw "invalid ca type";
+	}
+}
+
+void convert_dynamic(type t1, type t2,
+	std::istream& in = std::cin,
+	std::ostream& out = std::cout)
+{
+	switch(t1)
+	{
+		case type::formula:
+			_convert_dynamic<type::formula>(t2, in, out); break;
+		case type::table:
+			_convert_dynamic<type::table>(t2, in, out); break;
+		case type::grids:
+			_convert_dynamic<type::grids>(t2, in, out); break;
+		default: throw "invalid ca type";
+	}
+}
+
+void convert_dynamic(const char* t1, const char* t2,
+	std::istream& in = std::cin,
+	std::ostream& out = std::cout)
+{
+	convert_dynamic(name_type_map[t1], name_type_map[t2],
+		in, out);
+}
+
 
 }}
 

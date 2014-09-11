@@ -401,8 +401,19 @@ public:
 		else
 		 return false;
 		return true;
-	}
+	}	
 };
+
+template<class T, class S>
+_rect<T,S> rect_cover(const _rect<T,S>& r1, const _rect<T,S>& r2)
+{
+	using point = _point<T>;
+	return _rect<T,S>(point(std::min(r1.ul().x, r2.ul().x),
+			std::min(r1.ul().y, r2.ul().y)),
+		point(std::max(r1.lr().x, r2.lr().x),
+			std::max(r1.lr().y, r2.lr().y)));
+}
+
 using rect = _rect<def_coord_traits, _rect_storage_default<def_coord_traits>>;
 
 template<class Traits>
@@ -416,6 +427,12 @@ struct _dimension : public _rect<Traits, _rect_storage_origin<Traits>>
 	_dimension() {}
 };
 using dimension = _dimension<def_coord_traits>;
+
+template<class TDest, class TSrc>
+inline _dimension<TDest> convert(const _dimension<TSrc>& src)
+{
+	return _dimension<TDest>(src.dx(), src.dy());
+}
 
 // TODO: inherit from bounding box
 template<class Traits>

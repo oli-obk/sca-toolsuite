@@ -114,9 +114,9 @@ public:
 					 stream << *itr;
 					else
 					{
-						stream << "(" << (int)itr->x-skipped
-						       << ".." << (int)itr->x
-						       << ", " << (int)itr->y << ")";
+						stream << "(" << +itr->x-skipped
+						       << ".." << +itr->x
+						       << ", " << +itr->y << ")";
 						skipped = 0;
 					}
 

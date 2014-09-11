@@ -543,7 +543,7 @@ public:
 				//_grid[2][n_out.neighbours()] = 1; // reserve
 			}
 			else {
-				std::cout << "rejected: "<< cp <<std::endl;
+//				std::cout << "rejected: "<< cp <<std::endl;
 				cp = point(-1, -1);
 			}
 		//	std::cout <<

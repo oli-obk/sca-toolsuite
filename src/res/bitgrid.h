@@ -233,7 +233,7 @@ public:
 		const bitgrid_t& g) {
 		const bit_storage_w str(g.grid, g.each);
 		const number_grid ng{};
-		const ::dimension tmp_dim(g._dim.width(), g._dim.height()); // TODO
+		const ::dimension tmp_dim(g._dim.dx(), g._dim.dy()); // TODO
 		write_grid(&ng, stream, tmp_dim, g.bw, str);
 		return stream;
 	}
@@ -251,6 +251,14 @@ public:
 	const_iterator cend() const noexcept { return const_iterator(grid, each, _dim, bw, false); }
 
 	storage_t raw_value() const noexcept { return grid; }
+
+	bool operator==(const bitgrid_t& other) const noexcept {
+		return grid == other.grid;
+	}
+	bool operator!=(const bitgrid_t& other) const noexcept {
+		return ! operator==(other);
+	}
+
 };
 
 

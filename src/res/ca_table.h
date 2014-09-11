@@ -24,6 +24,8 @@
 #include "ca_eqs.h"
 #include "bitgrid.h"
 
+#include <bitset> // TODO
+
 namespace sca { namespace ca {
 
 namespace tbl_detail
@@ -69,6 +71,8 @@ protected:
 	using coord_t = typename bitgrid_traits::coord_t;
 	using point = _point<bitgrid_traits>;
 	using dimension = _dimension<bitgrid_traits>;
+	using rect = _rect<bitgrid_traits>;
+	using grid_t = _grid_t<bitgrid_traits, bitgrid_cell_traits>;
 public:
 	using n_t = _n_t<bitgrid_traits, std::vector<point>>;
 
@@ -116,6 +120,30 @@ protected:
 	//! O(1)
 	void dump(std::ostream& stream) const;
 
+	void dump_as_grids(std::ostream& stream) const
+	{
+		const rect rect_max = rect_cover(
+			_n_in.get_rect(), _n_out.get_rect());
+
+		const ::point both_center = convert<def_coord_traits>(-rect_max.ul());
+
+		::grid_t tmp_grid(convert<def_coord_traits>(dimension(rect_max.dx(), rect_max.dy())), 0);
+
+		tmp_grid[both_center] = 1;
+		stream << tmp_grid << std::endl;
+		tmp_grid[both_center] = 0;
+
+		convert<def_coord_traits>(_n_in).for_each(convert<def_coord_traits>(both_center), [&](const ::point& p){ tmp_grid[convert<def_coord_traits>(p)] = 1; });
+		stream << tmp_grid << std::endl;
+		convert<def_coord_traits>(_n_in).for_each(convert<def_coord_traits>(both_center), [&](const ::point& p){ tmp_grid[convert<def_coord_traits>(p)] = 0; });
+
+		// it's getting boring...
+		// TODO: callback for that
+		convert<def_coord_traits>(_n_out).for_each(convert<def_coord_traits>(both_center), [&](const ::point& p){ tmp_grid[convert<def_coord_traits>(p)] = 1; });
+		stream << tmp_grid << std::endl;
+		convert<def_coord_traits>(_n_out).for_each(convert<def_coord_traits>(both_center), [&](const ::point& p){ tmp_grid[convert<def_coord_traits>(p)] = 0; });
+	}
+
 	_table_hdr_t(std::istream& stream);
 
 	// TODO: single funcs to initialize and make const?
@@ -156,7 +184,6 @@ private:
 //	using typename b::cell_t;
 //	using typename b::point;
 
-private:
 	static TblCont<uint64_t> fetch_tbl(std::istream& stream, unsigned size_each, unsigned n_size)
 	{
 		TblCont<uint64_t> res(1 << (size_each * n_size));
@@ -231,30 +258,37 @@ private:
 		u_int64_t operator()(const bitgrid_t& grid) const
 		{
 			// TODO!! thread safety!
-			static dimension n_out_dim = _n_out.get_dim();
+			//static dimension n_out_dim = _n_out.get_dim();
 
-			bitgrid_t bit_tmp_result(size_each, n_out_dim, 0, 0);
+			bitgrid_t bit_tmp_result(size_each, dimension(_n_out.size(), 1), 0, 0);
 
 			if(itr != tf.cend() &&
 				grid_has_conf(grid, itr->get_full_input()))
 			{
-		//		std::cerr << "equal:" << grid << ", " << *itr << std::endl;
+				std::cerr << "equal:" << grid << ", " << *itr << std::endl;
 
-				for(const auto& p : ca::counted(_n_out))
-				 bit_tmp_result[center_out + p] = itr->get_output()[p.id()];
+				for(std::size_t i = 0; i < _n_out.size(); ++i)
+				 bit_tmp_result[point(i, 0)] = itr->get_output()[i];
+
+				for(std::size_t i = 0; i < _n_out.size(); ++i)
+				 bit_tmp_result[point(i, 0)] = itr->get_output()[i];
+			//	 bit_tmp_result[center_out + p] = itr->get_output()[p.id()];
 
 				++itr;
 			}
 			else
 			{
-		/*		if(itr == tf.cend())
+				if(itr == tf.cend())
 				 std::cerr << "differ:" << grid << ", " << "(end)" << std::endl;
 				else
-				 std::cerr << "differ:" << grid << ", " << *itr << std::endl;*/
+				 std::cerr << "differ:" << grid << ", " << *itr << std::endl;
 
 				for(const auto& p : ca::counted(_n_out))
-				 bit_tmp_result[center_out + p] = grid[center + p];
+				 bit_tmp_result[point(p.id(), 0)] = grid[center + p];
+			//	 bit_tmp_result[center_out + p] = grid[center + p];
 			}
+
+			std::cerr << grid << "->" << bit_tmp_result << std::endl;
 
 			return bit_tmp_result.raw_value();
 		}
@@ -276,11 +310,14 @@ private:
 		std::size_t percent = 0, cur;
 		std::cerr << "Precalculating table, please wait..." << std::endl;
 
-		bitgrid_t tbl_idx(size_each, dimension(_n_in.size(), 0), 0, 0);
+		bitgrid_t tbl_idx(size_each, dimension(_n_in.size(), 1), 0, 0);
 
 		for(std::size_t i = 0; i < max; ++i)
 		{
 			// evaluate
+
+			std::cerr << "tbl idx: " << (int)tbl_idx.raw_value() << std::endl;
+
 			tbl.at(tbl_idx.raw_value()) = ftor(grid);
 
 //			std::cerr << grid << " -> " << tmp_result << std::endl;
@@ -302,8 +339,9 @@ private:
 			{
 				bool go_on = true;
 
-				int digit = 0;
-				for(auto itr = _n_in.cbegin(); go_on && (itr != _n_in.cend()); ++itr)
+				int digit = _n_in.size() - 1; // count up the counter backwards
+				for(auto itr = _n_in.neighbours().crbegin();
+					go_on && (itr != _n_in.neighbours().crend()); ++itr)
 				{
 					const point& p = *itr;
 		//			std::cerr << "increasing: " << p << " = " << (center + p) << std::endl;
@@ -314,7 +352,7 @@ private:
 					bit_reference r2 = tbl_idx[point(digit, 0)];
 					r2 = ((r2 + 1) % own_num_states);
 
-					++digit;
+					--digit;
 				}
 			}
 		}
@@ -347,6 +385,39 @@ public:
 		stream.write((char*)table.data(), table.size() * 8);
 	}
 
+
+	void dump_as_grids(std::ostream& stream) const
+	{
+		// TODO: find out symmetry...
+		bool _rot = false, _mirr = false;
+
+		stream << _rot << std::endl << _mirr << " "/*<< std::endl*/;
+
+		_table_hdr_t::dump_as_grids(stream);
+
+		::grid_t grid_in(convert<def_coord_traits>(_n_in.get_dim()), 0),
+			grid_out(convert<def_coord_traits>(_n_out.get_dim()), 0);
+
+		for(uint64_t j = 0; j < table.size(); ++j)
+		{
+			grid_in.reset(0);
+			grid_out.reset(0);
+
+			bitgrid_t tbl_idx(size_each, dimension(_n_in.size(), 1), 0, j);
+
+			std::cout << "j:" << j << ", tbl_idx: "<< tbl_idx<< std::endl;
+
+			for(std::size_t i = 0; i < _n_in.size(); ++i)
+			 grid_in[convert<def_coord_traits>(center + _n_in[i])] = tbl_idx[point(i, 0)];
+
+			for(std::size_t i = 0; i < _n_out.size(); ++i)
+			 grid_out[convert<def_coord_traits>(center_out + _n_out[i])] = table[j];
+
+			if(grid_in != grid_out) // TODO: n size...
+			 stream << grid_in << std::endl << grid_out << std::endl;
+		}
+	}
+
 	_table_t(std::istream& stream) :
 		_table_hdr_t(stream),
 		table(fetch_tbl(stream, size_each, _n_in.size()))
@@ -371,7 +442,6 @@ public:
 		table(calculate_table_trans(tf))
 	{
 	}
-
 
 	//! Note: the type traits here can be different than ours
 	//! Runtime: O(N)
@@ -403,6 +473,7 @@ public:
 			? table[bitgrid.raw_value()]
 			: *cell_ptr; // can not happen, except for border -> don't change
 	}
+
 private:
 	//! version for multi-targets
 	template<class T, class CT>
@@ -430,7 +501,7 @@ public:
 
 		(void)p; // for a ca, the coordinates are no cell input
 	//	bitgrid_t bitgrid(size_each, _n_in.get_dim(), 0, 0, 0);
-		bitgrid_t bitgrid(size_each, dimension(_n_in.size(), 0), 0, 0, 0);
+		bitgrid_t bitgrid(size_each, dimension(_n_in.size(), 1), 0, 0, 0);
 
 		grid_cell_t min = std::numeric_limits<grid_cell_t>::max(),
 			max = std::numeric_limits<grid_cell_t>::min(); // any better alternative?
@@ -440,13 +511,24 @@ public:
 			const point& p = _p;
 			const grid_cell_t* const ptr = cell_ptr + (grid_cell_t)(p.y * dim.width() + p.x);
 			bitgrid[point(_p.id(), 0)] = *ptr;
-			// TODO: if min is reset, it can maybe note be max? -> faster....
+			// TODO: if min is reset, it can maybe not be max? -> faster....
 			min = std::min(min, *ptr);
 			max = std::max(max, *ptr);
 		}
 
 		// todo: better hashing function for not exactly n bits?
 		const bool in_range = (min >= 0 && max < (int)own_num_states);
+
+		if(in_range) {
+		bitgrid_t tmp(size_each, dimension(_n_in.size(), 1), 0, table.at(bitgrid.raw_value()));
+		if(tmp!=bitgrid)
+		{
+		 std::cerr << p << " -> raw (falschrum): " << bitgrid << std::endl;
+		std::cerr << " -> table:" << tmp << std::endl;
+		}
+		}
+
+
 		return in_range
 			? tar_write<T, GCT>(table.at(bitgrid.raw_value()), cell_tar, tar_dim)
 			: *cell_ptr; // can not happen, except for border -> don't change

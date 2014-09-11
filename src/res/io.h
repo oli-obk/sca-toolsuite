@@ -479,7 +479,7 @@ inline void write_grid(const base_grid* grid_class, std::ostream& os, const _dim
 		// TODO: reserve?
 
 		for(unsigned x = border; x < (unsigned)dim.width() - border; x++) {
-			ss << storage_class[x + (dim.width())*y]; // TODO: two [] operators
+			ss << +storage_class[x + (dim.width())*y]; // TODO: two [] operators
 			ss << ((x == last_symbol) ? '\n' : ' ');
 		}
 		os << ss.str();

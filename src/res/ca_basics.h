@@ -25,6 +25,8 @@
 #include <algorithm>
 #include <array>
 #include <type_traits>
+
+#include "util.h"
 #include "grid.h" // TODO: make grid a template?
 
 namespace sca { namespace ca {
@@ -112,7 +114,7 @@ public:
 		{
 			if(lhs.input_set[i] || rhs.input_set[i])
 			{
-				// if one of tem is not set,
+				// if one of them is not set,
 				// the one which is not set is smaller
 				if(!(lhs.input_set[i]&&rhs.input_set[i]))
 				 return (int)lhs.input_set[i]
@@ -178,22 +180,10 @@ inline bool compare_by_input(const trans_t& lhs,
 	return _compare_by_input(lhs, rhs);
 }
 
-// TODO: make a utils.h
-template<typename ...> struct falsify : std::false_type { };
-template<typename T, T Arg> class falsify_id : std::false_type { };
-template<typename ...Args>
-class dont_instantiate_me {
-	static_assert(falsify<Args...>::value, "This should not be instantiated.");
-};
-template<typename T, T Arg>
-class dont_instantiate_me_id {
-	static_assert(falsify_id<T, Arg>::value, "This should not be instantiated.");
-};
-
 // TODO: std::array
 template<class T>
 std::size_t get_pos(const T&, typename T::const_reference) {
-	return dont_instantiate_me<T>(), 0;
+	return util::dont_instantiate_me<T>(), 0;
 }
 
 template<class VT>
@@ -210,6 +200,7 @@ template<class Traits, class Container>
 class _n_t
 {
 	using point = _point<Traits>;
+	using rect = _rect<Traits>;
 	using dimension = _dimension<Traits>;
 	using u_coord_t = typename Traits::u_coord_t;
 protected:
