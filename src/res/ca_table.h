@@ -212,7 +212,7 @@ private:
 		bool grid_has_conf(const Grid& g, const Conf& c) const
 		{
 			conf_t::const_iterator citr = c.cbegin();
-			const auto cb = [&](const point& p) {
+			const auto cb = [&](const _point<bitgrid_traits>& p) {
 				return ((int)g[p]) == *(citr++);
 			};
 			return _n_in.for_each_bool(center, cb);
