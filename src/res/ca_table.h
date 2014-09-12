@@ -103,7 +103,7 @@ protected:
 	// data for outside:
 	const u_coord_t bw; // TODO: u_coord_t
 
-	static unsigned fetch_8(std::istream& stream);
+	static int fetch_8(std::istream& stream);
 
 	n_t fetch_n(std::istream& stream) const;
 	void put_n(std::ostream &stream, const n_t &n) const;
@@ -115,7 +115,7 @@ public:
 	}
 	const n_t& n_out() const noexcept {  }*/
 protected:
-	static unsigned fetch_32(std::istream& stream);
+	static int fetch_32(std::istream& stream);
 
 	//! O(1)
 	void dump(std::ostream& stream) const;
@@ -315,8 +315,7 @@ private:
 		for(std::size_t i = 0; i < max; ++i)
 		{
 			// evaluate
-
-			std::cerr << "tbl idx: " << (int)tbl_idx.raw_value() << std::endl;
+//			std::cerr << "tbl idx: " << (int)tbl_idx.raw_value() << std::endl;
 
 			tbl.at(tbl_idx.raw_value()) = ftor(grid);
 
@@ -480,12 +479,17 @@ private:
 	int tar_write(const uint64_t& val, typename CT::cell_t *cell_tar,
 		const _dimension<T>& tar_dim) const
 	{
-		const bitgrid_t tar_grid(size_each, _n_in.get_dim(), 0, val);
+		const bitgrid_t tar_grid(size_each, dimension(_n_out.size(), 1), 0, val);
 		// copy tar_grid's result to *ptr
-		for(const point& p : _n_out)
+		for(const auto& _p : ca::counted(_n_out))
 		{
+			const point& p = _p;
 			const auto ptr = cell_tar + (p.y * (coord_t)tar_dim.width()) + p.x;
-			*ptr = tar_grid[p];
+			if(*ptr != tar_grid[point(_p.id(), 0)]) {
+				std::cout << "ptr:" << *ptr << std::endl;
+			std::cout << "p: " << p << ", tar_grid: " << tar_grid << " => " << tar_grid[point(_p.id(), 0)] << std::endl;
+			}
+			*ptr = tar_grid[point(_p.id(), 0)];
 		}
 		return tar_grid[center_out];
 	}
@@ -508,30 +512,81 @@ public:
 
 		for(const auto& _p : ca::counted(_n_in))
 		{
-			const point& p = _p;
-			const grid_cell_t* const ptr = cell_ptr + (grid_cell_t)(p.y * dim.width() + p.x);
+			const point& p2 = _p;
+		/*	std::cout << typeid(decltype(_p)).name() << std::endl;
+			std::cout << p2.y << "," << (coord_t)dim.width()<<  ", " << p2.x << std::endl;
+			std::cout << (coord_t)(p2.y * (coord_t)dim.width() + p2.x) << std::endl;*/
+			const grid_cell_t* const ptr = cell_ptr + (coord_t)(p2.y * (coord_t)dim.width() + p2.x); // TODO: check signs...
 			bitgrid[point(_p.id(), 0)] = *ptr;
 			// TODO: if min is reset, it can maybe not be max? -> faster....
+//			std::cout << *ptr << std::endl;
 			min = std::min(min, *ptr);
 			max = std::max(max, *ptr);
+
+	//					std::cout << "NN " << (int)(coord_t)(p2.y * dim.width() + p2.x) << std::endl;
+
 		}
 
 		// todo: better hashing function for not exactly n bits?
 		const bool in_range = (min >= 0 && max < (int)own_num_states);
+//std::cout << p << " -> raw (falschrum): " << bitgrid << std::endl;
+
+	#if 0
+		bitgrid_t tmp(size_each, dimension(_n_out.size(), 1), 0, table.at(bitgrid.raw_value()));
 
 		if(in_range) {
-		bitgrid_t tmp(size_each, dimension(_n_in.size(), 1), 0, table.at(bitgrid.raw_value()));
+//		bitgrid_t tmp(size_each, dimension(_n_out.size(), 1), 0, table.at(bitgrid.raw_value()));
 		if(tmp!=bitgrid)
 		{
-		 std::cerr << p << " -> raw (falschrum): " << bitgrid << std::endl;
-		std::cerr << " -> table:" << tmp << std::endl;
+		 std::cout << p << " -> raw (falschrum): " << bitgrid << std::endl;
+		std::cout << " -> table:" << tmp << std::endl;
+		for(const auto& p2 : _n_out)
+		{
+			const grid_cell_t* const ptr1 = cell_ptr + (coord_t)(p2.y * (coord_t)dim.width() + p2.x);
+			const grid_cell_t* const ptr2 = cell_tar + (coord_t)(p2.y * (coord_t)tar_dim.width() + p2.x);
+			if(*ptr1 != *ptr2)
+			{
+				std::cout << "p, p2: " << p << ", " << p2 << " -> " << *ptr1 << " != " << *ptr2 << std::endl;
+				throw "up";
+			}
+		}
 		}
 		}
 
-
-		return in_range
+		std::cout << p << ": " << bitgrid << std::endl;
+		return (in_range && (tmp!=bitgrid))
 			? tar_write<T, GCT>(table.at(bitgrid.raw_value()), cell_tar, tar_dim)
 			: *cell_ptr; // can not happen, except for border -> don't change
+#else
+		if(in_range)
+		{
+			bitgrid_t tmp(size_each, dimension(_n_out.size(), 1), 0, table.at(bitgrid.raw_value()));
+
+			if(tmp!=bitgrid)
+			{
+			 std::cout << p << " -> raw (falschrum): " << bitgrid << std::endl;
+			std::cout << " -> table:" << tmp << std::endl;
+			for(const auto& p2 : _n_out)
+			{
+				const grid_cell_t* const ptr1 = cell_ptr + (coord_t)(p2.y * (coord_t)dim.width() + p2.x);
+				const grid_cell_t* const ptr2 = cell_tar + (coord_t)(p2.y * (coord_t)tar_dim.width() + p2.x);
+				if(*ptr1 != *ptr2)
+				{
+					std::cout << "p, p2: " << p << ", " << p2 << " -> " << *ptr1 << " != " << *ptr2 << std::endl;
+				//	throw "up";
+				}
+			}
+			}
+
+			return (tmp!=bitgrid)
+			? tar_write<T, GCT>(table.at(bitgrid.raw_value()), cell_tar, tar_dim)
+			: *cell_ptr;
+
+		}
+		else
+		 return *cell_ptr;
+
+#endif
 	}
 
 };

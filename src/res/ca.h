@@ -553,6 +553,9 @@ public:
 
 		*new_grid = *old_grid; // TODO: necessary to copy _all_ points?
 
+		if(*new_grid != *old_grid)
+		 throw "not equal";
+
 	//	for(const point& p : cells_to_check )
 	//	if(try_change.find(p) != try_change.end())
 		for(const point& p : change_order )
@@ -575,7 +578,7 @@ public:
 		{
 
 			// compute next state on advance
-			(*new_grid)[p] = ca_calc.next_state
+			/*(*new_grid)[p] =*/ ca_calc.next_state // TODO?
 					(&((*old_grid)[p]),
 						p, _grid->internal_dim(),
 						&((*new_grid)[p]), _grid->internal_dim());

@@ -57,9 +57,9 @@ tbl_detail::version_t::version_t(const uint32_t &i)
 	}
 }
 
-unsigned _table_hdr_t::fetch_8(std::istream &stream)
+int _table_hdr_t::fetch_8(std::istream &stream)
 {
-	uint8_t res;
+	int8_t res;
 	stream.read((char*)&res, 1);
 	return res;
 }
@@ -83,17 +83,17 @@ void _table_hdr_t::put_n(std::ostream &stream, const n_t& n) const
 	stream.write((char*)&tmp, 4);
 	const auto dump_point =
 		[&](const point& p) {
-		char x = p.x;
-		stream.write(&x, 1);
-		char y = p.y;
-		stream.write(&y, 1);
+		int8_t x = p.x;
+		stream.write((char*)&x, 1);
+		int8_t y = p.y;
+		stream.write((char*)&y, 1);
 	};
 	n.for_each(point::zero(), dump_point);
 }
 
-unsigned _table_hdr_t::fetch_32(std::istream &stream)
+int _table_hdr_t::fetch_32(std::istream &stream)
 {
-	uint32_t res;
+	int32_t res;
 	stream.read((char*)&res, 4);
 	//	const u_coord_t res_u = res; // TODO: ???
 	//	(void) res_u;
