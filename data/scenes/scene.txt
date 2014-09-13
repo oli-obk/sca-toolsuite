@@ -1,0 +1,57 @@
+description
+
+This shows a simple example of a CA.
+
+n
+
+2 2 2
+2 1 2
+2 2 2
+
+grids
+
+1
+
+0 0 0 0 0
+0 1 2 0 0
+0 0 0 0 0
+
+2
+
+0 0 0 0 0
+0 1 2 2 0
+0 0 0 0 0
+
+3
+
+0 0 0 0 0
+0 1 1 2 0
+0 0 0 0 0
+
+4
+
+0 0 0 0 0
+0 0 1 2 0
+0 0 0 0 0
+
+path
+
+1
+
+Initial setup
+mark red (x==1)
+
+2
+
+The head moves
+mark green active
+
+3
+
+The middle part moves
+mark blue (x==1) && (y>0) && (y<4)
+
+4
+
+The tail moves. Done.
+arrow 1 1 2 2
