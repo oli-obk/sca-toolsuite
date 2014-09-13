@@ -344,6 +344,14 @@ public:
 		return tmp += rhs;
 	}
 
+	_n_t inverted() const
+	{
+		Container res_cont = _n;
+		for(point& p : res_cont)
+		 p = -p;
+		return _n_t(std::move(res_cont));
+	}
+
 	//! complexity: O(_n)
 	template<class T>
 	std::vector<_point<T>> operator()(const _point<T>& rhs) const

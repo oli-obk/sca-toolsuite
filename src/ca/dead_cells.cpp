@@ -46,8 +46,6 @@ class MyProgram : public Program
 			def_cell_traits>;
 		calc_t ca(in);
 
-		std::cerr << "BW:" << ca.border_width() << std::endl;
-
 		grid_t input(std::cin, ca.border_width());
 
 		ca::dead_cell_scan<ca::table_t, def_coord_traits,
@@ -65,8 +63,8 @@ int main(int argc, char** argv)
 	HelpStruct help;
 	help.syntax = "ca/dead_cells <ca-table-file>"
 		"";
-	help.description = "\n"
-		"";
+	help.description = "TODO: describe 0, 1, 2, 3\n"
+		"...";
 	help.add_param("<ca-table-file>", "path to ca in table format");
 	help.input = "the input configuration";
 	help.output = "the dead cells grid";

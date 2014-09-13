@@ -34,6 +34,10 @@ class dead_cell_scan
 
 	using cell_t = typename CellTraits::cell_t;
 	using u_coord_t = typename Traits::u_coord_t;
+	using point = _point<Traits>;
+	using rect = _rect<Traits>;
+	using n_t = _n_t<Traits, std::vector<point>>;
+	using grid_t = _grid_t<Traits, CellTraits>;
 
 	const cell_t num_states;
 

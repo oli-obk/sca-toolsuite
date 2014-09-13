@@ -89,12 +89,13 @@ public:
 		table (size_each * n_w * n_w * uint_64)
 	*/
 
-protected:
+private:
 
 	const tbl_detail::header_t header;
 	const tbl_detail::version_t version;
 
 //	const u_coord_t n_w; // TODO: u_coord_t
+protected:
 	const unsigned own_num_states; //!< number of possible states per cell
 	const u_coord_t size_each; // TODO: u_coord_t
 	const n_t _n_in, _n_out;
@@ -103,21 +104,23 @@ protected:
 
 	// data for outside:
 	const u_coord_t bw; // TODO: u_coord_t
+
+private:
 	uint32_t _is_dead;
 
 	static int fetch_8(std::istream& stream);
+	static int fetch_32(std::istream& stream);
 
 	n_t fetch_n(std::istream& stream) const;
 	void put_n(std::ostream &stream, const n_t &n) const;
 
-public:
 /*	unsigned border_width() const noexcept { return bw; } // TODO: should ret reference
 	const n_t& n_in() const noexcept {
 		std::set<n_t::>
 	}
 	const n_t& n_out() const noexcept {  }*/
-protected:
 
+protected:
 	void set_dead_states(uint32_t bitmask) noexcept
 	{
 		_is_dead = bitmask;
@@ -127,10 +130,9 @@ protected:
 		  std::cerr << " * " << (int)i << std::endl;
 	}
 
+public:
 	bool is_dead(cell_t state) const noexcept {
 		return _is_dead & (1 << state); }
-
-	static int fetch_32(std::istream& stream);
 
 	//! O(1)
 	void dump(std::ostream& stream) const;
