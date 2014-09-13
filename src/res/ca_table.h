@@ -21,10 +21,11 @@
 #ifndef CA_TABLE_H
 #define CA_TABLE_H
 
+#include "utils/exceptions.h"
 #include "ca_eqs.h"
 #include "bitgrid.h"
 
-#include <bitset> // TODO
+#include <vector>
 
 namespace sca { namespace ca {
 
@@ -50,7 +51,7 @@ const header_t header;
 
 struct version_t
 {
-	static constexpr const uint32_t id = 2;
+	static constexpr const uint32_t id = 3;
 	version_t(const uint32_t& i);
 	version_t() {}
 	static void dump(std::ostream &stream)
@@ -102,6 +103,7 @@ protected:
 
 	// data for outside:
 	const u_coord_t bw; // TODO: u_coord_t
+	uint32_t _is_dead;
 
 	static int fetch_8(std::istream& stream);
 
@@ -115,6 +117,19 @@ public:
 	}
 	const n_t& n_out() const noexcept {  }*/
 protected:
+
+	void set_dead_states(uint32_t bitmask) noexcept
+	{
+		_is_dead = bitmask;
+		std::cerr << "Dead states: " << std::endl;
+		for(int i = 0; i < 32; ++i)
+		 if(bitmask & (1<<i))
+		  std::cerr << " * " << (int)i << std::endl;
+	}
+
+	bool is_dead(cell_t state) const noexcept {
+		return _is_dead & (1 << state); }
+
 	static int fetch_32(std::istream& stream);
 
 	//! O(1)
@@ -174,6 +189,9 @@ template<template<class ...> class TblCont, class Traits, class CellTraits>
 class _table_t : public _table_hdr_t // TODO: only for reading?
 {
 private:
+
+	constexpr static uint64_t entry_invalid() { return std::numeric_limits<uint64_t>::min(); }
+
 	// TODO!!! table can use uint8_t in many cases!
 	const TblCont<uint64_t> table;
 
@@ -207,7 +225,7 @@ private:
 			center_out(_n_out.get_center_cell())
 		{}
 
-		u_int64_t operator()(const bitgrid_t& grid) const
+		uint64_t operator()(const bitgrid_t& grid) const
 		{
 			// TODO!! thread safety!
 			static dimension n_out_dim = _n_out.get_dim();
@@ -255,7 +273,7 @@ private:
 			center_out(_n_out.get_center_cell())
 		{}
 
-		u_int64_t operator()(const bitgrid_t& grid) const
+		uint64_t operator()(const bitgrid_t& grid) const
 		{
 			// TODO!! thread safety!
 			//static dimension n_out_dim = _n_out.get_dim();
@@ -265,8 +283,9 @@ private:
 			if(itr != tf.cend() &&
 				grid_has_conf(grid, itr->get_full_input()))
 			{
+#ifdef TABLE_DEBUG
 				std::cerr << "equal:" << grid << ", " << *itr << std::endl;
-
+#endif
 				for(std::size_t i = 0; i < _n_out.size(); ++i)
 				 bit_tmp_result[point(i, 0)] = itr->get_output()[i];
 
@@ -278,10 +297,12 @@ private:
 			}
 			else
 			{
+#ifdef TABLE_DEBUG
 				if(itr == tf.cend())
 				 std::cerr << "differ:" << grid << ", " << "(end)" << std::endl;
 				else
 				 std::cerr << "differ:" << grid << ", " << *itr << std::endl;
+#endif
 
 				for(const auto& p : ca::counted(_n_out))
 				 bit_tmp_result[point(p.id(), 0)] = grid[center + p];
@@ -301,7 +322,7 @@ private:
 	TblCont<uint64_t> calculate_table(const Functor& ftor) const
 	{
 		TblCont<uint64_t> tbl;
-		tbl.resize(1 << (size_each * _n_in.size())); // ctor can not reserve
+		tbl.resize(1 << (size_each * _n_in.size()), entry_invalid()); // ctor can not reserve
 
 		const dimension n_in_dim(_n_in.get_dim().dx(), _n_in.get_dim().dy());
 		bitgrid_t grid(size_each, n_in_dim, 0, 0);
@@ -376,6 +397,47 @@ private:
 				size_each, _n_in, _n_out, center));
 	}
 
+
+	uint32_t states_dead_from_table()
+	{
+		uint32_t dead = ~0;
+
+		std::vector<int> in_id_of(_n_out.size(), -1);
+		for(std::size_t o = 0; o < _n_out.size(); ++o)
+		for(std::size_t i = 0; i < _n_in.size(); ++i) // TODO: zipe
+		if(_n_in[i] == _n_out[o])
+		 in_id_of[o] = i;
+
+		for(std::size_t o = 0; o < _n_out.size(); ++o)
+		if(in_id_of[o] == -1)
+		 return 0; // no cell can be active in this ca
+
+		for(uint64_t idx = 0; idx < table.size(); ++idx)
+		{
+			uint64_t table_val = table[idx];
+			if(table_val == entry_invalid())
+			 continue;
+
+			bitgrid_t in(size_each, dimension(_n_in.size(), 1), 0, idx);
+			bitgrid_t out(size_each, dimension(_n_out.size(), 1), 0, table_val);
+
+			// TODO: mark invalid entries specially
+
+			for(std::size_t o = 0; o < _n_out.size(); ++o)
+			{
+				int _in = in[point(in_id_of[o], 0)];
+				if(_in < (int)own_num_states // skip empty table entries...
+					&& _in >= 0 && (int)out[point(o, 0)] != _in)
+				{
+					std::cerr << "NOT: " << _in << std::endl;
+					dead &= ~ (1 << _in); // not dead -> toggle bit
+				}
+			}
+		}
+
+		return dead;
+	}
+
 public:
 	//! O(table)
 	void dump(std::ostream& stream) const
@@ -403,9 +465,9 @@ public:
 			grid_out.reset(0);
 
 			bitgrid_t tbl_idx(size_each, dimension(_n_in.size(), 1), 0, j);
-
+#ifdef TABLE_DEBUG
 			std::cout << "j:" << j << ", tbl_idx: "<< tbl_idx<< std::endl;
-
+#endif
 			for(std::size_t i = 0; i < _n_in.size(); ++i)
 			 grid_in[convert<def_coord_traits>(center + _n_in[i])] = tbl_idx[point(i, 0)];
 
@@ -431,6 +493,7 @@ public:
 			_eqs.calc_n_out<bitgrid_traits>()),
 		table(calculate_table_eq(std::move(_eqs)))
 	{
+		set_dead_states(states_dead_from_table());
 	}
 
 	_table_t(const std::vector<trans_t>& tf,
@@ -440,6 +503,7 @@ public:
 		_table_hdr_t(num_states, n_in, n_out),
 		table(calculate_table_trans(tf))
 	{
+		set_dead_states(states_dead_from_table());
 	}
 
 	//! Note: the type traits here can be different than ours
@@ -485,10 +549,12 @@ private:
 		{
 			const point& p = _p;
 			const auto ptr = cell_tar + (p.y * (coord_t)tar_dim.width()) + p.x;
+#ifdef TABLE_DEBUG
 			if(*ptr != tar_grid[point(_p.id(), 0)]) {
 				std::cout << "ptr:" << *ptr << std::endl;
-			std::cout << "p: " << p << ", tar_grid: " << tar_grid << " => " << tar_grid[point(_p.id(), 0)] << std::endl;
+				std::cout << "p: " << p << ", tar_grid: " << tar_grid << " => " << tar_grid[point(_p.id(), 0)] << std::endl;
 			}
+#endif
 			*ptr = tar_grid[point(_p.id(), 0)];
 		}
 		return tar_grid[center_out];
@@ -564,8 +630,11 @@ public:
 
 			if(tmp!=bitgrid)
 			{
+#ifdef TABLE_DEBUG
 			 std::cout << p << " -> raw (falschrum): " << bitgrid << std::endl;
 			std::cout << " -> table:" << tmp << std::endl;
+#endif
+#ifdef TABLE_DEBUG
 			for(const auto& p2 : _n_out)
 			{
 				const grid_cell_t* const ptr1 = cell_ptr + (coord_t)(p2.y * (coord_t)dim.width() + p2.x);
@@ -576,15 +645,20 @@ public:
 				//	throw "up";
 				}
 			}
+#endif
 			}
 
-			return (tmp!=bitgrid)
-			? tar_write<T, GCT>(table.at(bitgrid.raw_value()), cell_tar, tar_dim)
-			: *cell_ptr;
+			//return (tmp!=bitgrid)
+			return true
+				? tar_write<T, GCT>(table.at(bitgrid.raw_value()), cell_tar, tar_dim)
+				: *cell_ptr;
 
 		}
 		else
-		 return *cell_ptr;
+		{
+			tar_write<T, GCT>(bitgrid.raw_value(), cell_tar, tar_dim);
+			return *cell_ptr;
+		}
 
 #endif
 	}

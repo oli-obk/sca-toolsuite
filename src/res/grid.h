@@ -609,4 +609,41 @@ inline bool human_idx_on_grid(const int human_grid_size, const int human_idx) {
 	return (human_idx >= 0 && human_idx < human_grid_size);
 }
 
+template<class T, class CT, class Container, class Functor, class Functor2>
+void iterate_grid(_grid_t<T, CT>& grid, const Container& c, int num_states,
+	const Functor& ftor,
+	const Functor2& contin_ftor = [&](){ return true; })
+{
+	typename CT::cell_t* ref;
+
+	for(auto digit = c.begin();
+		contin_ftor() && digit != c.end(); )
+	{
+		ftor(grid);
+
+		for( digit = c.begin();
+			digit != c.end() && (
+				ref = &grid[*digit],
+				*ref = ((*ref + 1) % num_states)) == 0;
+			++digit) // TODO: operator?: ?
+		{
+		}
+	}
+}
+
+template<class T, class CT, class Container, class Functor>
+bool iterate_grid_bool(_grid_t<T, CT>& grid, const Container& c, int num_states,
+	const Functor& ftor)
+{
+	bool ok = true;
+	const auto bool_ftor = [&](_grid_t<T, CT>& grid) {
+		ok = ftor(grid);
+	};
+	const auto cont_ftor = [&]() {
+		return ok;
+	};
+	iterate_grid(grid, c, num_states, bool_ftor, cont_ftor);
+	return ok;
+}
+
 #endif // GRID_H

@@ -111,6 +111,8 @@ void _table_hdr_t::dump(std::ostream &stream) const
 	stream.write((char*)&tmp, 4);
 	put_n(stream, _n_in);
 	put_n(stream, _n_out);
+	tmp = _is_dead;
+	stream.write((char*)&tmp, 4);
 }
 
 _table_hdr_t::_table_hdr_t(std::istream &stream) :
@@ -124,7 +126,8 @@ _table_hdr_t::_table_hdr_t(std::istream &stream) :
 	_n_out(fetch_n(stream)),
 	center(_n_in.get_center_cell()),
 	center_out(_n_out.get_center_cell()), // TODO: correct?
-	bw(_n_in.get_max_w())
+	bw(_n_in.get_max_w()),
+	_is_dead(fetch_32(stream))
 {
 	std::cerr << "Number of states:" << own_num_states << std::endl;
 	std::cerr << "N in: " << _n_in << std::endl;

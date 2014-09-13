@@ -18,10 +18,10 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#include "simulate.h"
 #include "general.h"
-#include "io.h"
-#include "ca_convert.h"
+#include "grid.h"
+#include "ca/dead_cells.h"
+#include "ca_table.h"
 
 using namespace sca;
 
@@ -29,27 +29,33 @@ class MyProgram : public Program
 {
 	exit_t main()
 	{
-		const char *in_name = "unspecified", *out_name = in_name;
-
-		if(argc > 1 && !strcmp(argv[1], "help"))
-		{
-			std::cerr << "Available formats for ca converter:"
-				<< std::endl;
-			ca::name_type_map.dump_formats(std::cerr);
-			return exit_t::success;
-		}
+		const char *tbl_name = nullptr;
 
 		switch(argc)
 		{
-			case 3: out_name = argv[2];
-			case 2: in_name = argv[1];
-			case 1:
+			case 2: tbl_name = argv[1];
 				break;
+			case 1:
 			default:
 				exit_usage();
 		}
 
-		ca::convert_dynamic(in_name, out_name);
+		std::ifstream in(tbl_name);
+		using calc_t =
+		ca::_calculator_t<ca::table_t, def_coord_traits,
+			def_cell_traits>;
+		calc_t ca(in);
+
+		std::cerr << "BW:" << ca.border_width() << std::endl;
+
+		grid_t input(std::cin, ca.border_width());
+
+		ca::dead_cell_scan<ca::table_t, def_coord_traits,
+			def_cell_traits> scanner(ca, 3);
+		grid_t dead_cells = scanner(input);
+
+		std::cout << dead_cells;
+
 		return exit_t::success;
 	}
 };
@@ -57,17 +63,15 @@ class MyProgram : public Program
 int main(int argc, char** argv)
 {
 	HelpStruct help;
-	help.syntax = "ca/converter <in-format> <out-format>"
+	help.syntax = "ca/dead_cells <ca-table-file>"
 		"";
-	help.description = "Makes a copy of a stored cellular automaton\n"
-		"Type `ca/converter help' for available formats";
-	help.add_param("<in-format>", "input format or `'");
-	help.input = "the known, stored ca in a valid format";
-	help.output = "the target for the copy";
+	help.description = "\n"
+		"";
+	help.add_param("<ca-table-file>", "path to ca in table format");
+	help.input = "the input configuration";
+	help.output = "the dead cells grid";
 
 	MyProgram p;
 	return p.run(argc, argv, &help);
 }
-
-
 

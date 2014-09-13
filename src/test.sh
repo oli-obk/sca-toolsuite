@@ -8,6 +8,10 @@ do_eval()
 	eval $* >/dev/null 2>/dev/null
 	if [ $? != 0 ]; then
 		echo "   FAILED"
+		echo "DETAILED CALL: "
+		echo "  $*"
+		echo "OUTPUT: "
+		eval $*
 		exit 1;
 	else
 		echo "   SUCCESS"

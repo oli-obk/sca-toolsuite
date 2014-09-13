@@ -37,7 +37,9 @@ HEADERS += res/io.h res/stack_algorithm.h \
     res/bitgrid.h \
     res/ca_eqs.h \
     res/traits.h \
-    res/util.h
+    res/util.h \
+    res/ca/dead_cells.h \
+    res/utils/exceptions.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \
@@ -85,7 +87,8 @@ SOURCES += algo/relax.cpp \
     res/ca.cpp \
     ca/scene.cpp \
     res/ca_table.cpp \
-    ca/converter.cpp
+    ca/converter.cpp \
+    ca/dead_cells.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL.txt \
 	../README.txt \
