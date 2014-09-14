@@ -400,9 +400,12 @@ public:
 	//!< @todo not tested yet
 	void reset(const cell_t& new_value)
 	{
-		const u_coord_t& dx = _dim.dx();
+		const u_coord_t dx = _dim.dx();
 		area_t max = _dim.area() - (dx + 1) * bw;
 		const u_coord_t linewidth = dx - bw_2;
+
+		std::cout << _dim << std::endl;
+		std::cout << bw << std::endl;
 
 		for(area_t pos = (dx + 1) * bw; pos < max; pos += dx)
 		{
