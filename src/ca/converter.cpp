@@ -35,7 +35,7 @@ class MyProgram : public Program
 		{
 			std::cerr << "Available formats for ca converter:"
 				<< std::endl;
-			ca::name_type_map.dump_formats(std::cerr);
+			ca::name_type_map.dump_names(std::cerr);
 			return exit_t::success;
 		}
 

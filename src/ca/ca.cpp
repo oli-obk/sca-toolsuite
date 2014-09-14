@@ -26,7 +26,7 @@
 #include "io.h"
 #include "ca.h"
 #include "ca_eqs.h"
-#include "ca_table.h" // TODO: used?
+#include "ca_table.h"
 
 using namespace sca;
 
@@ -38,10 +38,8 @@ class MyProgram : public Program, sim::ulator
 		const char* equation = "v";
 		bool async = false;
 		int num_steps = INT_MAX;
-		unsigned int seed = sca_random::find_good_seed();
+		unsigned seed = sca_random::find_good_seed();
 		sim_type sim = sim_type::end;
-		FILE* const in_fp = stdin;
-		FILE* const out_fp = stdout;
 
 		switch(argc)
 		{
@@ -65,6 +63,38 @@ class MyProgram : public Program, sim::ulator
 				exit_usage();
 		}
 
+		exit_t result;
+
+		// choose ca type
+		if(!strncmp(equation, "table:", 6))
+		{
+			std::ifstream ifs(equation + 6);
+			ca::simulator_t<ca::table_t, def_coord_traits,
+				def_cell_traits> simulator(ifs);
+			result = func(simulator, sim, num_steps, async, seed);
+		}
+		else
+		{
+			ca::simulator_t<ca::eqsolver_t, def_coord_traits,
+				def_cell_traits> simulator(equation, async);
+			result = func(simulator, sim, num_steps, async, seed);
+		}
+
+		return result;
+	}
+
+	template<class CaType>
+	exit_t func(ca::simulator_t<CaType,  def_coord_traits, def_cell_traits> simulator,
+		const sim_type& sim,
+		const int& num_steps,
+		const bool& async,
+		unsigned seed)
+	{
+		using ca_sim_t = ca::simulator_t<CaType,  def_coord_traits, def_cell_traits>;
+
+		FILE* const in_fp = stdin;
+		FILE* const out_fp = stdout;
+
 		sca_random::set_seed(seed);
 
 		switch(sim)
@@ -79,18 +109,6 @@ class MyProgram : public Program, sim::ulator
 				break;
 		}
 
-#define CA_TABLE_OPTIMIZATION
-#ifdef CA_TABLE_OPTIMIZATION
-		(void)in_fp;
-		using ca_sim_t = ca::simulator_t<ca::table_t, def_coord_traits, def_cell_traits>;
-
-		std::ifstream ifs(equation);
-		ca_sim_t simulator(ifs);
-		ifs.close();
-#else
-		using ca_sim_t = ca::simulator_t<ca::eqsolver_t, def_coord_traits, def_cell_traits>;
-		ca_sim_t simulator(equation, async);
-#endif
 		simulator.grid().read(in_fp);
 
 #if 0
@@ -132,9 +150,9 @@ class MyProgram : public Program, sim::ulator
 
 			// TODO: why is the param necessary?
 			if(async)
-			 simulator.run_once(ca_sim_t::default_asynchronicity());
+			 simulator.run_once(typename ca_sim_t::default_asynchronicity());
 			else
-			 simulator.run_once(ca_sim_t::synchronous());
+			 simulator.run_once(typename ca_sim_t::synchronous());
 		}
 
 		if(sim == sim_type::anim)

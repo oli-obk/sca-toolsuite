@@ -39,7 +39,8 @@ HEADERS += res/io.h res/stack_algorithm.h \
     res/traits.h \
     res/util.h \
     res/ca/dead_cells.h \
-    res/utils/exceptions.h
+    res/utils/exceptions.h \
+    res/utils/name_type_map.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \

@@ -18,38 +18,47 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#ifndef SIMULATE_H
-#define SIMULATE_H
-
-// TODO
-// #include "utils/name_type_map.h"
+#ifndef NAME_TYPE_MAP_H
+#define NAME_TYPE_MAP_H
 
 namespace sca {
-namespace sim {
 
-class ulator
+// TODO: inside name_type_map_t?
+template<class Enum>
+struct name_type_pair
 {
-protected:
-	enum class sim_type
-	{
-		end,
-		role,
-		more,
-		anim,
-		undefined
-	};
-	sim_type type_by_str(const char* str);
-private:
-	struct sim_wrapper
-	{
-		sim_type t;
-		const char* str;
-	};
+	const char* name;
+	Enum e;
+};
 
-	static sim_wrapper wraps[4]; // TODO: why is 4 needed?
+template<std::size_t N, class Enum, Enum False>
+struct name_type_map_t
+{
+	// TODO: binary tree using map's stack allocator?
+	name_type_pair<Enum> map[N];
+
+	using pair_t = name_type_pair<Enum>;
+
+	// TODO: private stuff?
+	Enum operator[](const char* _name) const
+	{
+		const pair_t* const end = map + N;
+		Enum result = False;
+		for(const pair_t* ptr = map;
+			result == False && ptr != end; ++ptr)
+		if(!strcmp(ptr->name, _name))
+		 result = ptr->e;
+		return result;
+	}
+
+	void dump_names(std::ostream& stream) const
+	{
+		const pair_t* const end = map + N;
+		for(const pair_t* ptr = map; ptr != end; ++ptr)
+		 stream << " * " << ptr->name << std::endl;
+	}
 };
 
 }
-}
 
-#endif // SIMULATE_H
+#endif // NAME_TYPE_MAP_H

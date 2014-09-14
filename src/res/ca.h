@@ -360,13 +360,11 @@ class simulator_t : /*private _ca_calculator_t<Solver>,*/ public input_ca
 	grid_t _grid[3];
 	grid_t *old_grid = _grid, *new_grid = _grid; // TODO: old grid const?
 	typename calc_class::n_t n_in, n_out; // TODO: const?
-	std::vector<point> //recent_active_cells(old_grid->size()),
-			new_changed_cells; // TODO: this vector will shrink :/
+	std::vector<point> new_changed_cells; // TODO: vector will shrink :/
 	//! temporary variable
 	std::set<point> cells_to_check, cells_not_token; // TODO: use pointers here, like in grid
 	int round = 0; //!< steps since last input
 	bool async; // TODO: const?
-	//using calc = _ca_calculator_t<Solver>;
 
 	static constexpr const char* def_in_eq = "v:=v";
 
@@ -428,14 +426,12 @@ public:
 	int next_state(const int *cell_ptr, const point& p) const
 	{
 		(void) cell_ptr;
-	//	return ca_calc.next_state(cell_ptr, p, grid().internal_dim());
 		return (*new_grid)[p];
 	}
 
 	//! overload with human coordinates and reference to grid. slower.
 	int next_state(const point& p) const
 	{
-	//	return ca_calc.next_state(grid(), p);
 		return (*new_grid)[p];
 	}
 
@@ -501,23 +497,19 @@ public:
 					(&((*old_grid)[p]),
 						p, _grid->internal_dim(),
 						&((*new_grid)[p]), _grid->internal_dim());
-				// TODO: read from stored var, not from array
-				/*if(((*new_grid)[p] != (*old_grid)[p]) && async(2))
-				{
-					std::cout << "FOUND ACTIVE CELL: " << p << std::endl;
-					cells_to_check.insert(p);
-				}*/
 
 				bool changes = false;
-				for(auto itr = n_out.cbegin(); !changes && (itr != n_out.cend()); ++itr) {
+				for(auto itr = n_out.cbegin(); !changes && (itr != n_out.cend()); ++itr)
+				{
 					point ip = *itr + p;
-					if(sim_rect.is_inside(ip) &&  (*new_grid)[ip] != (*old_grid)[ip])
-					{
 
-					 std::cout << "neq:" << ip << std::endl;
-					 std::cout << (*new_grid)[ip] << " <-> " << (*old_grid)[ip] << std::endl;
+					// note: async(2) means that active cells can be activated or not
+					changes = changes || ( sim_rect.is_inside(ip) &&  ((*new_grid)[ip] != (*old_grid)[ip]) && async(2));
+					if(changes)
+					{
+						std::cout << "neq:" << ip << std::endl;
+						std::cout << (*new_grid)[ip] << " <-> " << (*old_grid)[ip] << std::endl;
 					}
-				 changes = changes || ( sim_rect.is_inside(ip) &&  ((*new_grid)[ip] != (*old_grid)[ip]) && async(2));
 				}
 				if(changes)
 				{
@@ -527,35 +519,11 @@ public:
 			}
 		};
 
-		std::cout << "INT_MIN" << std::endl;
 		new_grid->reset(std::numeric_limits<int>::min());
 
 		for(const point& ap : new_changed_cells)
 		for(const point& np : n_in)
-		{
-			const point p = ap + np;
-			// note: is_cell_active is just a lookup in new_grid
-			// note: async(2) means that active cells can be activated or not
-
-
-
-#if 0
-			if(sim_rect.is_inside(p) /*&& is_cell_active(p)*/ && async(2)) // TODO: intsct?
-		//	if(!_grid->point_is_on_border(p))
-			{
-			 cells_to_check.insert(p);
-			} // TODO:active check here?
-#endif
-
-			add_cell_if_variable_and_async(p);
-
-
-
-		/*	else
-			{
-				std::cout << "is" << p << "<< active? " << is_cell_active(p) << std::endl;
-			}*/
-		}
+		 add_cell_if_variable_and_async(ap + np);
 		new_changed_cells.clear();
 
 		for(const point& p : cells_not_token)
@@ -563,23 +531,6 @@ public:
 		cells_not_token.clear();
 
 		std::cout << "NG:" << std::endl << (*new_grid) << std::endl;
-
-		// try to find neighbours that do not overwrite each other
-		/*std::set<point> try_change;
-		bool this_ok;
-		do // TODO: this is slow...
-		{
-			this_ok = true;
-			for(auto itr = cells_to_check.cbegin(); itr != cells_to_check.cend() && this_ok; ++itr)
-			if(async(2))
-			{
-				const auto n_ok = [&](const point& p){ return try_change.find(p) == try_change.end(); };
-				if(n_out.for_each_bool(*itr, n_ok))
-				 try_change.insert(*itr);
-				else
-				 this_ok = false;
-			}
-		} while(!this_ok);*/
 
 		std::vector<point> change_order;
 		std::copy(cells_to_check.begin(), cells_to_check.end(), std::back_inserter(change_order));
@@ -602,7 +553,6 @@ public:
 			if(n_out.for_each_bool(cp, point_avail)) {
 				const auto reserve_point = [&](const point& p){ _grid[2][p] = 1; };
 				n_out.for_each(cp, reserve_point);
-				//_grid[2][n_out.neighbours()] = 1; // reserve
 				final_dec.insert(cp);
 			}
 			else {
@@ -610,77 +560,15 @@ public:
 				cells_not_token.insert(cp);
 				cp = point(-1, -1);
 			}
-		//	std::cout <<
 		}
 
 		std::cout << "reserved:" << _grid[2] << std::endl;
-#if 0
-		std::sort(change_order.begin(), change_order.end());
-
-		*new_grid = *old_grid; // TODO: necessary to copy _all_ points?
-
-		if(*new_grid != *old_grid)
-		 throw "not equal";
-#endif
-	//	for(const point& p : cells_to_check )
-	//	if(try_change.find(p) != try_change.end())
 
 		for(const point& p : sim_rect)
 		 if(final_dec.find(p) == final_dec.end())
 		  (*new_grid)[p] = (*old_grid)[p];
 		 else
 		  std::cout << "ACTIVATED: " << p << std::endl;
-
-#if 0
-		for(const point& p : change_order )
-		// TODO: use bool async template here to increase speed?
-		// plus: exploit code duplication?
-		{
-#if 0
-			int new_value;
-			const int old_value = (*old_grid)[p];
-			(*new_grid)[p] = (new_value
-				= ca_calc.template next_state<Traits, CellTraits>
-					(&((*old_grid)[p]),
-						p, _grid->internal_dim()));
-			if(new_value != old_value)
-			{
-				new_changed_cells.push_back(p);
-			}
-#else
-		if(p.x > -1)
-		{
-
-#if 0
-			// compute next state on advance
-			/*(*new_grid)[p] =*/ ca_calc.next_state // TODO?
-					(&((*old_grid)[p]),
-						p, _grid->internal_dim(),
-						&((*new_grid)[p]), _grid->internal_dim());
-			const auto on_changed = [&](const point& np) {
-				if((*old_grid)[np] != (*new_grid)[np])
-				 new_changed_cells.push_back(np);
-			};
-
-			n_out.for_each(p, on_changed);
-			on_changed(p); // backwards compatibility
-#endif
-		}
-#endif
-
-		//	std::cout << "at " << p << ": " << new_value
-		//		<< ", " << old_value << std::endl;
-
-
-		}
-/*		else
-		{	// i.e. async + not activated
-			// we still need to assign the old value:
-			(*new_grid)[p] = (*old_grid)[p];
-		}*/
-#endif
-
-
 
 	//	std::cout << "NOW:" <<  std::endl;
 	//	std::cout << *old_grid;

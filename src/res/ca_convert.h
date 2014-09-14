@@ -25,6 +25,7 @@
 
 #include "ca.h"
 #include "ca_table.h"
+#include "utils/name_type_map.h"
 
 namespace sca { namespace ca {
 
@@ -374,46 +375,6 @@ public:
 		t.dump(stream);
 	}
 };
-
-// TODO: inside name_type_map_t?
-template<class Enum>
-struct name_type_pair
-{
-	const char* name;
-	Enum e;
-};
-
-template<std::size_t N, class Enum, Enum False>
-struct name_type_map_t
-{
-	// TODO: binary tree using map's stack allocator?
-	name_type_pair<Enum> map[N];
-
-	using pair_t = name_type_pair<Enum>;
-
-	// TODO: private stuff?
-	Enum operator[](const char* _name) const
-	{
-		const pair_t* const end = map + N;
-		Enum result = False;
-		for(const pair_t* ptr = map;
-			result == False && ptr != end; ++ptr)
-		if(!strcmp(ptr->name, _name))
-		 result = ptr->e;
-		return result;
-	}
-
-	void dump_formats(std::ostream& stream) const
-	{
-		const pair_t* const end = map + N;
-		for(const pair_t* ptr = map; ptr != end; ++ptr)
-		 stream << " * " << ptr->name << std::endl;
-	}
-};
-
-
-
-
 
 enum class type
 {
