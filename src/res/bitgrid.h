@@ -78,8 +78,8 @@ public:
 	}
 };
 
-using bitgrid_traits = coord_traits<int>;
-using bitgrid_cell_traits = cell_traits<int>;
+using bitgrid_traits = coord_traits<int64_t>;
+using bitgrid_cell_traits = cell_traits<int64_t>;
 
 class bitcell_itr_base
 {

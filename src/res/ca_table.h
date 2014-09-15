@@ -217,29 +217,28 @@ private:
 		eqsolver_t eqs;
 		const u_coord_t size_each;
 		const n_t _n_out;
-		const point center, center_out;
+		const point center, center_out; // TODO: all useless
 	public:
 		from_equation(eqsolver_t&& eqs, u_coord_t size_each, const n_t& _n_out, const point& center) :
 			eqs(eqs),
 			size_each(size_each),
 			_n_out(_n_out),
 			center(center),
-			center_out(_n_out.get_center_cell())
+			center_out(_n_out.center())
 		{}
 
 		uint64_t operator()(const bitgrid_t& grid) const
 		{
 			// TODO!! thread safety!
-			static dimension n_out_dim = _n_out.get_dim();
-			static ::grid_t tmp_result(::dimension(n_out_dim.dx(), n_out_dim.dy()), 0);
+			static ::grid_t tmp_result(::dimension(_n_out.dim().dx(), _n_out.dim().dy()), 0);
 
 			// TODO: tmp_result should be bitgrid.
-			bitgrid_t bit_tmp_result(size_each, n_out_dim, 0, 0);
+			bitgrid_t bit_tmp_result(size_each, _n_out.dim(), 0, 0);
 			eqs.calculate_next_state_grids(grid.raw_value(), size_each,
 				/*::point(center.x, center.y)*/ center,
 				grid.internal_dim(),
 				&tmp_result[::point(center_out.x, center_out.y)],
-				::dimension(n_out_dim.dx(), n_out_dim.dy()));
+				::dimension(_n_out.dim().dx(), _n_out.dim().dy()));
 			for(const point& p : _n_out)
 			 bit_tmp_result[center_out + p] = tmp_result[::point(center_out.x + p.x, center_out.y + p.y)];
 			return bit_tmp_result.raw_value();
@@ -272,7 +271,7 @@ private:
 			_n_in(_n_in),
 			_n_out(_n_out),
 			center(center),
-			center_out(_n_out.get_center_cell())
+			center_out(_n_out.center())
 		{}
 
 		uint64_t operator()(const bitgrid_t& grid) const
@@ -326,7 +325,7 @@ private:
 		TblCont<uint64_t> tbl;
 		tbl.resize(1 << (size_each * _n_in.size()), entry_invalid()); // ctor can not reserve
 
-		const dimension n_in_dim(_n_in.get_dim().dx(), _n_in.get_dim().dy());
+		const dimension n_in_dim(_n_in.dim().dx(), _n_in.dim().dy());
 		bitgrid_t grid(size_each, n_in_dim, 0, 0);
 		const std::size_t max = (int)pow(own_num_states, _n_in.size());
 
@@ -458,8 +457,8 @@ public:
 
 		_table_hdr_t::dump_as_grids(stream);
 
-		::grid_t grid_in(convert<def_coord_traits>(_n_in.get_dim()), 0),
-			grid_out(convert<def_coord_traits>(_n_out.get_dim()), 0);
+		::grid_t grid_in(convert<def_coord_traits>(_n_in.dim()), 0),
+			grid_out(convert<def_coord_traits>(_n_out.dim()), 0);
 
 		for(uint64_t j = 0; j < table.size(); ++j)
 		{
@@ -518,7 +517,7 @@ public:
 		using grid_cell_t = typename GCT::cell_t;
 
 		(void)p; // for a ca, the coordinates are no cell input
-		bitgrid_t bitgrid(size_each, _n_in.get_dim(), 0, 0, 0);
+		bitgrid_t bitgrid(size_each, _n_in.dim(), 0, 0, 0);
 
 		grid_cell_t min = std::numeric_limits<grid_cell_t>::max(),
 			max = std::numeric_limits<grid_cell_t>::min(); // any better alternative?

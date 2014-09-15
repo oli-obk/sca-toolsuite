@@ -215,6 +215,9 @@ protected:
 	//! @invariant The points are always sorted (linewise)
 	Container _n;
 
+	//! Not necessary, but saves much computation time.
+	rect rc;
+
 public:
 	_bounding_box<Traits> get_bb() const
 	{
@@ -229,22 +232,22 @@ public:
 		return get_pos(_n, p);
 	}
 
-	point get_center_cell() const
+	point center() const
 	{
-		_bounding_box<Traits> _bb = get_bb();
-		return point(-_bb.ul().x, -_bb.ul().y);
+/*		_bounding_box<Traits> _bb = get_bb();
+		return point(-_bb.ul().x, -_bb.ul().y);*/
+		return -rc.ul();
 	}
 
-	rect get_rect() const { return get_bb().rect(); }
-	dimension get_dim() const { return get_bb().dim(); }
-	u_coord_t get_max_w() const
+	rect get_rect() const { return rc; }
+	dimension dim() const { return dimension(rc.dx(), rc.dy()); }
+	u_coord_t max_w() const
 	{
-		_bounding_box<Traits> _bb = get_bb();
 		return std::max(
-			std::max((u_coord_t)-_bb.ul().x,
-				(u_coord_t)-_bb.ul().y),
-			std::max((u_coord_t)_bb.lr().x,
-				(u_coord_t)_bb.lr().y)
+			std::max((u_coord_t)-rc.ul().x,
+				(u_coord_t)-rc.ul().y),
+			std::max((u_coord_t)rc.lr().x,
+				(u_coord_t)rc.lr().y)
 		);
 	}
 
@@ -304,12 +307,8 @@ public:
 		std::set<point> neighbour_set;
 
 		for( const point& p : _n ) // TODO: const in all fors
-		{
-			for(unsigned i = 0; i < rhs._n.size(); ++i)
-			{
-				neighbour_set.insert( p + rhs._n[i] );
-			}
-		}
+		for(unsigned i = 0; i < rhs._n.size(); ++i)
+		 neighbour_set.insert( p + rhs._n[i] );
 
 		_n.assign(neighbour_set.begin(), neighbour_set.end());
 
@@ -407,6 +406,7 @@ public:
 		return stream;
 	}
 
+	//! returns iff p1 is a neighbour of p2
 	bool is_neighbour_of(const point& p1, const point& p2) const
 	{
 		return std::binary_search(_n.begin(), _n.end(), p1-p2);
@@ -439,6 +439,7 @@ template<class T> // TODO: unite with upper class...
 class n_t_2 : public _n_t<T>
 {
 	using base = _n_t<T>;*/
+
 	void init(const std::vector<int>& in_grid,
 		const dimension& in_dim)
 	{
@@ -473,10 +474,12 @@ class n_t_2 : public _n_t<T>
 			//base::bb.add_point( p -= center_cell );
 			p -= center_cell;
 		}
+
+		rc = get_bb().rect(); //TODO: no bb ever necessary
 	}
 public:
 	_n_t(std::istream& stream) { stream >> *this; } // TODO: const ctor
-	_n_t() {}
+	_n_t() : rc(point::zero(), point::zero()) {}
 
 	// TODO: make constexpr version, too
 	//! assumes that no borders exist
@@ -491,10 +494,12 @@ public:
 			_n.push_back(p - _center_cell);
 			//bb.add_point(neighbours.back());
 		}
+
+		rc = get_bb().rect();
 	}
 
 	// TODO: make grid const!
-	_n_t(grid_t& grid, point _center_cell)
+	_n_t(grid_t& grid, point _center_cell) : rc(point::zero(), point::zero()) // TODO
 	{
 		std::size_t reserve = 0;
 		for(const grid_t::value_type& c : grid)
@@ -504,18 +509,20 @@ public:
 		for(const point& p : grid.points())
 		if(grid[p])
 		 _n.push_back(p - _center_cell);
+
+		rc = get_bb().rect();
 	}
 
-	_n_t(const Container&& cont) : _n(cont) {}
+	_n_t(const Container&& cont) : _n(cont), rc(get_bb().rect()) {}
 
 	const Container& neighbours() const noexcept { return _n; }
 
 	//! assumes that no borders exist
-	template<std::size_t N>
+/*	template<std::size_t N>
 	constexpr _n_t(const std::array<point, N>& arr)
 		: _n(arr)
 	{
-	}
+	}*/
 
 	// TODO: maybe simply return the n_t instead of the array?
 	// TODO: cpp-file?

@@ -124,9 +124,9 @@ _table_hdr_t::_table_hdr_t(std::istream &stream) :
 	//	center((n_w - 1)>>1, (n_w - 1)>>1),
 	_n_in(fetch_n(stream)),
 	_n_out(fetch_n(stream)),
-	center(_n_in.get_center_cell()),
-	center_out(_n_out.get_center_cell()), // TODO: correct?
-	bw(_n_in.get_max_w()),
+	center(_n_in.center()),
+	center_out(_n_out.center()), // TODO: correct?
+	bw(_n_in.max_w()),
 	_is_dead(fetch_32(stream))
 {
 	std::cerr << "Number of states:" << own_num_states << std::endl;
@@ -141,10 +141,10 @@ _table_hdr_t::_table_hdr_t(_table_hdr_t::cell_t num_states, const n_t& _n_in, co
 	size_each((unsigned)ceil(log(own_num_states))), // TODO: use int arithm
 	_n_in(_n_in),
 	_n_out(_n_out),
-	center(_n_in.get_center_cell()),
+	center(_n_in.center()),
 	//	base::calc_border_width<bitgrid_traits>()), // TODO: don't calc bw 3 times...
-	center_out(_n_out.get_center_cell()), // TODO: correct?
-	bw(_n_in.get_max_w())
+	center_out(_n_out.center()), // TODO: correct?
+	bw(_n_in.max_w())
 {
 	std::cerr << "Number of states:" << own_num_states << std::endl;
 	std::cerr << "N in: " << _n_in << std::endl;

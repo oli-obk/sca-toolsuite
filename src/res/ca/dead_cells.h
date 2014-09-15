@@ -103,8 +103,8 @@ public:
 
 
 		// step 3: mark passive
-		grid_t tmp_grid(n_in.get_dim(), 0);
-		point tmp_center = n_in.get_center_cell();
+		grid_t tmp_grid(n_in.dim(), 0);
+		point tmp_center = n_in.center();
 
 		const auto check_passive = [&](const point& p)
 		{

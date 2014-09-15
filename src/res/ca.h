@@ -146,8 +146,8 @@ public:
 		_border_width(_base::template calc_border_width<Traits>()),
 		_n_in(_base::template calc_n_in<Traits>()),
 		_n_out(_base::template calc_n_out<Traits>()),
-		cc_out(_n_out.get_center_cell()),
-		tmp_out_grid(_n_out.get_dim(), 0)
+		cc_out(_n_out.center()),
+		tmp_out_grid(_n_out.dim(), 0)
 	{
 	}
 
@@ -157,8 +157,8 @@ public:
 		_border_width(_base::template calc_border_width<Traits>()),
 		_n_in(_base::template calc_n_in<Traits>()),
 		_n_out(_base::template calc_n_out<Traits>()),
-		cc_out(_n_out.get_center_cell()),
-		tmp_out_grid(_n_out.get_dim(), 0)
+		cc_out(_n_out.center()),
+		tmp_out_grid(_n_out.dim(), 0)
 	{
 	}
 

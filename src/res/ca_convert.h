@@ -150,9 +150,9 @@ public:
 		_mirr(_mirr),
 		n_in(n_in),
 		n_out(n_out),
-		center_in(n_in.get_center_cell()),
-		center_out(n_in.get_center_cell()),
-		n_dim(n_in.get_dim()),
+		center_in(n_in.center()), // TODO: remove them all
+		center_out(n_in.center()),
+		n_dim(n_in.dim()),
 		rect_in(n_in.get_rect()),
 		rect_out(n_out.get_rect()),
 		rect_max(rect_cover(rect_in, rect_out)),
