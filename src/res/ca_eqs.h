@@ -30,6 +30,7 @@
 
 #include "ca_basics.h"
 #include "equation_solver.h"
+#include "bitgrid.h"
 
 namespace sca { namespace ca {
 
@@ -141,7 +142,7 @@ public:
 	}
 
 	template<class T, class CT>
-	int calculate_next_state(const typename CT::cell_t *cell_ptr,
+	int calculate_next_state_old(const typename CT::cell_t *cell_ptr,
 		const _point<T>& p, const _dimension<T>& dim) const
 	{
 		int result; // TODO: used?

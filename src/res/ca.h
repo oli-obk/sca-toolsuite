@@ -25,6 +25,7 @@
 
 #include "random.h"
 #include "ca_basics.h"
+#include "bitgrid.h"
 
 namespace sca { namespace ca {
 
@@ -168,9 +169,9 @@ public:
 
 	//! calculates next state at (human) position (x,y)
 	//! @param dim the grids internal dimension
-	int next_state(const cell_t *cell_ptr, const point& p, const dimension& dim) const // TODO: return cell_t
+	int next_state_old(const cell_t *cell_ptr, const point& p, const dimension& dim) const // TODO: return cell_t
 	{
-		return _base::template calculate_next_state<Traits, CellTraits>(cell_ptr, p, dim);
+		return _base::template calculate_next_state_old<Traits, CellTraits>(cell_ptr, p, dim);
 	}
 
 	//! calculates next states around (human) position (x,y)
@@ -181,6 +182,18 @@ public:
 		return _base::template calculate_next_state<Traits, CellTraits>(cell_ptr, p, dim, cell_tar, tar_dim);
 	}
 
+	//! returns bitgrid
+	bitgrid_t next_state(const cell_t *cell_ptr, const point& p, const dimension& dim) const
+	{
+		return _base::template calculate_next_state<Traits, CellTraits>(cell_ptr, p, dim);
+	}
+
+	//! returns bitgrid
+	bitgrid_t next_state(const grid_t &grid, const point& p) const
+	{
+		return next_state(&grid[p], p, grid.internal_dim());
+	}
+
 	//! overload, with x and y in internal format. slower.
 	int next_state_realxy(const cell_t *cell_ptr, const point& p, const dimension& dim) const
 	{
@@ -189,9 +202,9 @@ public:
 	}
 
 	//! overload with human coordinates and reference to grid. slower.
-	int next_state(const grid_t &grid, const point& p) const
+	int next_state_old(const grid_t &grid, const point& p) const
 	{
-		return next_state(&grid[p], p, grid.internal_dim());
+		return next_state_old(&grid[p], p, grid.internal_dim());
 	}
 
 /*	//! overload with human coordinates and reference to grid. slower.

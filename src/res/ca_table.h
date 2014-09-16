@@ -510,7 +510,7 @@ public:
 	//! Note: the type traits here can be different than ours
 	//! Runtime: O(N)
 	template<class GT, class GCT>
-	int calculate_next_state(const typename GCT::cell_t* const cell_ptr,
+	int calculate_next_state_old(const typename GCT::cell_t* const cell_ptr,
 		const _point<GT>& p, const _dimension<GT>& dim) const
 	{
 		// TODO: class member?
@@ -561,11 +561,11 @@ private:
 		return tar_grid[center_out];
 	}
 public:
-	//! version for multi-targets
+
+	//! returns result as bitgrid
 	template<class T, class GCT>
-	int calculate_next_state(const typename GCT::cell_t *cell_ptr,
-		const _point<T>& p, const _dimension<T>& dim, typename GCT::cell_t *cell_tar,
-		const _dimension<T>& tar_dim) const
+	bitgrid_t calculate_next_state(const typename GCT::cell_t *cell_ptr,
+		const _point<T>& p, const _dimension<T>& dim) const
 	{
 		// TODO: class member?
 		using grid_cell_t = typename GCT::cell_t;
@@ -650,20 +650,28 @@ public:
 			}
 
 			//return (tmp!=bitgrid)
-			return true
-				? tar_write<T, GCT>(table.at(bitgrid.raw_value()), cell_tar, tar_dim)
-				: *cell_ptr;
+			return bitgrid;
 
 		}
 		else
 		{
-			tar_write<T, GCT>(bitgrid.raw_value(), cell_tar, tar_dim);
-			return *cell_ptr;
+			return bitgrid;
 		}
 
 #endif
 	}
 
+
+	//! version for multi-targets
+	template<class T, class GCT>
+	int calculate_next_state(const typename GCT::cell_t *cell_ptr,
+		const _point<T>& p, const _dimension<T>& dim, typename GCT::cell_t *cell_tar,
+		const _dimension<T>& tar_dim) const
+	{
+		bitgrid_t bitgrid = calculate_next_state<T, GCT>(cell_ptr, p, dim);
+		tar_write<T, GCT>(bitgrid.raw_value(), cell_tar, tar_dim);
+		return *cell_ptr;
+	}
 };
 
 /*
