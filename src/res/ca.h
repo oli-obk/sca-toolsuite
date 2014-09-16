@@ -245,6 +245,9 @@ public:
 	bool is_cell_active(const grid_t& grid, const point& p, grid_t*& result) const
 	{
 		// TODO: might be redirected to Solver to save time, in many cases
+
+		// let next_state... return bool if it was in range?
+
 		next_state_ref(grid, p); // TODO!!! result = &next ... ??
 		result = &tmp_out_grid;
 
@@ -253,8 +256,18 @@ public:
 		for(auto itr = _n_out.cbegin();
 			equal && itr != _n_out.cend(); ++itr)
 		{
-			equal = equal && (grid[p + *itr] == tmp_out_grid[cc_out + *itr]);
+			const point grid_point = p + *itr;
+			equal = equal && (
+				grid[grid_point] == tmp_out_grid[cc_out + *itr]);
+			if(! grid.contains(grid_point)) // TODO: cleaner abortion...
+			 return false;
 		}
+
+/*		if(!equal)
+		{
+			std::cout << "ACTIVE!" << p << std::endl;
+			std::cout << grid << ", " << std::endl << tmp_out_grid << std::endl;
+		}*/
 		return !equal;
 	}
 
@@ -652,7 +665,7 @@ public:
 		//if(has_)
 		// TODO: for now, we assume that the ca is always stable
 		(*old_grid)[p] = (*new_grid)[p] =
-			ca_input.next_state(*new_grid, p);
+			ca_input.next_state_old(*new_grid, p);
 		/*for(const point np : n_in)
 		{
 			point cur = p + np;

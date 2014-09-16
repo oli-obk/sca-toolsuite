@@ -567,6 +567,14 @@ public:
 	bitgrid_t calculate_next_state(const typename GCT::cell_t *cell_ptr,
 		const _point<T>& p, const _dimension<T>& dim) const
 	{
+		return bitgrid_t(size_each, dimension(_n_out.size(), 1), 0,
+			_calculate_next_state<T, GCT>(cell_ptr, p, dim));
+	}
+
+	template<class T, class GCT>
+	storage_t _calculate_next_state(const typename GCT::cell_t *cell_ptr,
+		const _point<T>& p, const _dimension<T>& dim) const
+	{
 		// TODO: class member?
 		using grid_cell_t = typename GCT::cell_t;
 
@@ -625,6 +633,7 @@ public:
 			? tar_write<T, GCT>(table.at(bitgrid.raw_value()), cell_tar, tar_dim)
 			: *cell_ptr; // can not happen, except for border -> don't change
 #else
+
 		if(in_range)
 		{
 			bitgrid_t tmp(size_each, dimension(_n_out.size(), 1), 0, table.at(bitgrid.raw_value()));
@@ -650,12 +659,12 @@ public:
 			}
 
 			//return (tmp!=bitgrid)
-			return bitgrid;
+			return table.at(bitgrid.raw_value());
 
 		}
 		else
 		{
-			return bitgrid;
+			return bitgrid.raw_value();
 		}
 
 #endif
@@ -664,12 +673,12 @@ public:
 
 	//! version for multi-targets
 	template<class T, class GCT>
-	int calculate_next_state(const typename GCT::cell_t *cell_ptr,
+	bool calculate_next_state(const typename GCT::cell_t *cell_ptr,
 		const _point<T>& p, const _dimension<T>& dim, typename GCT::cell_t *cell_tar,
 		const _dimension<T>& tar_dim) const
 	{
-		bitgrid_t bitgrid = calculate_next_state<T, GCT>(cell_ptr, p, dim);
-		tar_write<T, GCT>(bitgrid.raw_value(), cell_tar, tar_dim);
+		const storage_t bitgrid = _calculate_next_state<T, GCT>(cell_ptr, p, dim);
+		tar_write<T, GCT>(bitgrid, cell_tar, tar_dim);
 		return *cell_ptr;
 	}
 };
