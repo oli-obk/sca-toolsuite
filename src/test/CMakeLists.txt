@@ -1,2 +1,1 @@
-compile("test.cpp")
-
+compile("sca_test.cpp")

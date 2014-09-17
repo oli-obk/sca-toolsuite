@@ -162,15 +162,12 @@ class grid_storage_r
 {
 public:
 	virtual void insert_horizontal_border_begin(
-		int human_linewidth,
-		int border_width) = 0;
+		int human_linewidth) = 0;
 
 	virtual void insert_horizontal_border_end(
-		int human_linewidth,
-		int border_width) = 0;
+		int human_linewidth) = 0;
 
-	virtual void insert_vertical_border_end(
-		int border_width) = 0;
+	virtual void insert_vertical_border_end() = 0;
 
 	virtual void append(const T val) = 0;
 };
@@ -187,40 +184,43 @@ template<class T>
 class vector_storage_r : public grid_storage_r<T>
 {
 	std::vector<T>& grid;
+	int border_width, border_symbol;
 
 	inline void insert_horizontal_border(
 		typename std::vector<T>::iterator itr,
-		int human_linewidth,
-		int border_width)
+		int human_linewidth)
 	{
 		grid.insert(itr,
 			(human_linewidth + (border_width<<1))*border_width,
-			std::numeric_limits<T>::min());
+			border_symbol);
 	}
 public:
 	inline void insert_horizontal_border_begin(
-		int human_linewidth,
-		int border_width)
+		int human_linewidth)
 	{
-		insert_horizontal_border(grid.begin(), human_linewidth, border_width);
+		insert_horizontal_border(grid.begin(), human_linewidth);
 	}
 
 	inline void insert_horizontal_border_end(
-		int human_linewidth,
-		int border_width)
+		int human_linewidth)
 	{
-		insert_horizontal_border(grid.end(), human_linewidth, border_width);
+		insert_horizontal_border(grid.end(), human_linewidth);
 	}
 
-	inline void insert_vertical_border_end(
-		int border_width)
+	inline void insert_vertical_border_end()
 	{
-		grid.insert(grid.end(), border_width, std::numeric_limits<T>::min());
+		grid.insert(grid.end(), border_width, border_symbol);
 	}
 
 	void append(const T val) { grid.push_back(val); }
 
-	vector_storage_r(std::vector<T>& grid) : grid(grid) {}
+	vector_storage_r(std::vector<T>& grid,
+		int border_width,
+		int border_symbol) :
+		grid(grid),
+		border_width(border_width),
+		border_symbol(border_symbol)
+	{}
 };
 
 template<class T>
@@ -400,7 +400,7 @@ inline void read_grid(const base_grid* grid_class, std::istream& is, _dimension<
 			// scan symbol
 			grid_class->read(ptr, &read_symbol);
 			if(!col_count) // (TODO: move this somewhere else?)
-			 storage_class.insert_vertical_border_end(border); // TODO: ref instead of ptr
+			 storage_class.insert_vertical_border_end(); // TODO: ref instead of ptr
 			storage_class.append(read_symbol);
 			col_count++;
 
@@ -411,7 +411,7 @@ inline void read_grid(const base_grid* grid_class, std::istream& is, _dimension<
 				// first newline => determine line length
 				if(! line_count) {
 					line_width = col_count;
-					storage_class.insert_horizontal_border_begin(line_width, border);
+					storage_class.insert_horizontal_border_begin(line_width);
 				}
 				else
 				 assert(line_width == col_count);
@@ -419,7 +419,7 @@ inline void read_grid(const base_grid* grid_class, std::istream& is, _dimension<
 				line_count++;
 				col_count = 0;
 
-				storage_class.insert_vertical_border_end(border);
+				storage_class.insert_vertical_border_end();
 			}
 			else
 			 assert(read_symbol == ' ');
@@ -433,7 +433,7 @@ inline void read_grid(const base_grid* grid_class, std::istream& is, _dimension<
 		throw "Read IO error (buffer overflow?)";
 	} // otherwise, we have just reached the end of the grid
 
-	storage_class.insert_horizontal_border_end(line_width, border);
+	storage_class.insert_horizontal_border_end(line_width);
 
 	dim = _dimension<Traits>(line_width + (((int)(border))<<1),
 		line_count + (((int)(border))<<1));
@@ -442,10 +442,10 @@ inline void read_grid(const base_grid* grid_class, std::istream& is, _dimension<
 }
 
 template<class Dimension, class T, class GridType = number_grid>
-void read_grid(std::istream& is, std::vector<T>& grid, Dimension& dim, int border = -1) {
+void read_grid(std::istream& is, std::vector<T>& grid, Dimension& dim, int border_width, int border_symbol) {
 	GridType grid_class;
-	vector_storage_r<T> storage(grid);
-	read_grid(&grid_class, is, dim, storage, border);
+	vector_storage_r<T> storage(grid, border_width, border_symbol);
+	read_grid(&grid_class, is, dim, storage, border_width);
 }
 
 

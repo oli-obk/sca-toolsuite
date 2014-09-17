@@ -263,7 +263,7 @@ public:
 			 return false;
 		}
 
-/*		if(!equal)
+	/*	if(!equal)
 		{
 			std::cout << "ACTIVE!" << p << std::endl;
 			std::cout << grid << ", " << std::endl << tmp_out_grid << std::endl;

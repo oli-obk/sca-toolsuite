@@ -594,7 +594,7 @@ public:
 			const grid_cell_t* const ptr = cell_ptr + (coord_t)(p2.y * (coord_t)dim.width() + p2.x); // TODO: check signs...
 			bitgrid[point(_p.id(), 0)] = *ptr;
 			// TODO: if min is reset, it can maybe not be max? -> faster....
-//			std::cout << *ptr << std::endl;
+	//		std::cout << *ptr << std::endl;
 			min = std::min(min, *ptr);
 			max = std::max(max, *ptr);
 
@@ -604,7 +604,6 @@ public:
 
 		// todo: better hashing function for not exactly n bits?
 		const bool in_range = (min >= 0 && max < (int)own_num_states);
-//std::cout << p << " -> raw (falschrum): " << bitgrid << std::endl;
 
 	#if 0
 		bitgrid_t tmp(size_each, dimension(_n_out.size(), 1), 0, table.at(bitgrid.raw_value()));

@@ -168,6 +168,7 @@ public:
 
 	_dim_cont<Traits> points() const { return _dim.points(bw); }
 
+	//! returns whether p is in the human rectangle, i.e. (0,0) to ...
 	bool contains(const point& p) const {
 		return _human_dim().contains(p);
 	}
@@ -404,9 +405,6 @@ public:
 		area_t max = _dim.area() - (dx + 1) * bw;
 		const u_coord_t linewidth = dx - bw_2;
 
-		std::cout << _dim << std::endl;
-		std::cout << bw << std::endl;
-
 		for(area_t pos = (dx + 1) * bw; pos < max; pos += dx)
 		{
 			const auto first = _data.begin() + pos;
@@ -513,21 +511,23 @@ public:
 	//! reads a grid with current border width (0 if default constructed)
 	friend std::istream& operator>> (std::istream& stream,
 		_grid_t& g) {
-		read_grid(stream, g._data, g._dim, g.bw);
+		read_grid(stream, g._data, g._dim, g.bw,
+			std::numeric_limits<cell_t>::min());
 		return stream;
 	}
 
 
 	//! constructor which reads a grid immediatelly
-	_grid_t(std::istream& stream, u_coord_t border_width) :
+	_grid_t(std::istream& stream, u_coord_t border_width, cell_t border = 0) :
 		base(border_width)
 	{
-		read_grid(stream, _data, _dim, bw);
+		read_grid(stream, _data, _dim, bw, border);
 	}
 
 	//! constructor which reads a grid immediatelly
 	//! @todo bw 1 as def is deprecated, maybe inherit asm__grid_t in asm_basics.h?
-	_grid_t(const char* filename, u_coord_t border_width = 1) :
+	_grid_t(const char* filename, u_coord_t border_width = 1,
+		cell_t border_symbol = std::numeric_limits<cell_t>::min()) :
 		base(border_width)
 	{
 		std::ifstream ifs;
@@ -540,7 +540,7 @@ public:
 		}
 		else
 		 is_ptr = &std::cin;
-		read_grid(*is_ptr, _data, _dim, bw);
+		read_grid(*is_ptr, _data, _dim, bw, border_symbol);
 	}
 
 	point_itr find_subgrid(const _grid_t& sub, const point_itr& from) const

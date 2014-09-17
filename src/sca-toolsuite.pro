@@ -80,7 +80,6 @@ SOURCES += algo/relax.cpp \
 	res/graph_io.cpp \
 	res/geometry.cpp \
 	res/eqs_functions.cpp \
-	test/test.cpp \
 	gui_qt/CaSelector.cpp \
 	img/transform.cpp \
     ca/dump.cpp \
@@ -89,7 +88,8 @@ SOURCES += algo/relax.cpp \
     ca/scene.cpp \
     res/ca_table.cpp \
     ca/converter.cpp \
-    ca/dead_cells.cpp
+    ca/dead_cells.cpp \
+    test/sca_test.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL.txt \
 	../README.txt \

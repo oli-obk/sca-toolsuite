@@ -20,7 +20,7 @@
 
 #include "general.h"
 #include "grid.h"
-#include "ca.h"
+//#include "ca.h"
 
 class MyProgram : public Program
 {
@@ -61,6 +61,10 @@ class MyProgram : public Program
 		assert_always(g2[point(0, 1)] == 2, "2");
 		assert_always(g2[point(1, 0)] == 3, "3");
 		assert_always(g2[point(1, 1)] == 4, "4");
+
+
+		grid_t g3(dimension(2,2), 1, 0, 42);
+		std::cout << g3[point(-1, -1)] << std::endl;
 
 		return exit_t::success;
 	}
