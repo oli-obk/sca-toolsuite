@@ -40,9 +40,8 @@ class _patch_t
 	using grid_t = _grid_t<Traits, CellTraits>;
 	using cell_t = typename CellTraits::cell_t;
 
-
 	std::set<point> _area;
-	conf_t _conf;
+	conf_t _conf; // TODO: use array
 	conf_t _conf_before;
 
 	_patch_t add__patch_t(const std::set<point>& rhs_area,
@@ -296,20 +295,42 @@ public:
 		 return _area < rhs._area;
 	}
 
-	// TODO: common function using a template
-	void apply_fwd(grid_t& current) const
+private:
+	template<class Functor>
+	void _apply(grid_t& current, const conf_t& _conf, const Functor& checkfunc) const
 	{
 		for(const auto& p : ca::counted(_area))
 		{
-			if(current[p] != _conf_before[p.id()])
-			{
-				std::cout << "Error applying: " << *this << " at " << p << " on " << current << std::endl;
-				std::cout << "Point is " << current[p] << ", but _conf_before is " << _conf_before[p.id()] << std::endl;
-			}
-			if(current[p] != _conf_before[p.id()])
-				throw "This patch can not be applied on this grid.";
+			checkfunc(p, p.id());
 			current[p] = _conf[p.id()];
 		}
+	}
+
+	struct no_checkfunc {
+		void operator()(const point& , std::size_t ) const {}
+	};
+public:
+
+
+	// TODO: common function using a template
+	void apply_fwd(grid_t& current) const
+	{
+		const auto checkfunc = [&](const point& p, std::size_t id)
+		{
+			if(current[p] != _conf_before[id])
+			{
+				std::cout << "Error applying: " << *this << " at " << p << " on " << current << std::endl;
+				std::cout << "Point is " << current[p] << ", but _conf_before is " << _conf_before[id] << std::endl;
+			}
+			if(current[p] != _conf_before[id])
+			 throw "This patch can not be applied on this grid.";
+		};
+		_apply(current, _conf, checkfunc);
+	}
+
+	void apply_fwd_force(grid_t& current) const
+	{
+		_apply(current, _conf, no_checkfunc());
 	}
 
 	void apply_fwd(grid_t& current, const std::set<point>& selection) const
@@ -341,17 +362,23 @@ public:
 
 	void apply_bwd(grid_t& current) const
 	{
-		for(const auto& p : ca::counted(_area))
+		const auto checkfunc = [&](const point& p, std::size_t id)
 		{
-			if(current[p] != _conf[p.id()])
+			if(current[p] != _conf[id])
 			{
 				std::cout << "Error applying: " << *this << " at " << p << " on " << current << std::endl;
-				std::cout << "Point is " << current[p] << ", but _conf is " << _conf[p.id()] << std::endl;
+				std::cout << "Point is " << current[p] << ", but _conf is " << _conf[id] << std::endl;
 			}
-			if(current[p] != _conf[p.id()])
+			if(current[p] != _conf[id])
 			 throw "This patch can not be applied on this grid.";
-			current[p] = _conf_before[p.id()];
-		}
+		};
+
+		_apply(current, _conf_before, checkfunc);
+	}
+
+	void apply_bwd_force(grid_t& current) const
+	{
+		_apply(current, _conf_before, no_checkfunc());
 	}
 
 	_patch_t operator+(const _patch_t& rhs) const

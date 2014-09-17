@@ -42,11 +42,12 @@ private:
 	eqsolver::expression_ast ast;
 	int* helper_vars = nullptr; //!< @todo: auto/unique_ptr
 	std::size_t helpers_size;
-protected:
-	unsigned num_states;
+	std::size_t _num_states;
 //	n_t_const neighbourhood;
 
 public:
+	std::size_t num_states() const noexcept { return _num_states; }
+
 	template<class Traits>
 	typename Traits::u_coord_t calc_border_width() const
 	{
@@ -84,7 +85,7 @@ public:
 	// TODO: single funcs to initialize and make const?
 	// aka: : ast(private_build_ast), ...
 	eqsolver_t(const char* equation, unsigned num_states = 0) // TODO: cpp file
-		: num_states(num_states)
+		: _num_states(num_states)
 	{
 		//	debug("Building AST from equation...\n");
 		eqsolver::build_tree(equation, &ast);

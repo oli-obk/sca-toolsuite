@@ -183,15 +183,15 @@ public:
 	}
 
 	//! returns bitgrid
-	bitgrid_t next_state(const cell_t *cell_ptr, const point& p, const dimension& dim) const
+	bool next_state(const cell_t *cell_ptr, const point& p, const dimension& dim, bitgrid_t& res) const
 	{
-		return _base::template calculate_next_state<Traits, CellTraits>(cell_ptr, p, dim);
+		return _base::template calculate_next_state<Traits, CellTraits>(cell_ptr, p, dim, res);
 	}
 
 	//! returns bitgrid
-	bitgrid_t next_state(const grid_t &grid, const point& p) const
+	bool next_state(const grid_t &grid, const point& p, bitgrid_t& res) const
 	{
-		return next_state(&grid[p], p, grid.internal_dim());
+		return next_state(&grid[p], p, grid.internal_dim(), res);
 	}
 
 	//! overload, with x and y in internal format. slower.
@@ -283,6 +283,8 @@ public:
 	{
 		return _base::is_dead(state);
 	}
+
+	std::size_t num_states() const { return _base::num_states(); }
 
 };
 
@@ -556,7 +558,7 @@ public:
 		 add_cell_if_variable_and_async(p);
 		cells_not_token.clear();
 
-		std::cout << "NG:" << std::endl << (*new_grid) << std::endl;
+	//	std::cout << "NG:" << std::endl << (*new_grid) << std::endl;
 
 		std::vector<point> change_order;
 		std::copy(cells_to_check.begin(), cells_to_check.end(), std::back_inserter(change_order));
@@ -588,7 +590,7 @@ public:
 			}
 		}
 
-		std::cout << "reserved:" << _grid[2] << std::endl;
+	//	std::cout << "reserved:" << _grid[2] << std::endl;
 
 		for(const point& p : sim_rect)
 		 if(final_dec.find(p) == final_dec.end())

@@ -163,7 +163,7 @@ class bitgrid_t : public grid_alignment_t<bitgrid_traits>
 	using point = _point<bitgrid_traits>;
 
 	using storage_t = uint64_t;
-	const storage_t each, bitmask;
+	/*const*/ storage_t each, bitmask;
 	storage_t grid;
 
 	void size_check()
@@ -176,6 +176,8 @@ class bitgrid_t : public grid_alignment_t<bitgrid_traits>
 		}
 	}
 public:
+	bitgrid_t() noexcept : grid_alignment_t(0) {}
+
 	template<class Traits>
 	bitgrid_t(storage_t each, const _dimension<Traits>& dim,
 		u_coord_t border_width, cell_t fill, cell_t border_fill) :

@@ -371,6 +371,7 @@ public:
 		: _grid_t(dim, 0, 0) {}
 
 	//! constructor which reads a grid immediatelly
+	//! @deprecated use iostream instead
 	_grid_t(FILE* fp, u_coord_t border_width) :
 		base(border_width)
 	{
@@ -508,6 +509,11 @@ public:
 		return stream;
 	}
 
+	void print_with_border(std::ostream& stream = std::cout) const
+	{
+		write_grid(stream, _data, base::internal_dim(), 0);
+	}
+
 	//! reads a grid with current border width (0 if default constructed)
 	friend std::istream& operator>> (std::istream& stream,
 		_grid_t& g) {
@@ -515,7 +521,6 @@ public:
 			std::numeric_limits<cell_t>::min());
 		return stream;
 	}
-
 
 	//! constructor which reads a grid immediatelly
 	_grid_t(std::istream& stream, u_coord_t border_width, cell_t border = 0) :

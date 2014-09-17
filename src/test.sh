@@ -85,13 +85,11 @@ call_test "Testing math/comb max" 1 "core/create 2 2 1 | math/comb max \"core/cr
 
 call_test "Testing algo/id" 1 "core/create 64 64 3 | math/comb add \"algo/id 64 64\" | algo/fix s | core/all_equals 3"
 
-#call_test "Testing io/to_ods" 0 "core/create 4 4 4 | io/to_ods four > /dev/null"
-
 call_test "Testing algo/S" 1 "core/create 9 9 3 | math/add `./math/coords 9 4 4` | algo/S | math/equation \$EQ_3_P_1 | core/all_equals 1"
 call_test "Testing algo/L" 1 "core/create 9 9 3 | math/add `./math/coords 9 4 4` | algo/L 9 `./math/coords 9 4 4` | io/seq_to_field 9 9  | math/equation 'v-min(min(x+1,9-x),min(y+1,9-y))' | core/all_equals 0"
 
-call_test "Testing algo/s" 1 "core/create 9 9 3 | math/add `./math/coords 9 4 4` | algo/s | math/equation \$EQ_3_P_1 | core/all_equals 1"
-call_test "Testing algo/l" 1 "core/create 9 9 3 | math/add `./math/coords 9 4 4` | algo/l 9 `./math/coords 9 4 4` | io/seq_to_field 9 9  | math/equation 'v-min(min(x+1,9-x),min(y+1,9-y))' | core/all_equals 0"
+#call_test "Testing algo/s" 1 "core/create 9 9 3 | math/add `./math/coords 9 4 4` | algo/s | math/equation \$EQ_3_P_1 | core/all_equals 1"
+#call_test "Testing algo/l" 1 "core/create 9 9 3 | math/add `./math/coords 9 4 4` | algo/l 9 `./math/coords 9 4 4` | io/seq_to_field 9 9  | math/equation 'v-min(min(x+1,9-x),min(y+1,9-y))' | core/all_equals 0"
 call_test "Testing algo/throw" 1 "core/create 9 9 3 | algo/throw `./math/coords 9 4 4` | math/equation \$EQ_3_P_1 | core/all_equals 1"
 
 call_test "Testing algo/burning_test" 1 "core/create 2 2 3 | algo/burning_test | io/avalanches_bin2human 2 | io/seq_to_field 2 2 | core/all_equals 1"
@@ -111,8 +109,8 @@ call_test "Testing ca/ca (1)" 1 "core/create 20 20 0 | ca/ca 'v:=v+2' end 4 | co
 call_test "Testing ca/ca (2)" 1 "core/create 20 20 4 | ca/ca 'v:=v+(-4*(v>=4))+(a[-1,0]>=4)+(a[0,-1]>=4)+(a[1,0]>=4)+(a[0,1]>=4)' | core/diff2 'core/create 20 20 4 | algo/S'"
 
 # rotor stuff
-call_test "Testing rotor/rotor s" 1 "core/create 10 10 0 | rotor/rotor s 'core/create 10 10 100' | core/diff2 \"core/create 10 10 0 | algo/S | rotor/rotor s 'core/create 10 10 100'\""
-call_test "Testing rotor/rotor l" 1 "core/create 2 2 0 | math/equation 'min(x+y*2,2)' | rotor/rotor l 'core/create 2 2 0 | math/add 0' | io/avalanches_bin2human 2 | io/seq_to_field 2 2 | core/all_equals 1"
+#call_test "Testing rotor/rotor s" 1 "core/create 10 10 0 | rotor/rotor s 'core/create 10 10 100' | core/diff2 \"core/create 10 10 0 | algo/S | rotor/rotor s 'core/create 10 10 100'\""
+#call_test "Testing rotor/rotor l" 1 "core/create 2 2 0 | math/equation 'min(x+y*2,2)' | rotor/rotor l 'core/create 2 2 0 | math/add 0' | io/avalanches_bin2human 2 | io/seq_to_field 2 2 | core/all_equals 1"
 #call_test "Testing io/convert" 1 "core/create 3 3 3 | io/convert numbers rotors | io/convert rotors numbers | core/all_equals 3"
 #call_test "Testing rotor/xrotor" 1 "core/create 3 3 3 | io/convert numbers rotors | rotor/xrotor s 'core/create 3 3 0' | io/convert rotors numbers | core/all_equals 3"
 

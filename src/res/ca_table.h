@@ -185,6 +185,8 @@ public:
 		 res_v.push_back(point(p.x, p.y));
 		return _n_t_v<Traits>(std::move(res_v));
 	}
+
+	std::size_t num_states() const noexcept { return own_num_states; }
 };
 
 template<template<class ...> class TblCont, class Traits, class CellTraits>
@@ -430,7 +432,6 @@ private:
 				if(_in < (int)own_num_states // skip empty table entries...
 					&& _in >= 0 && (int)out[point(o, 0)] != _in)
 				{
-					std::cerr << "NOT: " << _in << std::endl;
 					dead &= ~ (1 << _in); // not dead -> toggle bit
 				}
 			}
@@ -564,16 +565,19 @@ public:
 
 	//! returns result as bitgrid
 	template<class T, class GCT>
-	bitgrid_t calculate_next_state(const typename GCT::cell_t *cell_ptr,
-		const _point<T>& p, const _dimension<T>& dim) const
+	bool calculate_next_state(const typename GCT::cell_t *cell_ptr,
+		const _point<T>& p, const _dimension<T>& dim, bitgrid_t& res) const
 	{
-		return bitgrid_t(size_each, dimension(_n_out.size(), 1), 0,
-			_calculate_next_state<T, GCT>(cell_ptr, p, dim));
+		storage_t stor;
+		bool valid = _calculate_next_state<T, GCT>(cell_ptr, p, dim, stor);
+		res = bitgrid_t(size_each, dimension(_n_out.size(), 1), 0,
+			stor);
+		return valid;
 	}
 
 	template<class T, class GCT>
-	storage_t _calculate_next_state(const typename GCT::cell_t *cell_ptr,
-		const _point<T>& p, const _dimension<T>& dim) const
+	bool _calculate_next_state(const typename GCT::cell_t *cell_ptr,
+		const _point<T>& p, const _dimension<T>& dim, storage_t& res) const
 	{
 		// TODO: class member?
 		using grid_cell_t = typename GCT::cell_t;
@@ -658,14 +662,22 @@ public:
 			}
 
 			//return (tmp!=bitgrid)
-			return table.at(bitgrid.raw_value());
+#ifdef TABLE_DEBUG
+			std::cout << "RESULT: " << bitgrid << " -> " << bitgrid_t(size_each, dimension(_n_out.size(), 1), 0,
+				table.at(bitgrid.raw_value())) << std::endl;
+#endif
+			res = table.at(bitgrid.raw_value());
 
 		}
 		else
 		{
-			return bitgrid.raw_value();
+#ifdef TABLE_DEBUG
+			std::cout << "RESULT: " << bitgrid << " ->  (unchanged)" << std::endl;
+#endif
+			res = 0;
 		}
 
+		return in_range;
 #endif
 	}
 
@@ -676,9 +688,10 @@ public:
 		const _point<T>& p, const _dimension<T>& dim, typename GCT::cell_t *cell_tar,
 		const _dimension<T>& tar_dim) const
 	{
-		const storage_t bitgrid = _calculate_next_state<T, GCT>(cell_ptr, p, dim);
-		tar_write<T, GCT>(bitgrid, cell_tar, tar_dim);
-		return *cell_ptr;
+		storage_t sto;
+		bool valid = _calculate_next_state<T, GCT>(cell_ptr, p, dim, sto);
+		tar_write<T, GCT>(sto, cell_tar, tar_dim);
+		return valid;
 	}
 };
 
