@@ -31,7 +31,7 @@
 namespace grid_io
 {
 
-class grid_pair_t
+struct grid_pair_t
 {
 	grid_t in, out;
 public:
@@ -93,7 +93,8 @@ class leaf_template_t<grid_io::grid_pair_t> : public leaf_base_t // TODO: why is
 public:
 	void parse(io::secfile_t& inf) { inf.stream >> t; }
 	void dump(std::ostream& ) const { throw "not impl"; }
-	const leaf_template_t<grid_io::grid_pair_t>& cast() const { return *this; }
+	const grid_io::grid_pair_t& value() const noexcept { return t; }
+	grid_io::grid_pair_t& value() noexcept { return t; }
 };
 
 }
@@ -285,8 +286,9 @@ public:
 				 add_transition_functions(in_grid, out_grid, *itr_in, *itr_out, _rot, _mirr);
 			}
 				break;
-			default:
-			 throw "In and out grid must be equal-sized or `fit' each other.";
+			default: {
+				throw "In and out grid must be equal-sized or `fit' each other.";
+			}
 		}
 
 	}
@@ -330,38 +332,17 @@ public:
 		point center;
 		std::size_t center_count = 0;
 
-		io::secfile_t inf;
+		io::secfile_t inf(in);
 		grid_io::gridfile_t gridfile;
+
 		try {
 			gridfile.parse(inf);
 		} catch(io::secfile_t::error_t ife) {
-			std::cout << "infile line " << ife.line << ": "	 << ife.msg << std::endl;
+			std::cerr << "infile line " << ife.line << ": "	 << ife.msg << std::endl;
 		}
 
 
-		const grid_t& center_grid = gridfile.leaf<grid_t>("center");
-		for(const point& p : center_grid.points())
-		if(center_grid[p])
-		{
-			center = p;
-			++center_count;
-		}
-
-
-	//	bool _rot = gridfile["symmetry"]["rot"].is_read();
-	//	bool _mirr =
-
-		std::size_t max = gridfile.numbered_count();
-
-
-#if OLDSTYLE
-		bool _rot, _mirr;
-		in >> _rot;
-		in >> _mirr;
-
-		std::cerr << _rot << _mirr << std::endl;
-
-		grid_t center_grid(in, 0);
+		const grid_t& center_grid = gridfile.value<grid_t>("center");
 		for(const point& p : center_grid.points())
 		if(center_grid[p])
 		{
@@ -372,29 +353,23 @@ public:
 		if(center_count != 1)
 		 throw "Expected exactly 1 center cell.";
 
-		grid_t center_grid_2(in, 0);
-	//	in >> center_grid; // TODO: bug
-	//	std::cout <<  center_grid << std::endl;
-		ca::n_t n_in(center_grid_2, center);
-
-	//	in >> center_grid;
-	//	std::cout <<  center_grid << std::endl;
-		grid_t center_grid_3(in, 0);
-		ca::n_t n_out(center_grid_3, center);
+		ca::n_t n_in(gridfile.value<grid_t>("n_in"), center);
+		ca::n_t n_out(gridfile.value<grid_t>("n_out"), center);
 
 		tv_ctor cons(n_in, n_out);
-		while(in.good())
+		for(std::size_t i = 0; i < gridfile.max(); ++i)
 		{
-			const grid_t in_grid(in, 0);
-			const grid_t out_grid(in, 0);
-			cons.add(in_grid, out_grid, _rot, _mirr);
+			const io::supersection_t& g = gridfile[i];
+			bool rot = g.leaf<void>("rotate").is_read();
+			bool mirr = g.leaf<void>("mirror").is_read();
+			for(std::size_t j = 0; j < g.max(); ++j)
+			{
+				const grid_io::grid_pair_t& gp = g.value<grid_io::grid_pair_t>(j);
+				cons.add(gp.in, gp.out, rot, mirr);
+			}
 		}
-#endif
 
-
-
-
-//		return trans_vector_t(std::move(cons));
+		return trans_vector_t(std::move(cons));
 	}
 
 	void dump_as_formula_at(std::ostream& stream, int output_idx) const

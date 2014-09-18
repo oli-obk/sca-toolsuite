@@ -50,26 +50,26 @@ supersection_t::cur_type_t supersection_t::check_string(secfile_t &inf, std::str
 	cur_type_t res;
 	if(type == type_t::multi && is_number(s.c_str()))
 	{
-		std::cout << "Found multi object: `" << s << "'" << std::endl;
+		std::cerr << "Found multi object: `" << s << "'" << std::endl;
 		res = cur_type_t::multi;
 	}
 	else if((type == type_t::batch) && (batch_str == s))
 	{
-		std::cout << "Found batch string: `" << s << "'" << std::endl;
+		std::cerr << "Found batch string: `" << s << "'" << std::endl;
 		res = cur_type_t::batch;
 	}
 	else if((super_itr = supersections.find(s)) != supersections.end())
 	{
-		std::cout << "Found supersection: `" << s << "'" << std::endl;
+		std::cerr << "Found supersection: `" << s << "'" << std::endl;
 		res = cur_type_t::super;
 	}
 	else if((leaf_itr = leafs.find(s)) != leafs.end()) // TODO: store itr in mutable class var?
 	{
-		std::cout << "Found leaf: `" << s << "'" << std::endl;
+		std::cerr << "Found leaf: `" << s << "'" << std::endl;
 		res = cur_type_t::leaf;
 	}
 	else {
-		std::cout << "No match: `" << s << "'" << std::endl;
+		std::cerr << "No match: `" << s << "'" << std::endl;
 		res = cur_type_t::unknown;
 	}
 
@@ -107,10 +107,12 @@ void supersection_t::parse(secfile_t &inf)
 {
 	std::string s;
 	cur_type_t cur;
+
+	int idx = -1; // TODO: size_t
+
 	while(cur_type_t::unknown != (cur = check_string(inf, s))) // TODO: while type = inf.read_string_no_clear() ...
 	{
 		std::cerr << "Trying to parse section: " << s << std::endl;
-		int idx = -1; // TODO: size_t
 
 		switch(cur)
 		{

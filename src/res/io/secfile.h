@@ -120,8 +120,8 @@ public:
 	void dump(std::ostream& stream) const { stream << t; }
 	operator T&() noexcept { return t; }
 	operator const T&() const noexcept { return t; }
-
-//	const leaf_template_t<T>& cast() const { return *this; }
+	const T& value() const noexcept { return t; }
+	T& value() noexcept { return t; }
 };
 
 template<>
@@ -139,7 +139,6 @@ class leaf_template_t<void> : public leaf_base_t
 public:
 	void parse(secfile_t& ) noexcept {}
 	void dump(std::ostream& ) const noexcept {}
-	const leaf_base_t& cast() const { throw "cannot downcast void leaf"; }
 };
 
 class factory_base
@@ -167,8 +166,6 @@ public:
 		batch
 	};
 	type_t type;
-
-	const supersection_t& cast() const { throw "Don't cast to a supersection"; }
 
 private:
 	const bool required;
@@ -218,14 +215,25 @@ protected:
 
 	cur_type_t check_string(secfile_t& inf, std::string& s);
 
+	template<class M, class K>
+	static leaf_base_t& save_map_find(const M& map, const K& key)
+	{
+		auto itr = map.find(key);
+		if((itr) == map.end()) {
+			std::cerr << "Looking up: " << key << std::endl;
+			throw "Key not found";
+		}
+		else
+		 return *(itr->second);
+	}
 
 public:
 
-	std::size_t numbered_count() const { return multi_sections.size(); }
+	std::size_t max() const { return multi_sections.size(); }
 
 	supersection_t& section(const char* name) {
 		return dynamic_cast<supersection_t&>(
-			*(supersections.find(name)->second));
+			save_map_find(supersections, name));
 	}
 
 	supersection_t& operator[](const char* name) {
@@ -236,20 +244,22 @@ public:
 	template<class T>
 	leaf_template_t<T>& leaf(const char* name) {
 		return dynamic_cast<leaf_template_t<T>&>(
-			*leafs.find(name)->second);
+			save_map_find(leafs, name));
 	}
 
 	leaf_base_t& numbered(std::size_t id) {
-		return *(multi_sections.find(id)->second);
+		return save_map_find(multi_sections, id);
 	}
 
-	leaf_base_t& operator[](std::size_t id) {
-		return numbered(id);
+	supersection_t& operator[](std::size_t id) {
+		return dynamic_cast<supersection_t&>(numbered(id));
 	}
+
+
 
 	const supersection_t& section(const char* name) const {
 		return dynamic_cast<const supersection_t&>(
-			*(supersections.find(name)->second));
+			save_map_find(supersections, name));
 	}
 
 	const supersection_t& operator[](const char* name) const {
@@ -259,17 +269,45 @@ public:
 	template<class T>
 	const leaf_template_t<T>& leaf(const char* name) const {
 		return dynamic_cast<const leaf_template_t<T>&>(
-			*leafs.find(name)->second);
+			save_map_find(leafs, name));
 	}
 
+	template<class T>
+	const T& value(const char* name) const {
+		return leaf<T>(name).value();
+	}
+
+	template<class T>
+	T& value(const char* name) {
+		return leaf<T>(name).value();
+	}
+
+	template<class T>
+	const T& value(std::size_t id) const {
+		return dynamic_cast<const leaf_template_t<T>&>(numbered(id)).value();
+	}
+
+	template<class T>
+	T& value(std::size_t id) {
+		return dynamic_cast<leaf_template_t<T>&>(numbered(id)).value();
+	}
 
 	const leaf_base_t& numbered(std::size_t id) const {
-		return *(multi_sections.find(id)->second);
+		return save_map_find(multi_sections, id);
 	}
 
-	const leaf_base_t& operator[](std::size_t id) const {
-		return numbered(id);
+	const supersection_t& operator[](std::size_t id) const {
+		return dynamic_cast<const supersection_t&>(numbered(id));
 	}
+
+	template<class T>
+	const leaf_template_t<T>& num(const char* name) const {
+		return dynamic_cast<const leaf_template_t<T>&>(
+			save_map_find(leafs, name));
+	}
+
+
+
 	// TODO: itr class
 
 

@@ -312,7 +312,7 @@ private:
 			//	 bit_tmp_result[center_out + p] = grid[center + p];
 			}
 
-			std::cerr << grid << "->" << bit_tmp_result << std::endl;
+			//std::cerr << grid << "->" << bit_tmp_result << std::endl;
 
 			return bit_tmp_result.raw_value();
 		}
