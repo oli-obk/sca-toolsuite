@@ -40,7 +40,7 @@ public:
 		return stream >> gp.in >> gp.out;
 	}
 };
-
+/*
 class symmetry_t : public io::supersection_t
 {
 	class rotate_t {};
@@ -50,13 +50,16 @@ public:
 		init_leaf<io::leaf_template_t<void>>("rotate");
 		init_leaf<io::leaf_template_t<void>>("mirror");
 	}
-};
+};*/
 
 class grid_group_t : public io::supersection_t
 {
 public:
 	grid_group_t() : supersection_t(type_t::batch) {
-		init_subsection<symmetry_t>("symmetry");
+//		init_subsection<symmetry_t>("symmetry");
+
+		init_leaf<io::leaf_template_t<void>>("rotate");
+		init_leaf<io::leaf_template_t<void>>("mirror");
 
 		init_factory<io::leaf_template_t<grid_pair_t>>();
 		set_batch_str("t");
@@ -90,6 +93,7 @@ class leaf_template_t<grid_io::grid_pair_t> : public leaf_base_t // TODO: why is
 public:
 	void parse(io::secfile_t& inf) { inf.stream >> t; }
 	void dump(std::ostream& ) const { throw "not impl"; }
+	const leaf_template_t<grid_io::grid_pair_t>& cast() const { return *this; }
 };
 
 }
@@ -104,7 +108,6 @@ class tv_ctor
 
 	using u_coord_t = typename def_coord_traits::u_coord_t;
 
-	bool _rot, _mirr;
 	const ca::n_t n_in, n_out;
 	const point center_in, center_out;
 	const dimension n_dim;
@@ -173,7 +176,7 @@ class tv_ctor
 	//! family of 8 trans functions, subgroup of D4
 	mutable trans_t tmp_tfs[8];
 
-	bool index_ok(int idx)
+	bool index_ok(int idx, bool _rot, bool _mirr)
 	{
 		return (_mirr || !(idx&4)) && (_rot || !(idx&3));
 	}
@@ -183,7 +186,9 @@ class tv_ctor
 		const _grid_t<Traits, CellTraits>& input_grid,
 		const _grid_t<Traits, CellTraits>& output_grid,
 		const point& p_in,
-		const point& p_out)
+		const point& p_out,
+		bool _rot,
+		bool _mirr)
 	{
 		// family of 8 trans functions, subgroup of D4
 	//	assert(bb.x_size() == input_grid.dim().width());
@@ -192,7 +197,7 @@ class tv_ctor
 		// TODO: unroll?
 		int used = 0;
 		for(int i = 0; i < 8; ++i)
-		if(index_ok(i))
+		if(index_ok(i, _rot, _mirr))
 		{
 			++used;
 			add_single_tf(tmp_tfs + i, p_in, p_out, input_grid, output_grid, i);
@@ -211,10 +216,7 @@ class tv_ctor
 	}
 
 public:
-	tv_ctor(const ca::n_t& n_in, const ca::n_t& n_out,
-		bool _rot, bool _mirr) :
-		_rot(_rot),
-		_mirr(_mirr),
+	tv_ctor(const ca::n_t& n_in, const ca::n_t& n_out) :
 		n_in(n_in),
 		n_out(n_out),
 		center_in(n_in.center()), // TODO: remove them all
@@ -241,7 +243,8 @@ public:
 #endif
 	}
 
-	void add(const grid_t& in_grid, const grid_t& out_grid)
+	void add(const grid_t& in_grid, const grid_t& out_grid,
+		bool _rot, bool _mirr)
 	{
 		enum class mode_t
 		{
@@ -266,7 +269,7 @@ public:
 				std::cerr << "Scanning rect: " << rc << std::endl;
 #endif
 				for(const point& p_in : rc)
-				 add_transition_functions(in_grid, out_grid, p_in, p_in);
+				 add_transition_functions(in_grid, out_grid, p_in, p_in, _rot, _mirr);
 			}
 				break;
 			case mode_t::fit:
@@ -279,7 +282,7 @@ public:
 				auto itr_out = rc_out.begin();
 
 				for( ; itr_in != rc_in.end(); ++itr_in, ++itr_out)
-				 add_transition_functions(in_grid, out_grid, *itr_in, *itr_out);
+				 add_transition_functions(in_grid, out_grid, *itr_in, *itr_out, _rot, _mirr);
 			}
 				break;
 			default:
@@ -334,8 +337,24 @@ public:
 		} catch(io::secfile_t::error_t ife) {
 			std::cout << "infile line " << ife.line << ": "	 << ife.msg << std::endl;
 		}
-		return trans_vector_t();
 
+
+		const grid_t& center_grid = gridfile.leaf<grid_t>("center");
+		for(const point& p : center_grid.points())
+		if(center_grid[p])
+		{
+			center = p;
+			++center_count;
+		}
+
+
+	//	bool _rot = gridfile["symmetry"]["rot"].is_read();
+	//	bool _mirr =
+
+		std::size_t max = gridfile.numbered_count();
+
+
+#if OLDSTYLE
 		bool _rot, _mirr;
 		in >> _rot;
 		in >> _mirr;
@@ -363,15 +382,19 @@ public:
 		grid_t center_grid_3(in, 0);
 		ca::n_t n_out(center_grid_3, center);
 
-		tv_ctor cons(n_in, n_out, _rot, _mirr);
+		tv_ctor cons(n_in, n_out);
 		while(in.good())
 		{
 			const grid_t in_grid(in, 0);
 			const grid_t out_grid(in, 0);
-			cons.add(in_grid, out_grid);
+			cons.add(in_grid, out_grid, _rot, _mirr);
 		}
+#endif
 
-		return trans_vector_t(std::move(cons));
+
+
+
+//		return trans_vector_t(std::move(cons));
 	}
 
 	void dump_as_formula_at(std::ostream& stream, int output_idx) const

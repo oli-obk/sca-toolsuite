@@ -119,7 +119,7 @@ void supersection_t::parse(secfile_t &inf)
 			idx = std::stoi(s);
 			std::cerr << "Reading multi object: " << idx << "..." << std::endl;
 			auto ptr = leaf_factory->make();
-			ptr->parse(inf);
+			ptr->_parse(inf);
 			multi_sections[idx] = ptr;
 		}
 		break;
@@ -127,17 +127,17 @@ void supersection_t::parse(secfile_t &inf)
 		case cur_type_t::batch:
 		{
 			auto ptr = leaf_factory->make();
-			ptr->parse(inf);
+			ptr->_parse(inf);
 			multi_sections[++idx] = ptr;
 		}
 		break;
 
 		case cur_type_t::super:
-			super_itr->second->parse(inf);
+			super_itr->second->_parse(inf);
 			break;
 
 		case cur_type_t::leaf:
-			leaf_itr->second->parse(inf);
+			leaf_itr->second->_parse(inf);
 			break;
 
 		default:

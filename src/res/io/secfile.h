@@ -87,12 +87,26 @@ public:
 	section_t read_section();
 };
 
+template<class T> class leaf_template_t;
+
 class leaf_base_t
 {
+private:
+	bool read = false;
 public:
+	bool is_read() const { return read; }
+	void set_read() { read = true; }
+	void _parse(secfile_t& inf) {
+		set_read();
+		parse(inf);
+	}
 	virtual void parse(secfile_t& inf) = 0;
 	virtual void dump(std::ostream& stream) const = 0;
 	friend std::ostream& operator<<(std::ostream& stream, const leaf_base_t& l);
+	template<class T>
+	const leaf_template_t<T>& as() { return dynamic_cast<
+		const leaf_template_t<T>&>(*this); }
+//	virtual const leaf_base_t& cast() const = 0;
 };
 
 template<class T>
@@ -100,8 +114,14 @@ class leaf_template_t : public leaf_base_t
 {
 	T t;
 public:
-	void parse(secfile_t& inf) { inf.stream >> t; std::cerr << "Read object via cin: " << t << std::endl; }
+	void parse(secfile_t& inf) { inf.stream >> t; std::cerr << "Read object via cin: " << t << std::endl;
+
+	}
 	void dump(std::ostream& stream) const { stream << t; }
+	operator T&() noexcept { return t; }
+	operator const T&() const noexcept { return t; }
+
+//	const leaf_template_t<T>& cast() const { return *this; }
 };
 
 template<>
@@ -119,6 +139,7 @@ class leaf_template_t<void> : public leaf_base_t
 public:
 	void parse(secfile_t& ) noexcept {}
 	void dump(std::ostream& ) const noexcept {}
+	const leaf_base_t& cast() const { throw "cannot downcast void leaf"; }
 };
 
 class factory_base
@@ -146,6 +167,9 @@ public:
 		batch
 	};
 	type_t type;
+
+	const supersection_t& cast() const { throw "Don't cast to a supersection"; }
+
 private:
 	const bool required;
 	std::string batch_str;
@@ -153,7 +177,7 @@ private:
 	factory_base* leaf_factory;
 
 
-	std::map<std::string, leaf_base_t*> supersections;
+	std::map<std::string, leaf_base_t*> supersections; // TODO: map of supersection_t?
 	std::map<std::size_t, leaf_base_t*> multi_sections;
 	std::map<std::string, leaf_base_t*> leafs;
 
@@ -196,6 +220,58 @@ protected:
 
 
 public:
+
+	std::size_t numbered_count() const { return multi_sections.size(); }
+
+	supersection_t& section(const char* name) {
+		return dynamic_cast<supersection_t&>(
+			*(supersections.find(name)->second));
+	}
+
+	supersection_t& operator[](const char* name) {
+		return section(name);
+	}
+
+
+	template<class T>
+	leaf_template_t<T>& leaf(const char* name) {
+		return dynamic_cast<leaf_template_t<T>&>(
+			*leafs.find(name)->second);
+	}
+
+	leaf_base_t& numbered(std::size_t id) {
+		return *(multi_sections.find(id)->second);
+	}
+
+	leaf_base_t& operator[](std::size_t id) {
+		return numbered(id);
+	}
+
+	const supersection_t& section(const char* name) const {
+		return dynamic_cast<const supersection_t&>(
+			*(supersections.find(name)->second));
+	}
+
+	const supersection_t& operator[](const char* name) const {
+		return section(name);
+	}
+
+	template<class T>
+	const leaf_template_t<T>& leaf(const char* name) const {
+		return dynamic_cast<const leaf_template_t<T>&>(
+			*leafs.find(name)->second);
+	}
+
+
+	const leaf_base_t& numbered(std::size_t id) const {
+		return *(multi_sections.find(id)->second);
+	}
+
+	const leaf_base_t& operator[](std::size_t id) const {
+		return numbered(id);
+	}
+	// TODO: itr class
+
 
 	void dump(std::ostream& stream) const;
 
