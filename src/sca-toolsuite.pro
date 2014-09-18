@@ -40,7 +40,8 @@ HEADERS += res/io.h res/stack_algorithm.h \
     res/util.h \
     res/ca/dead_cells.h \
     res/utils/exceptions.h \
-    res/utils/name_type_map.h
+    res/utils/name_type_map.h \
+    res/io/secfile.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \
@@ -89,7 +90,8 @@ SOURCES += algo/relax.cpp \
     res/ca_table.cpp \
     ca/converter.cpp \
     ca/dead_cells.cpp \
-    test/sca_test.cpp
+    test/sca_test.cpp \
+    res/io/secfile.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL.txt \
 	../README.txt \

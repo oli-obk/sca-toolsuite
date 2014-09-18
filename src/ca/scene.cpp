@@ -18,164 +18,10 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
+#include "io/secfile.h"
 #include "general.h"
 #include "ca_basics.h"
 #include "ca_convert.h"
-
-#include <string>
-#include <iostream>
-#include <cstring>
-#include <map>
-
-class section_t
-{
-	std::string _value;
-public:
-	operator bool() { return _value.size(); }
-	bool operator==(const char* str) const { return _value == str; }
-	//section_t(const char* name) : name(name) {}
-	section_t(std::string&& value) : _value(value) {}
-	section_t() {}
-//	explicit operator const std::string&() const { return value; }
-	const std::string& value() const { return _value; }
-	friend std::ostream& operator<< (std::ostream& stream,
-		const section_t& s) {
-		return stream << s._value;
-	}
-};
-
-bool is_number_digit(const char& c) noexcept {
-	return (isdigit(c) || c == '-' || c == '+');
-}
-
-void skip_num_after(const char* ptr) noexcept
-{
-	while(is_number_digit(*++ptr)) ;
-}
-
-
-bool is_number(const char* ptr) noexcept
-{
-	bool ok = is_number_digit(*ptr);
-	while(is_number_digit(*++ptr)) ;
-	return ok && !*(ptr);
-}
-
-struct infile_t
-{
-	constexpr static std::size_t READ_BUF_SIZE = 128;
-	char read_buffer[READ_BUF_SIZE] = { 0 };
-	std::istream& stream;
-public:
-
-	struct error_t
-	{
-		int line;
-		const char* msg;
-	};
-
-	int line = 1;
-
-	error_t mk_error(const char* err) const {
-		std::cerr << "parsing stopped after: " << read_buffer << std::endl;
-		return error_t { line, err };
-	}
-
-	infile_t(std::istream& stream = std::cin) :
-		stream(stream) {}
-
-	void read_newline()
-	{
-		if(*get_next_line()) {
-			throw mk_error("Expected newline");
-		}
-		++line;
-	}
-
-	static bool m_atoi(int& res, const char* str) {
-		return is_number_digit(*str)
-			? res = atoi(str), true
-			: false;
-	}
-
-	bool read_int(int& i)
-	{
-		const char* buf = get_next_line();
-		/*if(!*buf) {
-			throw mk_error("Expected a non-empty number");
-		}*/
-		++line;
-		return (m_atoi(i, buf))
-			? clear_buffer(), true
-			: false;
-	}
-
-	const char* get_next_line()
-	{
-		const char* result = read_buffer;
-		if(!*result) {
-			stream.getline(read_buffer, READ_BUF_SIZE);
-			++line;
-			if(!stream.good())
-			 clear_buffer();
-		}
-		return result;
-	}
-
-	void clear_buffer() { *read_buffer = 0; }
-
-	std::string read_string_noclear()
-	{
-		/*if(!*read_buffer) {
-			throw mk_error("Expected a non-empty string");
-		}*/
-		return ++line, std::string(get_next_line());
-	}
-
-	std::string read_string()
-	{
-		/*if(!*read_buffer) {
-			throw mk_error("Expected a non-empty string");
-		}*/
-		std::string result = read_string_noclear();
-		clear_buffer();
-		return result;
-	}
-
-	bool match_string(const char* str)
-	{
-		/*if(!*read_buffer) {
-			throw mk_error("Expected a non-empty string");
-		}*/
-		std::string result = read_string_noclear();
-		if(result == str)
-		{
-			clear_buffer();
-			return true;
-		}
-		else
-		 return false;
-	}
-
-	/*void read_grid(grid_t& grid) {
-		stream >> grid;
-	}*/
-
-	section_t read_section()
-	{
-		std::string res = read_string_noclear();
-		//if(res.empty())
-		//throw mk_error("Expected section, got empty line!");
-		if(!stream.good())
-		 res = "";
-		if(res.size()) // i.e. this was a section
-		{
-			clear_buffer();
-			read_newline();
-		}
-		return std::move(res);
-	}
-};
 
 using namespace sca::ca;
 
@@ -195,13 +41,12 @@ public:
 	}
 };
 
-inline const char* next_word(const char*& str) {
-	while(*(++str) != ' ') ;
-	return ++str;
-}
-
 class path_node
 {
+	inline static const char* next_word(const char*& str) {
+		while(*(++str) != ' ') ;
+		return ++str;
+	}
 public:
 	//int grid_id;
 	std::string description;
@@ -248,7 +93,7 @@ public:
 	std::vector<markup> markup_list;
 	std::vector<arrow> arrow_list;
 
-	bool parse(infile_t& inf)
+	bool parse(io::secfile_t& inf)
 	{
 		/*if(inf.read_int(grid_id))
 		{
@@ -274,236 +119,16 @@ public:
 	void dump(std::ostream& stream) const { (void)stream; /*TODO*/ }
 };
 
-class leaf_base_t
+namespace io
 {
-public:
-	virtual void parse(infile_t& inf) = 0;
-	virtual void dump(std::ostream& stream) const = 0;
-	friend std::ostream& operator<<(std::ostream& stream, const leaf_base_t& l) {
-		return l.dump(stream), stream;
-	}
-};
-
-template<class T>
-class leaf_template_t : public leaf_base_t
-{
-	T t;
-public:
-	void parse(infile_t& inf) { inf.stream >> t; std::cerr << "Read object via cin: " << t << std::endl; }
-	void dump(std::ostream& stream) const { stream << t; }
-};
-
-template<>
-class leaf_template_t<std::string> : public leaf_base_t
-{
-	std::string t;
-public:
-	void parse(infile_t& inf) { t = inf.read_section();  std::cerr << "Read string: " << t << std::endl; }
-	void dump(std::ostream& stream) const { stream << t; }
-};
 
 template<> // TODO: abstract case of path_node? enable_if?
 class leaf_template_t<path_node> : public leaf_base_t
 {
 	path_node t;
 public:
-	void parse(infile_t& inf) { t.parse(inf); }
+	void parse(io::secfile_t& inf) { t.parse(inf); }
 	void dump(std::ostream& stream) const { t.dump(stream); }
-};
-
-class factory_base
-{
-public:
-	virtual leaf_base_t* make() = 0;
-};
-
-template<class T>
-class factory : public factory_base
-{
-public:
-	virtual T* make() { return new T(); }
-};
-
-class supersection_t : public leaf_base_t
-{
-public:
-	using self_type = supersection_t;
-
-	enum class type_t
-	{
-		sections,
-		multi,
-		batch
-	};
-	type_t type;
-private:
-	const bool required;
-	std::string batch_str;
-	factory_base* leaf_factory;
-	std::map<std::string, leaf_base_t*> supersections;
-	std::map<std::size_t, leaf_base_t*> multi_sections;
-	std::map<std::string, leaf_base_t*> leafs;
-
-	bool check_required()
-	{
-		(void)required; // TODO
-		return true;
-	}
-
-protected:
-	template<class T>
-	void init_subsection(const char* sec_name) {
-		supersections[sec_name] = new T();
-	}
-	template<class T>
-	void init_leaf(const char* leaf_name) {
-		leafs[leaf_name] = new T();
-	}
-	template<class T>
-	void init_factory() {
-		leaf_factory = new factory<T>();
-	}
-	void set_batch_str(const char* str) {
-		batch_str = str;
-	}
-
-	enum class cur_type_t
-	{
-		multi,
-		batch,
-		super,
-		leaf,
-		unknown
-	};
-
-	mutable std::map<std::string, leaf_base_t*>::iterator super_itr;
-	mutable std::map<std::string, leaf_base_t*>::iterator leaf_itr;
-
-	cur_type_t check_string(infile_t& inf, std::string& s)
-	{
-		s = inf.read_string_noclear();
-		cur_type_t res;
-		if(type == type_t::multi && is_number(s.c_str()))
-		{
-			std::cout << "Found multi object: `" << s << "'" << std::endl;
-			res = cur_type_t::multi;
-		}
-		else if((type == type_t::batch) && (batch_str == s))
-		{
-			std::cout << "Found batch string: `" << s << "'" << std::endl;
-			res = cur_type_t::batch;
-		}
-		else if((super_itr = supersections.find(s)) != supersections.end())
-		{
-			std::cout << "Found supersection: `" << s << "'" << std::endl;
-			res = cur_type_t::super;
-		}
-		else if((leaf_itr = leafs.find(s)) != leafs.end()) // TODO: store itr in mutable class var?
-		{
-			std::cout << "Found leaf: `" << s << "'" << std::endl;
-			res = cur_type_t::leaf;
-		}
-		else {
-			std::cout << "No match: `" << s << "'" << std::endl;
-			res = cur_type_t::unknown;
-		}
-
-		if(res != cur_type_t::unknown)
-		{
-			inf.clear_buffer();
-			inf.read_newline();
-		}
-
-		return res;
-	}
-
-
-public:
-
-	void dump(std::ostream& stream) const
-	{
-		for(const auto& pr : supersections)
-		{
-			stream << pr.first << std::endl << std::endl
-				<< (*pr.second);
-		}
-
-		for(const auto& pr : leafs)
-		{
-			stream << pr.first << std::endl << std::endl
-				<< (*pr.second);
-		}
-
-		for(const auto& pr : multi_sections)
-		{
-			stream << pr.first << std::endl << std::endl
-				<< (*pr.second);
-		}
-	}
-
-	void parse (infile_t& inf)
-	{
-		std::string s;
-		cur_type_t cur;
-		while(cur_type_t::unknown != (cur = check_string(inf, s))) // TODO: while type = inf.read_string_no_clear() ...
-		{
-			std::cerr << "Trying to parse section: " << s << std::endl;
-			int idx = -1; // TODO: size_t
-
-
-			switch(cur)
-			{
-				case cur_type_t::multi:
-				{
-					idx = std::stoi(s);
-					std::cerr << "Reading multi object: " << idx << "..." << std::endl;
-					auto ptr = leaf_factory->make();
-					ptr->parse(inf);
-					multi_sections[idx] = ptr;
-				}
-				break;
-
-				case cur_type_t::batch:
-				{
-					auto ptr = leaf_factory->make();
-					ptr->parse(inf);
-					multi_sections[++idx] = ptr;
-				}
-				break;
-
-				case cur_type_t::super:
-					super_itr->second->parse(inf);
-					break;
-
-				case cur_type_t::leaf:
-					leaf_itr->second->parse(inf);
-					break;
-
-				default:
-					throw "Impossible";
-					break;
-			}
-
-		}
-		std::cerr << "Aborted on reading: " << s << ":" << std::endl
-			<< " - `" << s << "' is no known super section or leaf" << std::endl;
-		if(type == type_t::multi)
-		{
-			std::cerr << " - `" << s << "' is no number" << std::endl;
-		}
-		else if(type == type_t::batch)
-		{
-			std::cerr << " - `" << s << "' does not match the batch string `" << batch_str << "'" << std::endl;
-		}
-		std::cerr << std::endl;
-
-		check_required();
-	}
-
-	supersection_t(type_t type = type_t::sections, bool required = true) :
-		type(type),
-		required(required)
-		{}
 };
 
 class scene_grids_t : public supersection_t
@@ -523,10 +148,10 @@ public:
 };
 
 
-class scene_2_t : public supersection_t // TODO: public?
+class scene_t : public supersection_t // TODO: public?
 {
 public:
-	scene_2_t() : supersection_t(type_t::batch)
+	scene_t() : supersection_t(type_t::batch)
 	{
 		init_leaf<leaf_template_t<std::string>>("description");
 		init_leaf<leaf_template_t<n_t>>("n");
@@ -556,6 +181,9 @@ public:
 	} */
 };
 
+}
+
+#if 0
 class scene_t
 {
 public:
@@ -580,7 +208,7 @@ public:
 	//		<< section("grids", );
 	}
 
-	void parse(infile_t& inf)
+	void parse(secfile_t& inf)
 	{
 		section_t sec;
 		while((sec = inf.read_section()))
@@ -628,6 +256,7 @@ public:
 		tv = std::move(trans_vector_t(std::move(cons)));*/
 	}
 };
+#endif
 
 class MyProgram : public Program
 {
@@ -653,20 +282,20 @@ class MyProgram : public Program
 		 * parsing
 		 */
 
-		infile_t inf;
+		io::secfile_t inf;
 /*		scene_t scene;
 
 		try {
 			scene.parse(inf);
-		} catch(infile_t::error_t ife) {
+		} catch(secfile_t::error_t ife) {
 			std::cout << "infile line " << ife.line << ": "	 << ife.msg << std::endl;
 		}
 
 		scene.dump(std::cout);*/
-		scene_2_t scene;
+		io::scene_t scene;
 		try {
 			scene.parse(inf);
-		} catch(infile_t::error_t ife) {
+		} catch(io::secfile_t::error_t ife) {
 			std::cout << "infile line " << ife.line << ": "	 << ife.msg << std::endl;
 		}
 		std::cout << scene;
