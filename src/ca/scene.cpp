@@ -131,30 +131,32 @@ public:
 	void dump(std::ostream& stream) const { t.dump(stream); }
 };
 
-class scene_grids_t : public supersection_t
+}
+
+class scene_grids_t : public io::supersection_t
 {
 public:
 	scene_grids_t() : supersection_t(type_t::multi) {
-		init_factory<leaf_template_t<grid_t>>();
+		init_factory<io::leaf_template_t<grid_t>>();
 	}
 };
 
-class scene_path_t : public supersection_t
+class scene_path_t : public io::supersection_t
 {
 public:
 	scene_path_t() : supersection_t(type_t::multi) {
-		init_factory<leaf_template_t<path_node>>();
+		init_factory<io::leaf_template_t<path_node>>();
 	}
 };
 
 
-class scene_t : public supersection_t // TODO: public?
+class scene_t : public io::supersection_t // TODO: public?
 {
 public:
 	scene_t() : supersection_t(type_t::batch)
 	{
-		init_leaf<leaf_template_t<std::string>>("description");
-		init_leaf<leaf_template_t<n_t>>("n");
+		init_leaf<io::leaf_template_t<std::string>>("description");
+		init_leaf<io::leaf_template_t<n_t>>("n");
 		init_subsection<scene_grids_t>("grids");
 
 		init_factory<scene_path_t>();
@@ -181,7 +183,6 @@ public:
 	} */
 };
 
-}
 
 #if 0
 class scene_t
@@ -283,16 +284,7 @@ class MyProgram : public Program
 		 */
 
 		io::secfile_t inf;
-/*		scene_t scene;
-
-		try {
-			scene.parse(inf);
-		} catch(secfile_t::error_t ife) {
-			std::cout << "infile line " << ife.line << ": "	 << ife.msg << std::endl;
-		}
-
-		scene.dump(std::cout);*/
-		io::scene_t scene;
+		scene_t scene;
 		try {
 			scene.parse(inf);
 		} catch(io::secfile_t::error_t ife) {

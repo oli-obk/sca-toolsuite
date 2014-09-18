@@ -23,9 +23,76 @@
 #ifndef CA_CONVERT_H
 #define CA_CONVERT_H
 
+#include "io/secfile.h"
 #include "ca.h"
 #include "ca_table.h"
 #include "utils/name_type_map.h"
+
+namespace grid_io
+{
+
+class grid_pair_t
+{
+	grid_t in, out;
+public:
+	friend std::istream& operator>> (std::istream& stream,
+		grid_pair_t& gp) {
+		return stream >> gp.in >> gp.out;
+	}
+};
+
+class symmetry_t : public io::supersection_t
+{
+	class rotate_t {};
+	class mirror_t {};
+public:
+	symmetry_t() : supersection_t(type_t::sections) {
+		init_leaf<io::leaf_template_t<void>>("rotate");
+		init_leaf<io::leaf_template_t<void>>("mirror");
+	}
+};
+
+class grid_group_t : public io::supersection_t
+{
+public:
+	grid_group_t() : supersection_t(type_t::batch) {
+		init_subsection<symmetry_t>("symmetry");
+
+		init_factory<io::leaf_template_t<grid_pair_t>>();
+		set_batch_str("t");
+	}
+};
+
+
+class gridfile_t : public io::supersection_t // TODO: public?
+{
+public:
+	gridfile_t() : supersection_t(type_t::batch)
+	{
+		init_factory<grid_group_t>();
+		set_batch_str("group");
+
+		init_leaf<io::leaf_template_t<grid_t>>("n_in");
+		init_leaf<io::leaf_template_t<grid_t>>("n_out");
+		init_leaf<io::leaf_template_t<grid_t>>("center");
+	}
+};
+
+}
+
+namespace io
+{
+
+template<> // TODO: abstract case of path_node? enable_if?
+class leaf_template_t<grid_io::grid_pair_t> : public leaf_base_t // TODO: why is this necessary?
+{
+	grid_io::grid_pair_t t;
+public:
+	void parse(io::secfile_t& inf) { inf.stream >> t; }
+	void dump(std::ostream& ) const { throw "not impl"; }
+};
+
+}
 
 namespace sca { namespace ca {
 
@@ -222,6 +289,7 @@ public:
 	}
 };
 
+
 class trans_vector_t
 {
 	ca::n_t n_in, n_out;
@@ -258,6 +326,15 @@ public:
 	{
 		point center;
 		std::size_t center_count = 0;
+
+		io::secfile_t inf;
+		grid_io::gridfile_t gridfile;
+		try {
+			gridfile.parse(inf);
+		} catch(io::secfile_t::error_t ife) {
+			std::cout << "infile line " << ife.line << ": "	 << ife.msg << std::endl;
+		}
+		return trans_vector_t();
 
 		bool _rot, _mirr;
 		in >> _rot;

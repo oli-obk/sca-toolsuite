@@ -113,6 +113,14 @@ public:
 	void dump(std::ostream& stream) const { stream << t; }
 };
 
+template<>
+class leaf_template_t<void> : public leaf_base_t
+{
+public:
+	void parse(secfile_t& ) noexcept {}
+	void dump(std::ostream& ) const noexcept {}
+};
+
 class factory_base
 {
 public:
@@ -141,7 +149,10 @@ public:
 private:
 	const bool required;
 	std::string batch_str;
+
 	factory_base* leaf_factory;
+
+
 	std::map<std::string, leaf_base_t*> supersections;
 	std::map<std::size_t, leaf_base_t*> multi_sections;
 	std::map<std::string, leaf_base_t*> leafs;
