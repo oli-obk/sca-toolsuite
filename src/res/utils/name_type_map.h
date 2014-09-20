@@ -21,6 +21,9 @@
 #ifndef NAME_TYPE_MAP_H
 #define NAME_TYPE_MAP_H
 
+#include <ostream>
+#include <cstring> // TODO: layer out to cpp file?
+
 namespace sca {
 
 // TODO: inside name_type_map_t?

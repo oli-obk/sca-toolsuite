@@ -67,7 +67,6 @@ int _table_hdr_t::fetch_8(std::istream &stream)
 _table_hdr_t::n_t _table_hdr_t::fetch_n(std::istream &stream) const
 {
 	std::vector<point> v(fetch_32(stream));
-	std::cout << "fetching n: " << v.size() << std::endl;
 	for(std::size_t i = 0; i < v.size(); ++i)
 	{
 		coord_t x = fetch_8(stream);

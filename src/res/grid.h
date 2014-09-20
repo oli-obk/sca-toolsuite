@@ -196,6 +196,14 @@ public:
 		_dim = rhs._dim;
 		return *this;
 	}
+
+	friend serializer& operator<<(serializer& s, const grid_alignment_t& g) {
+		return s << g._dim << g.bw; }
+	friend deserializer& operator>>(deserializer& s, grid_alignment_t& g) {
+		s >> g._dim >> g.bw;
+		g.bw_2 = g.bw << 1;
+		return s;
+	}
 };
 
 //! class representing a grid, i.e. an array with h/w + border
@@ -547,6 +555,11 @@ public:
 		 is_ptr = &std::cin;
 		read_grid(*is_ptr, _data, _dim, bw, border_symbol);
 	}
+
+	friend serializer& operator<<(serializer& s, const _grid_t& g) {
+		return s << (const base&)g << g._data; }
+	friend deserializer& operator>>(deserializer& s, _grid_t& g) {
+		return s >> (base&)g >> g._data; }
 
 	point_itr find_subgrid(const _grid_t& sub, const point_itr& from) const
 	{

@@ -434,6 +434,12 @@ struct _dimension : public _rect<Traits, _rect_storage_origin<Traits>>
 	_dimension(u_coord_t width, u_coord_t height) :
 		_rect<Traits, _rect_storage_origin<Traits>>({0,0}, {(coord_t)width, (coord_t)height}) {}
 	_dimension() {}
+
+	friend serializer& operator<<(serializer& s, const _dimension& d) {
+		return s << d._lr; }
+	friend deserializer& operator>>(deserializer& s, _dimension& d) {
+		return s >> d._lr; }
+
 };
 using dimension = _dimension<def_coord_traits>;
 
