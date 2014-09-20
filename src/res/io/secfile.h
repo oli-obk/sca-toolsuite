@@ -25,7 +25,7 @@
 #include <iostream>
 #include <map>
 
-namespace io {
+namespace sca { namespace io {
 
 class section_t
 {
@@ -321,6 +321,6 @@ public:
 		{}
 };
 
-}
+}}
 
 #endif // SECFILE_H

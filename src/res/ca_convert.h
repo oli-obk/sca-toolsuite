@@ -28,8 +28,9 @@
 #include "ca_table.h"
 #include "utils/name_type_map.h"
 
-namespace grid_io
-{
+namespace sca {
+
+namespace grid_io {
 
 struct grid_pair_t
 {
@@ -99,7 +100,7 @@ public:
 
 }
 
-namespace sca { namespace ca {
+namespace ca {
 
 class trans_vector_t;
 

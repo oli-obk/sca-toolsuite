@@ -24,6 +24,7 @@
 #include "ca_convert.h"
 
 using namespace sca::ca;
+using namespace sca::io;
 
 class color_t
 {
@@ -93,7 +94,7 @@ public:
 	std::vector<markup> markup_list;
 	std::vector<arrow> arrow_list;
 
-	bool parse(io::secfile_t& inf)
+	bool parse(secfile_t& inf)
 	{
 		/*if(inf.read_int(grid_id))
 		{
@@ -119,44 +120,43 @@ public:
 	void dump(std::ostream& stream) const { (void)stream; /*TODO*/ }
 };
 
-namespace io
-{
+namespace sca { namespace io {
 
 template<> // TODO: abstract case of path_node? enable_if?
 class leaf_template_t<path_node> : public leaf_base_t
 {
 	path_node t;
 public:
-	void parse(io::secfile_t& inf) { t.parse(inf); }
+	void parse(secfile_t& inf) { t.parse(inf); }
 	void dump(std::ostream& stream) const { t.dump(stream); }
 };
 
-}
+}}
 
-class scene_grids_t : public io::supersection_t
+class scene_grids_t : public supersection_t
 {
 public:
 	scene_grids_t() : supersection_t(type_t::multi) {
-		init_factory<io::leaf_template_t<grid_t>>();
+		init_factory<leaf_template_t<grid_t>>();
 	}
 };
 
-class scene_path_t : public io::supersection_t
+class scene_path_t : public supersection_t
 {
 public:
 	scene_path_t() : supersection_t(type_t::multi) {
-		init_factory<io::leaf_template_t<path_node>>();
+		init_factory<leaf_template_t<path_node>>();
 	}
 };
 
 
-class scene_t : public io::supersection_t // TODO: public?
+class scene_t : public supersection_t // TODO: public?
 {
 public:
 	scene_t() : supersection_t(type_t::batch)
 	{
-		init_leaf<io::leaf_template_t<std::string>>("description");
-		init_leaf<io::leaf_template_t<n_t>>("n");
+		init_leaf<leaf_template_t<std::string>>("description");
+		init_leaf<leaf_template_t<n_t>>("n");
 		init_subsection<scene_grids_t>("grids");
 
 		init_factory<scene_path_t>();
@@ -283,11 +283,11 @@ class MyProgram : public Program
 		 * parsing
 		 */
 
-		io::secfile_t inf;
+		secfile_t inf;
 		scene_t scene;
 		try {
 			scene.parse(inf);
-		} catch(io::secfile_t::error_t ife) {
+		} catch(secfile_t::error_t ife) {
 			std::cout << "infile line " << ife.line << ": "	 << ife.msg << std::endl;
 		}
 		std::cout << scene;

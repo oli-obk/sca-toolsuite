@@ -23,7 +23,7 @@
 
 #include "secfile.h"
 
-namespace io {
+namespace sca { namespace io {
 
 bool is_number_digit(const char& c) noexcept
 {
@@ -263,4 +263,4 @@ section_t secfile_t::read_section()
 	return std::move(res);
 }
 
-}
+}}

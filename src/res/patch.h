@@ -423,6 +423,11 @@ public:
 	std::size_t size() const { return _area.size(); }
 
 	void clear() { _area.clear(); _conf.clear(); _conf_before.clear(); }
+
+	friend io::serializer& operator<<(io::serializer& s, const _patch_t& p) {
+		return s << p._area << p._conf << p._conf_before; }
+	friend io::deserializer& operator>>(io::deserializer& s, _patch_t& p) {
+		return s >> p._area >> p._conf >> p._conf_before; }
 };
 
 //!

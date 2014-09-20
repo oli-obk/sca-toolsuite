@@ -29,12 +29,16 @@
 #include <iostream>
 
 #include "traits.h"
+#include "io/serial.h"
 
 enum class storage_t
 {
 	human,
 	internal
 };
+
+using sca::io::serializer;
+using sca::io::deserializer;
 
 //! Generic structure to store 2D coordinates
 //! Comparison is defined as linewise.
@@ -95,6 +99,11 @@ struct _point
 		const _point& p) {
 		return stream << "(" << (int)p.x << ", " << (int)p.y << ")";
 	}
+
+	friend serializer& operator<<(serializer& s, const _point& p) {
+		return s << p.x << p.y; }
+	friend deserializer& operator>>(deserializer& s, _point& p) {
+		return s >> p.x >> p.y; }
 };
 using point = _point<def_coord_traits>;
 

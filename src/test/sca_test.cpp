@@ -21,6 +21,21 @@
 #include "general.h"
 #include "grid.h"
 //#include "ca.h"
+#include "io/serial.h"
+
+using sca::io::serializer;
+using sca::io::deserializer;
+
+struct test_point
+{
+	int i;
+	char c;
+	test_point() : i(12), c(5) {}
+	friend serializer& operator<<(serializer& s, const test_point& tp) {
+		return s << tp.i << tp.c; }
+	friend deserializer& operator>>(deserializer& s, test_point& tp) {
+		return s >> tp.i >> tp.c; }
+};
 
 class MyProgram : public Program
 {
@@ -65,6 +80,25 @@ class MyProgram : public Program
 
 		grid_t g3(dimension(2,2), 1, 0, 42);
 		std::cout << g3[point(-1, -1)] << std::endl;
+
+		{
+		test_point tp;
+		std::ofstream ofs("test.txt");
+		sca::io::serializer ser(ofs);
+		ser << tp;
+		ser << 3;
+		}
+
+		{
+		test_point tp;
+		int i;
+		std::ifstream ifs("test.txt");
+		sca::io::deserializer ser(ifs);
+		ser >> tp;
+		ser >> i;
+		std::cerr << "tp: " << +tp.c << ", " << tp.i << std::endl;
+		std::cerr << "int: " << i << std::endl;
+		}
 
 		return exit_t::success;
 	}

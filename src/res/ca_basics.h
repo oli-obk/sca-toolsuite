@@ -867,6 +867,11 @@ public:
 	const_iterator cend() const { return _data.cend(); }
 
 	void clear() { _data.clear(); }
+
+	friend io::serializer& operator<<(io::serializer& s, const _conf_t& c) {
+		return s << c._data; }
+	friend io::deserializer& operator>>(io::deserializer& s, _conf_t& c) {
+		return s >> c._data; }
 };
 using conf_t = _conf_t<def_cell_traits>;
 
