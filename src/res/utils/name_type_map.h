@@ -34,6 +34,8 @@ struct name_type_pair
 	Enum e;
 };
 
+// TODO: specify help enum?
+
 template<std::size_t N, class Enum, Enum False>
 struct name_type_map_t
 {

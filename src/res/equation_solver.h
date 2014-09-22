@@ -26,13 +26,15 @@
 #include <cstdint>
 #include <tuple>
 #include <algorithm>
+#include <limits>
 
-#include <boost/spirit/include/support_info.hpp> // qi::info::nil
+//#include <boost/spirit/include/support_info.hpp>
+//#include <boost/phoenix/bind/bind_function.hpp>
 
-//#include <boost/variant/recursive_variant.hpp>
+#include <boost/variant/recursive_variant.hpp>
+#include <boost/variant/variant.hpp>
 #include <boost/variant/apply_visitor.hpp>
 #include <boost/variant/get.hpp>
-//#include <boost/phoenix/bind/bind_function.hpp>
 
 #include "random.h"
 
@@ -144,7 +146,7 @@ struct grid_storage_nothing
 {
 	// TODO: deduce unsigned int / int* from var_array?
 	inline unsigned int operator()(vaddr::var_array<false> ) const {
-		return INT_MIN; }
+		return std::numeric_limits<int>::min(); }
 	inline int* operator()(vaddr::var_array<true> ) const {
 		return nullptr; }
 };
@@ -446,9 +448,7 @@ public:
 
 //	inline int position(int _x, int _y) const { return (_y*(width+1)+_x+1); }
 
-	inline res_type operator()(const eqsolver::nil&) const { return 0; }
-
-	inline res_type operator()(boost::spirit::info::nil) const { return 0; }
+	inline res_type operator()(nil) const { return 0; }
 	inline res_type operator()(int n) const { return n; }
 	inline res_type operator()(std::string) const
 	{
@@ -542,9 +542,7 @@ public:
 
 //	inline int position(int _x, int _y) const { return (_y*(width+1)+_x+1); }
 
-	inline result_type operator()(const eqsolver::nil&) const { return err_str; }
-
-	inline result_type operator()(boost::spirit::info::nil) const { return err_str; }
+	inline result_type operator()(nil) const { return err_str; }
 	inline result_type operator()(int n) const { return std::to_string(n); }
 	inline result_type operator()(std::string) const
 	{
@@ -601,9 +599,7 @@ class ast_area  : public boost::static_visitor<unsigned int>
 public:
 	typedef unsigned int result_type;
 
-	inline result_type operator()(const eqsolver::nil&) const { return 0; }
-
-	inline result_type operator()(boost::spirit::info::nil) const { return 0; }
+	inline result_type operator()(nil) const { return 0; }
 	inline result_type operator()(int) const { return 0;  }
 	inline result_type operator()(std::string) const
 	{
@@ -651,9 +647,7 @@ public:
 	using typename base::result_type;
 	//typedef unsigned int result_type;
 
-	inline result_type operator()(const eqsolver::nil&) const { return cont_t(); }
-
-	inline result_type operator()(boost::spirit::info::nil) const { return cont_t(); }
+	inline result_type operator()(nil) const { return cont_t(); }
 	inline result_type operator()(int) const { return cont_t(); }
 	inline result_type operator()(std::string) const
 	{
@@ -1071,9 +1065,7 @@ struct ast_minmax : public boost::static_visitor<unsigned int>
 
 	ast_minmax(std::size_t helpers_size) : var_minmax(helpers_size) {}
 
-	inline result_type operator()(const eqsolver::nil&) const { exit(99); }
-
-	inline result_type operator()(boost::spirit::info::nil) const { exit(99); }
+	inline result_type operator()(nil) const { exit(99); }
 	inline result_type operator()(int n) const { return int_pair{expression_ast(n), expression_ast(n)};  }
 	inline result_type operator()(std::string) const
 	{

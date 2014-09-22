@@ -62,8 +62,8 @@ class MyProgram : public Program
 		for(unsigned int x = 0; x<dim.width(); x++)
 		{
 			const int internal = x+y*dim.width();
-			if(grid[internal] == INT_MIN) { // excludes border
-				result[internal] = INT_MIN;
+			if(grid[internal] == std::numeric_limits<int>::min()) { // excludes border
+				result[internal] = std::numeric_limits<int>::min();
 			}
 			else {
 				int result_int;
