@@ -489,6 +489,7 @@ public:
 	void apply_backup() { _patch.apply_bwd(_grid); _patch.clear(); }
 	//patch_t apply_backup_move() { _patch.apply_bwd(_grid); return std::move(_patch); }
 
+	_backed_up_grid(const _backed_up_grid& other) = delete;
 	_backed_up_grid(grid_t& _grid, bool cleanup = true) :
 		_grid(_grid),
 		cleanup(cleanup) {}
