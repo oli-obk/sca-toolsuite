@@ -18,60 +18,66 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#include "io/gridfile.h"
-#include "general.h"
-#include "ca_basics.h"
-#include "ca_convert.h"
+#include <cstring>
+#include <cassert> // TODO
+#include <string>
 
-class MyProgram : public Program
-{
-	exit_t main()
-	{
-		/*
-		 * args
-		 */
+#include "gridfile.h"
 
-		switch(argc)
-		{
-			case 2:
-			//	tbl_file = argv[1];
-			// TODO: output without changes?
-				assert_usage(!strcmp(argv[1], "tex"));
-				break;
-			case 1: break;
-			default:
-				exit_usage();
-		}
-
-		/*
-		 * parsing
-		 */
-
-		sca::io::secfile_t inf;
-		sca::io::gridfile_t scene;
-		try {
-			scene.parse(inf);
-		} catch(sca::io::secfile_t::error_t ife) {
-			std::cout << "infile line " << ife.line << ": "	 << ife.msg << std::endl;
-		}
-		std::cout << scene;
-
-		return exit_t::success;
+sca::io::color_t::color_t(const char *str)
+{ // TODO: const member construction...
+	switch(*str)
+	{ // TODO: not use assert!
+		case 'g': assert(!strncmp(str, "green", 5)); g = 255; break;
+		case 'r': assert(!strncmp(str, "red", 3)); r = 255; break;
+		case 'b': assert(!strncmp(str, "blue", 4)); b = 255; break;
+		default: throw "Unknown color type";
 	}
-};
-
-int main(int argc, char** argv)
-{
-	HelpStruct help;
-	help.syntax = "ca/scene [<out format>]"
-		"";
-	help.description = "Converts a scene into a document file."
-		"";
-	help.input = "Input grid in a special format.";
-	help.output = "The ca document";
-	help.add_param("<out format>", "output format. currently only: tex (=default)");
-
-	MyProgram p;
-	return p.run(argc, argv, &help);
 }
+
+sca::io::path_node::markup::markup(const char *str) :
+	color(str)
+{ // TODO: const constr
+	const char* ptr = str;
+	next_word(ptr);
+	tp = (!strcmp(ptr, "active"))
+		? mark_type::active
+		: mark_type::formula;
+	if(tp == mark_type::formula)
+	 formula = ptr;
+}
+
+sca::io::path_node::arrow::arrow(const char *str)
+{
+	const char* ptr = str;
+	p1.x = atoi(ptr); next_word(ptr);
+	p1.y = atoi(ptr); next_word(ptr);
+	p2.x = atoi(ptr); next_word(ptr);
+	p2.y = atoi(ptr);
+}
+
+bool sca::io::path_node::parse(sca::io::secfile_t &inf)
+{
+	/*if(inf.read_int(grid_id))
+		{
+			inf.read_newline();*/
+	std::string str;
+	while((str = inf.read_string()).size())
+	{
+		if(!str.compare(0, 4, "mark"))
+		 markup_list.emplace_back(str.data() + 5);
+		else if(!str.compare(0, 5, "arrow"))
+		 arrow_list.emplace_back(str.data() + 6);
+		else
+		{
+			assert(description.empty());
+			description = str;
+		}
+	}
+	return true;
+	//}
+	//else return false;
+}
+
+
 

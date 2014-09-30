@@ -18,43 +18,87 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#include "io/gridfile.h"
+#include <cstdlib>
+#include <cstdio>
+#include <vector>
+
+#include "io/secfile.h"
+#include "grid.h"
 #include "general.h"
-#include "ca_basics.h"
 #include "ca_convert.h"
+
+/*
+struct grid_pair_t
+{
+	grid_t in, out;
+public:
+	friend std::istream& operator>> (std::istream& stream,
+		grid_pair_t& gp) {
+		return stream >> gp.in >> gp.out;
+	}
+};*/
+using grid_pair_t = sca::grid_io::grid_pair_t; // TODO: abuse
+
+
+class rules_t : public sca::io::supersection_t
+{
+public:
+	rules_t() : supersection_t(type_t::batch)
+	{
+		init_factory<sca::io::leaf_template_t<grid_pair_t>>();
+		set_batch_str("replace");
+	}
+};
+
+
 
 class MyProgram : public Program
 {
+
+
 	exit_t main()
 	{
-		/*
-		 * args
-		 */
+		grid_t g_in(std::cin, 0);
 
-		switch(argc)
-		{
-			case 2:
-			//	tbl_file = argv[1];
-			// TODO: output without changes?
-				assert_usage(!strcmp(argv[1], "tex"));
-				break;
-			case 1: break;
-			default:
-				exit_usage();
-		}
+		assert_usage(argc == 2);
 
-		/*
-		 * parsing
-		 */
+		std::ifstream in(argv[1]);
+		sca::io::secfile_t inf(in);
+		rules_t rules;
 
-		sca::io::secfile_t inf;
-		sca::io::gridfile_t scene;
 		try {
-			scene.parse(inf);
+			rules.parse(inf);
 		} catch(sca::io::secfile_t::error_t ife) {
-			std::cout << "infile line " << ife.line << ": "	 << ife.msg << std::endl;
+			std::cerr << "infile line " << ife.line << ": "	 << ife.msg << std::endl;
 		}
-		std::cout << scene;
+
+		grid_t changed (g_in.human_dim(), 0, 0);
+
+		for(const point& p : g_in.points())
+		{
+			for(std::size_t j = 0; j < rules.max(); ++j)
+			{
+				const grid_pair_t& gp = rules.value<grid_pair_t>(j);
+
+				const rect scan_rect(point(0,0), point(g_in.human_dim().lr() - gp.in.human_dim().lr()));
+
+				bool equal = scan_rect.contains(p);
+
+				for(auto itr = gp.in.points().begin(); equal && itr != gp.in.points().end(); ++itr)
+				 equal = equal && /*(!changed[p+*itr]) &&*/ (gp.in[*itr] == g_in[p + *itr]);
+
+				if(equal)
+				for(const point& p2 : gp.in.points())
+				{
+					g_in[p + p2] = gp.out[p2];
+					changed[p + p2] = 1;
+				}
+
+			}
+
+		}
+
+		std::cout << g_in;
 
 		return exit_t::success;
 	}
@@ -63,15 +107,14 @@ class MyProgram : public Program
 int main(int argc, char** argv)
 {
 	HelpStruct help;
-	help.syntax = "ca/scene [<out format>]"
-		"";
-	help.description = "Converts a scene into a document file."
-		"";
-	help.input = "Input grid in a special format.";
-	help.output = "The ca document";
-	help.add_param("<out format>", "output format. currently only: tex (=default)");
-
+	help.syntax = "io/replace <rule-file>";
+	help.description = "\n"
+		".";
+	help.input = "input grid";
+	help.output = "output grid";
+	help.add_param("<rule-file>", "file with replacement rules");
 	MyProgram p;
 	return p.run(argc, argv, &help);
 }
+
 

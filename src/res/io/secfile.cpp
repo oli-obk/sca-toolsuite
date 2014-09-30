@@ -164,7 +164,7 @@ void supersection_t::parse(secfile_t &inf)
 }
 
 
-void leaf_template_t<std::string>::parse(secfile_t &inf) { t = inf.read_section();  std::cerr << "Read string: " << t << std::endl; }
+void leaf_template_t<std::string>::parse(secfile_t &inf) { t = inf.read_string_newline();  std::cerr << "Read string: " << t << std::endl; }
 
 
 std::ostream &operator<<(std::ostream &stream, const leaf_base_t &l) {
@@ -248,19 +248,26 @@ bool secfile_t::match_string(const char *str)
 	 return false;
 }
 
-section_t secfile_t::read_section()
+std::string secfile_t::read_string_newline()
 {
 	std::string res = read_string_noclear();
 	//if(res.empty())
 	//throw mk_error("Expected section, got empty line!");
-	if(!stream.good())
-	 res = "";
+	if(!stream.good()) {
+		std::cerr << "WARNING: stream not good..." << std::endl;
+		res = "";
+	}
 	if(res.size()) // i.e. this was a section
 	{
 		clear_buffer();
 		read_newline();
 	}
 	return std::move(res);
+}
+
+section_t secfile_t::read_section()
+{
+	return std::move(read_string_newline());
 }
 
 }}

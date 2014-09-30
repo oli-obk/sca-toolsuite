@@ -24,7 +24,7 @@
 #include <ostream>
 #include <cstring> // TODO: layer out to cpp file?
 
-namespace sca {
+namespace sca { namespace util {
 
 // TODO: inside name_type_map_t?
 template<class Enum>
@@ -45,6 +45,7 @@ struct name_type_map_t
 	using pair_t = name_type_pair<Enum>;
 
 	// TODO: private stuff?
+	// TODO: constexpr?
 	Enum operator[](const char* _name) const
 	{
 		const pair_t* const end = map + N;
@@ -64,6 +65,6 @@ struct name_type_map_t
 	}
 };
 
-}
+}}
 
 #endif // NAME_TYPE_MAP_H

@@ -461,7 +461,7 @@ enum class type
 };
 
 
-name_type_map_t<3, type, type::invalid> name_type_map = {{
+util::name_type_map_t<3, type, type::invalid> name_type_map = {{
 	{ "formula", type::formula },
 	{ "table", type::table },
 	{ "grids", type::grids }

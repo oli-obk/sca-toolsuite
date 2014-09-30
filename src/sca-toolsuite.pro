@@ -42,7 +42,8 @@ HEADERS += res/io.h res/stack_algorithm.h \
     res/utils/exceptions.h \
     res/utils/name_type_map.h \
     res/io/secfile.h \
-    res/io/serial.h
+    res/io/serial.h \
+    res/io/gridfile.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \
@@ -92,7 +93,10 @@ SOURCES += algo/relax.cpp \
     ca/converter.cpp \
     ca/dead_cells.cpp \
     test/sca_test.cpp \
-    res/io/secfile.cpp
+    res/io/secfile.cpp \
+    io/tik.cpp \
+    res/io/gridfile.cpp \
+    io/replace.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL.txt \
 	../README.txt \

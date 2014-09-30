@@ -83,7 +83,7 @@ public:
 	/*void read_grid(grid_t& grid) {
 		stream >> grid;
 	}*/
-
+	std::string read_string_newline();
 	section_t read_section();
 };
 
@@ -127,10 +127,13 @@ public:
 template<>
 class leaf_template_t<std::string> : public leaf_base_t
 {
+	using T = std::string;
 	std::string t;
 public:
 	void parse(secfile_t& inf);
 	void dump(std::ostream& stream) const { stream << t; }
+	const T& value() const noexcept { return t; }
+	T& value() noexcept { return t; }
 };
 
 template<>
@@ -227,84 +230,140 @@ protected:
 		 return *(itr->second);
 	}
 
-public:
-
-	std::size_t max() const { return multi_sections.size(); }
-
-	supersection_t& section(const char* name) {
-		return dynamic_cast<supersection_t&>(
-			save_map_find(supersections, name));
-	}
-
-	supersection_t& operator[](const char* name) {
-		return section(name);
-	}
-
-
-	template<class T>
-	leaf_template_t<T>& leaf(const char* name) {
-		return dynamic_cast<leaf_template_t<T>&>(
-			save_map_find(leafs, name));
+	const leaf_base_t& numbered(std::size_t id) const {
+		return save_map_find(multi_sections, id);
 	}
 
 	leaf_base_t& numbered(std::size_t id) {
 		return save_map_find(multi_sections, id);
 	}
 
-	supersection_t& operator[](std::size_t id) {
-		return dynamic_cast<supersection_t&>(numbered(id));
-	}
+public:
+	//! multi-container size
+	std::size_t max() const { return multi_sections.size(); }
 
-
-
-	const supersection_t& section(const char* name) const {
+	//! named supersection
+	const supersection_t& operator[](const char* name) const {
 		return dynamic_cast<const supersection_t&>(
 			save_map_find(supersections, name));
 	}
 
-	const supersection_t& operator[](const char* name) const {
-		return section(name);
+	//! named supersection
+	supersection_t& operator[](const char* name) {
+		return dynamic_cast<supersection_t&>(
+			save_map_find(supersections, name));
 	}
 
+	//! numbered supersection
+	const supersection_t& operator[](std::size_t id) const {
+		return dynamic_cast<const supersection_t&>(numbered(id));
+	}
+
+	//! numbered supersection
+	supersection_t& operator[](std::size_t id) {
+		return dynamic_cast<supersection_t&>(numbered(id));
+	}
+
+	//! access for the leaf itself. probably useless
 	template<class T>
+	leaf_template_t<T>& leaf(const char* name) {
+		return dynamic_cast<leaf_template_t<T>&>(
+			save_map_find(leafs, name));
+	}
+
+	//! access for the leaf itself. probably useless
+	template<class T> // TODO: -> private
 	const leaf_template_t<T>& leaf(const char* name) const {
 		return dynamic_cast<const leaf_template_t<T>&>(
 			save_map_find(leafs, name));
 	}
 
+	//! named value
 	template<class T>
 	const T& value(const char* name) const {
 		return leaf<T>(name).value();
 	}
 
+	//! named value
 	template<class T>
 	T& value(const char* name) {
 		return leaf<T>(name).value();
 	}
 
+	//! numbered value
 	template<class T>
 	const T& value(std::size_t id) const {
 		return dynamic_cast<const leaf_template_t<T>&>(numbered(id)).value();
 	}
 
+	//! numbered value
 	template<class T>
 	T& value(std::size_t id) {
 		return dynamic_cast<leaf_template_t<T>&>(numbered(id)).value();
 	}
 
-	const leaf_base_t& numbered(std::size_t id) const {
-		return save_map_find(multi_sections, id);
-	}
+	template<class KeyT>
+	using map_itr = typename std::map<KeyT, leaf_base_t*>::const_iterator;
 
-	const supersection_t& operator[](std::size_t id) const {
-		return dynamic_cast<const supersection_t&>(numbered(id));
-	}
+	template<class T, class KeyT>
+	class val_pair
+	{
+		map_itr<KeyT> itr;
+	public:
+	//	val_pair(const map_itr<KeyT>& itr) {}
+		const KeyT& key() const { return itr->first; }
+		const T& value() const { return dynamic_cast<leaf_template_t<T>*>(itr->second)->value(); }
+		val_pair(map_itr<KeyT> itr) : itr(itr) {}
+	};
+
+	template<class T, class KeyT>
+	class val_itr
+	{
+		map_itr<KeyT> itr;
+	public:
+		val_itr& operator++() { return ++itr, *this; }
+		val_pair<T, KeyT> operator*() const { return {itr}; }
+		bool operator!=(const val_itr& other) { return itr != other.itr; }
+		val_itr(const map_itr<KeyT>& itr) : itr(itr) {}
+	};
+
+	template<class T, class KeyT>
+	class val_cont
+	{
+		std::map<KeyT, leaf_base_t*> map;
+	public:
+		using iterator = val_itr<T, KeyT>;
+		iterator begin() { return { map.cbegin() }; }
+		iterator end() { return { map.cend() }; }
+		val_cont(const std::map<KeyT, leaf_base_t*>& map) : map(map) {}
+	};
+
+
+
 
 	template<class T>
+	val_cont<T, std::string> named_values() const {
+		return { supersections }; }
+
+	template<class T>
+	val_cont<T, std::size_t> numbered_values() const {
+		return { multi_sections }; }
+
+
+
+
+/*	class container
+	{
+		const
+
+	};*/
+
+
+	/*template<class T>
 	const leaf_template_t<T>& num(const char* name) const {
 		return dynamic_cast<const leaf_template_t<T>&>(
 			save_map_find(leafs, name));
-	}
+	}*/
 
 
 
