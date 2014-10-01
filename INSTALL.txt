@@ -15,6 +15,7 @@ CONTENTS
 
 You will need the following libraries, headers and tools:
 
+  g++>=4.8 or clang>=3.3 (clang is suggested)
   C++ 4.8 or higher
   boost
   cmake
@@ -29,32 +30,10 @@ In this directory, type:
   cd build
   cmake .. # TODO: define SCA_DEBUG, -Wall, -g
 
-###
-previous versions:
-
-In this directory, type:
-
-  ./configure CXXFLAGS="-Wall -O3"
-  make
-
-In case you want to debug, or are interested in gdb's or valgrind's output,
-use:
-
-  ./configure CXXFLAGS="-Wall -g -DSCA_DEBUG"
-
-If you need more information about how to configure, type
-
-  ./configure --help.
-
 2 Installation of the Qt GUI
 ::::::::::::::::::::::::::::
 
-For technical reasons, the GUI must be built separately. From this directory,
-do these steps:
-
-  cd src/gui
-  qmake  # on your system, this might be qmake-qt4 or similar
-  make
+The gui is built directly with the other tools, if you have qt installed.
 
 3 Debugging
 :::::::::::
