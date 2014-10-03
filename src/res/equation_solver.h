@@ -35,10 +35,16 @@
 #include <boost/variant/variant.hpp>
 #include <boost/variant/apply_visitor.hpp>
 #include <boost/variant/get.hpp>
+#include <boost/proto/operators.hpp>
 
 #include "random.h"
 
 // typedef expression_ast result_type; // TODO: must work with phoenix 3!
+
+//! this is a temporary fix until boost 1.57 - fixes a phoenix bug
+namespace boost { namespace phoenix {
+	using proto::exprns_::operator%=;
+}}
 
 //! namespace of the equation solver
 namespace eqsolver

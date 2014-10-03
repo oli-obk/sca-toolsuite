@@ -633,7 +633,7 @@ inline bool human_idx_on_grid(const int human_grid_size, const int human_idx) {
 template<class T, class CT, class Container, class Functor, class Functor2>
 void iterate_grid(_grid_t<T, CT>& grid, const Container& c, int num_states,
 	const Functor& ftor,
-	const Functor2& contin_ftor = [&](){ return true; })
+	const Functor2& contin_ftor = [](){ return true; })
 {
 	typename CT::cell_t* ref;
 
