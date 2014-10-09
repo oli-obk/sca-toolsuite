@@ -254,6 +254,10 @@ public:
 	point operator[](unsigned i) const { return _n[i]; }
 	unsigned size() const { return _n.size(); }
 
+	bool operator==(const _n_t& other) const {
+		return _n = other._n;
+	}
+
 	/*neighbourhood(const dim_cont& _dim, point _center_cell = {0,0})
 		: center_cell(_center_cell),
 		dim({_dim.h, _dim.w})

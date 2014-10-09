@@ -64,6 +64,7 @@ public:
 	}
 
 	const cell_t& operator*() const { return *ptr; }
+	const cell_t* operator->() const { return ptr; }
 
 	bool operator==(const _const_cell_itr& rhs) const {
 		return ptr == rhs.ptr; }

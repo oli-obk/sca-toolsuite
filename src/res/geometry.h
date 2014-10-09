@@ -173,6 +173,24 @@ public:
 		return *this;
 	}
 
+	_point_itr& operator+=(const point& p)
+	{
+		position += p;
+		if(position.x >= max.x || position.y >= max.y
+			|| position.x < min.x || position.y < min.y)
+		{
+			std::cerr << "Error adding " << p << ", result: " << position << std::endl;
+			throw "Added invalid point to point itr";
+		}
+
+		return *this;
+	}
+
+	_point_itr operator+(const point& p) const
+	{
+		return _point_itr(*this) += p;
+	}
+
 /*	_point_itr& operator+=(const coord_t& x_offset)
 	{
 	}*/
@@ -273,7 +291,7 @@ struct _dim_cont
 		return _end;
 	}
 
-	iterator cbegin(const point& pos = point::zero()) const { return begin(pos); }
+	iterator cbegin(/*const point& pos = point::zero()*/) const { return begin(/*pos*/); }
 	const iterator& cend() const noexcept { return end(); }
 	area_t size() const noexcept { return h * w; }
 	bool empty() const noexcept { return (h | w) == 0; }
