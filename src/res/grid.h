@@ -503,6 +503,8 @@ public:
 
 	iterator begin() { return iterator(_data.data(), _dim, bw); }
 	iterator end() { return iterator(_data.data(), _dim, bw, false); }
+	const_iterator begin() const { return cbegin(); }
+	const_iterator end() const { return cend(); }
 	const_iterator cbegin() const { return const_iterator(_data.data(), _dim, bw); }
 	const_iterator cend() const { return const_iterator(_data.data(), _dim, bw, false); }
 	// TODO: the last two funcs should have cv qualifier
