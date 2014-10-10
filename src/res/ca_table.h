@@ -598,7 +598,7 @@ public:
 			const grid_cell_t* const ptr = cell_ptr + (coord_t)(p2.y * (coord_t)dim.width() + p2.x); // TODO: check signs...
 			bitgrid[point(_p.id(), 0)] = *ptr;
 			// TODO: if min is reset, it can maybe not be max? -> faster....
-	//		std::cout << *ptr << std::endl;
+		//	std::cout << "p: " << p << "-> val, min, max: " << *ptr << ", " << min << ", " << max << std::endl;
 			min = std::min(min, *ptr);
 			max = std::max(max, *ptr);
 

@@ -52,6 +52,7 @@ class MyProgram : public Program
 {
 
 	static void dump_grid_as_tikz(const grid_t& g,
+		const sca::io::color_formula_t& color_f,
 		std::ostream& out = std::cout)
 	{
 		out << "\\draw[step=0.5cm,color=gray] (0, 0) grid ("
@@ -61,12 +62,15 @@ class MyProgram : public Program
 			<< "inner sep=0pt, anchor=south west,\n"
 			<< "\tnodes={inner sep=0pt, text width=.5cm,\n"
 			<< "\t\talign=center, minimum height=.5cm}]{\n";
+		const auto draw_node = [&](std::size_t x, std::size_t y){
+			out << "\\node[s_" << color_f(g, point(x, y)) << "]{" << g[point(x, y)] << "};";
+		};
 		for(std::size_t y = 0; y < g.dy(); ++y)
 		{
 			out << "\t";
 			for(std::size_t x = 0; x < g.dx() - 1; ++x)
-			 out << g[point(x, y)] << " & ";
-			out << g[point(g.dx()-1, y)] << " \\\\" << std::endl;
+			 draw_node(x, y), out << " & ";
+			draw_node(g.dx()-1, y), out << " \\\\" << std::endl;
 		}
 		out << "};\n";
 	}
@@ -110,8 +114,21 @@ class MyProgram : public Program
 
 		const std::size_t rowsize = std::min(max_possible_rowsize, max_pathlen);
 
-	//	sca::io::color_formula_t color(
-	//		gridfile.value<std::string>("rgb32").c_str());
+		sca::io::color_formula_t color(
+			gridfile.value<std::string>("rgb32").c_str());
+		std::set<int32_t> color_table; // collection of all colors
+		for(std::size_t i = 0; i < grids.max(); ++i)
+		{
+			const grid_t& g = grids.value<grid_t>(i);
+			for(const point& p : g.points())
+			 color_table.insert(color(g, p));
+		}
+
+		for(const int32_t& i : color_table)
+		out << "\t\\definecolor{rgb" << i << "}{RGB}{"
+			<< ((i>>16) & 255) << ", "
+			<< ((i>>8) & 255) << ", "
+			<< (i & (255)) << "}\n";
 
 		for(std::size_t i = 0; i < gridfile.max(); ++i)
 		{
@@ -143,12 +160,17 @@ class MyProgram : public Program
 				//std::cerr << node.key() << " --> " << node.value().description << std::endl;
 
 			//	out << "\\begin{figure}\n\\begin{tikzpicture}\n";
-				out << "\\begin{tikzpicture}\n";
+				out << "\\begin{tikzpicture}\n[\n";
+				for(const int32_t& i : color_table) {
+					out << "\ts_" << i << "/.style={top color=rgb" << i << ", bottom color = rgb" << i << "},\n";
+				}
+				out << "\tdummy/.style={}";
+				out << "]\n";
 
 				const sca::io::path_node& node = pr.value();
 				const grid_t& grid = grids.value<grid_t>(pr.key());
 
-				dump_grid_as_tikz(grid, out);
+				dump_grid_as_tikz(grid, color, out);
 				for(const sca::io::path_node::arrow ar : node.arrow_list)
 				{
 					point tp1 = to_tikz(ar.p1, grid.human_dim()),
