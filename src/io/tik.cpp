@@ -26,26 +26,27 @@
 const char* tex_header =
 	"% created by sca toolsuite's io/tik\n"
 	"% https://github.com/JohannesLorenz/sca-toolsuite\n\n"
-	"\\documentclass{article}\n"
+	"\\documentclass{article}\n";
+const char* tex_includes =
 	"\\usepackage{tikz}\n"
 	"\\usetikzlibrary{matrix}\n"
-	"\\usepackage{xr}\n" // cross refs for external docs
-	"\\begin{document}\n\n";
-
+	"\\usepackage{xr}\n"; // cross refs for external docs
 const char* tex_footer = "\\end{document}\n";
 
 enum class tex_type
 {
 	include,
 	complete,
+	header,
 	invalid
 };
 
 constexpr const sca::util::name_type_map_t<
-	2, tex_type, tex_type::invalid> tex_type_map = {{
+	3, tex_type, tex_type::invalid> tex_type_map = {{
 	{ "include", tex_type::include },
 	{ "complete", tex_type::complete },
-	// TODO: header ? help ?
+	{ "header", tex_type::header },
+	// TODO: help ?
 }};
 
 class MyProgram : public Program
@@ -91,7 +92,11 @@ class MyProgram : public Program
 		std::ostream& out = std::cout)
 	{
 		if(tt == tex_type::complete)
-		 out << tex_header;
+		{
+			out << tex_header;
+			out << tex_includes;
+			out << "\\begin{document}\n\n";
+		}
 
 	//	out << gridfile.value<std::string>("description");
 
@@ -215,15 +220,22 @@ class MyProgram : public Program
 				return exit_usage();
 		}
 
-		sca::io::secfile_t inf;
-		sca::io::gridfile_t gridfile;
-		try {
-			gridfile.parse(inf);
-		} catch(sca::io::secfile_t::error_t ife) {
-			std::cout << "infile line " << ife.line << ": "	 << ife.msg << std::endl;
+		if(tt == tex_type::header)
+		{
+			std::cout << tex_includes;
 		}
-
-		make_tikz(tt, gridfile);
+		else
+		{
+			sca::io::secfile_t inf;
+			sca::io::gridfile_t gridfile;
+			try {
+				gridfile.parse(inf);
+			} catch(sca::io::secfile_t::error_t ife) {
+				std::cout << "infile line " << ife.line
+					<< ": "	 << ife.msg << std::endl;
+			}
+			make_tikz(tt, gridfile);
+		}
 
 		return exit_t::success;
 	}
