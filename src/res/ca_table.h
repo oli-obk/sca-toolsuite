@@ -189,7 +189,6 @@ public:
 	std::size_t num_states() const noexcept { return own_num_states; }
 };
 
-template<template<class ...> class TblCont, class Traits, class CellTraits>
 class _table_t : public _table_hdr_t // TODO: only for reading?
 {
 private:
@@ -197,7 +196,7 @@ private:
 	constexpr static uint64_t entry_invalid() { return std::numeric_limits<uint64_t>::min(); }
 
 	// TODO!!! table can use uint8_t in many cases!
-	const TblCont<uint64_t> table;
+	const std::vector<uint64_t> table;
 
 	using storage_t = uint64_t;
 
@@ -206,9 +205,9 @@ private:
 //	using typename b::cell_t;
 //	using typename b::point;
 
-	static TblCont<uint64_t> fetch_tbl(std::istream& stream, unsigned size_each, unsigned n_size)
+	static std::vector<uint64_t> fetch_tbl(std::istream& stream, unsigned size_each, unsigned n_size)
 	{
-		TblCont<uint64_t> res(1 << (size_each * n_size));
+		std::vector<uint64_t> res(1 << (size_each * n_size));
 		stream.read((char*)res.data(), res.size() * 8);
 		return res;
 	}
@@ -322,9 +321,9 @@ private:
 	// TODO : static?
 	//! used to dump an in-memory-table from an equation
 	template<class Functor>
-	TblCont<uint64_t> calculate_table(const Functor& ftor) const
+	std::vector<uint64_t> calculate_table(const Functor& ftor) const
 	{
-		TblCont<uint64_t> tbl;
+		std::vector<uint64_t> tbl;
 		tbl.resize(1 << (size_each * _n_in.size()), entry_invalid()); // ctor can not reserve
 
 		const dimension n_in_dim(_n_in.dim().dx(), _n_in.dim().dy());
@@ -385,7 +384,7 @@ private:
 
 
 	//! used to dump an in-memory-table from an equation
-	TblCont<uint64_t> calculate_table_eq(eqsolver_t&& eqs) const
+	std::vector<uint64_t> calculate_table_eq(eqsolver_t&& eqs) const
 	{
 		return calculate_table(
 			from_equation(std::move(eqs),
@@ -393,7 +392,7 @@ private:
 	}
 
 	//! used to dump an in-memory-table from a vector of transitions
-	TblCont<uint64_t> calculate_table_trans(const std::vector<trans_t>& tf) const
+	std::vector<uint64_t> calculate_table_trans(const std::vector<trans_t>& tf) const
 	{
 		return calculate_table(
 			from_trans(tf,
@@ -711,7 +710,7 @@ public:
 		stream.write((char*)vec.data(), vec.size() * 8); }
 };*/
 
-using table_t = _table_t<std::vector, def_coord_traits, def_cell_traits>;
+using table_t = _table_t;
 
 }}
 
