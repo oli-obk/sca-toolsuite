@@ -228,6 +228,7 @@ public:
 	using area_t = typename base::area_t;
 	using u_coord_t = typename base::u_coord_t;
 private:
+	using rect = _rect<Traits>;
 	using dimension = typename base::dimension;
 
 	class line
