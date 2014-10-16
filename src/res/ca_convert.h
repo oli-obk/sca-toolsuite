@@ -520,6 +520,7 @@ struct converter<type::grids, type::table> : converter_base
 	}
 };
 
+// TODO: all to cpp files
 template<>
 struct converter<type::table, type::grids> : converter_base
 {

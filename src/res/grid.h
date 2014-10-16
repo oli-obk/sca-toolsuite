@@ -64,6 +64,7 @@ public:
 	}
 
 	const cell_t& operator*() const { return *ptr; }
+	const cell_t* operator->() const { return ptr; }
 
 	bool operator==(const _const_cell_itr& rhs) const {
 		return ptr == rhs.ptr; }
@@ -227,6 +228,7 @@ public:
 	using area_t = typename base::area_t;
 	using u_coord_t = typename base::u_coord_t;
 private:
+	using rect = _rect<Traits>;
 	using dimension = typename base::dimension;
 
 	class line
@@ -502,6 +504,8 @@ public:
 
 	iterator begin() { return iterator(_data.data(), _dim, bw); }
 	iterator end() { return iterator(_data.data(), _dim, bw, false); }
+	const_iterator begin() const { return cbegin(); }
+	const_iterator end() const { return cend(); }
 	const_iterator cbegin() const { return const_iterator(_data.data(), _dim, bw); }
 	const_iterator cend() const { return const_iterator(_data.data(), _dim, bw, false); }
 	// TODO: the last two funcs should have cv qualifier
@@ -633,7 +637,7 @@ inline bool human_idx_on_grid(const int human_grid_size, const int human_idx) {
 template<class T, class CT, class Container, class Functor, class Functor2>
 void iterate_grid(_grid_t<T, CT>& grid, const Container& c, int num_states,
 	const Functor& ftor,
-	const Functor2& contin_ftor = [&](){ return true; })
+	const Functor2& contin_ftor = [](){ return true; })
 {
 	typename CT::cell_t* ref;
 

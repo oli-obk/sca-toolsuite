@@ -135,7 +135,12 @@ public:
 };
 #endif
 
-#include <type_traits>
+
+//#define SERIAL_DEBUG
+
+#ifdef SERIAL_DEBUG
+ #include <type_traits>
+#endif
 
 class serializer_base
 {
@@ -148,7 +153,17 @@ class serializer : serializer_base
 {
 	std::ostream& stream;
 
-
+	template<class T>
+	static serializer& dbg(serializer& os, const T& t) {
+#ifdef SERIAL_DEBUG
+		std::cerr << "Serialized "
+			<< typeid(T).name() << " " << t
+			<< ", now at " << os.stream.tellp() << std::endl;
+#else
+		(void)t;
+#endif
+		return os;
+	}
 
 public:
 
@@ -167,16 +182,17 @@ public:
 			&& !std::is_enum<T>::value
 		>::type* = nullptr>
 	friend serializer& operator<<(serializer& s, const T& x) {
-		return s << x; }
+		return dbg(s << x, x); }
 
 	template<class T, typename std::enable_if<std::is_enum<T>::value>::type* = nullptr>
 	friend serializer& operator<<(serializer& s, const T& x) {
-		return s << (std::size_t)x; }
+		return dbg(s << (std::size_t)x, (std::size_t)x);
+	}
 
 	template<class T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
 	friend serializer& operator<<(serializer& s, const T& x) {
 		s.stream.write((const char*)&x, sizeof(T));
-		return s;
+		return dbg(s, x);
 	}
 };
 
@@ -185,7 +201,17 @@ class deserializer : serializer_base
 {
 	std::istream& stream;
 
-
+	template<class T>
+	static deserializer& dbg(deserializer& is, const T& t) {
+#ifdef SERIAL_DEBUG
+		std::cerr << "Deserialized "
+			<< typeid(T).name() << " " << t
+			<< ", now at " << is.stream.tellg() << std::endl;
+#else
+		(void)t;
+#endif
+		return is;
+	}
 
 public:
 
@@ -205,26 +231,45 @@ public:
 			&& !std::is_enum<T>::value
 			>::type* = nullptr>
 	friend deserializer& operator>>(deserializer& s, T& x) {
-		return s >> x; }
+		return dbg(s >> x, x); }
 
 	template<class T, typename std::enable_if<std::is_enum<T>::value>::type* = nullptr>
 	friend deserializer& operator>>(deserializer& s, T& x) {
 		std::size_t _x;
 		s >> _x;
 		x = (T)_x;
-		return s;
+		return dbg(s, (std::size_t)x);
 	}
 
 	template<class T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
 	friend deserializer& operator>>(deserializer& s, T& x) {
 		s.stream.read((char*)&x, sizeof(T));
-		return s;
+		return dbg(s, x);
 	}
 
 };
 
 template<class T>
+void dbg_serialize_container(const T& cont) {
+#ifdef SERIAL_DEBUG
+	std::cerr << "Serializing container " << typeid(T).name() << " of size " << cont.size() << std::endl;
+#else
+	(void)cont;
+#endif
+}
+
+template<class T>
+void dbg_deserialize_container(const T&, const std::size_t& sz) {
+#ifdef SERIAL_DEBUG
+	std::cerr << "Deserializing container " << typeid(T).name() << " of size " << sz << std::endl;
+#else
+	(void)sz;
+#endif
+}
+
+template<class T>
 serializer& operator<<(serializer& s, const std::set<T>& x) {
+	dbg_serialize_container(x);
 	s << (std::size_t)x.size();
 	for(const T& elem : x)
 	 s << elem;
@@ -235,6 +280,7 @@ template<class T>
 deserializer& operator>>(deserializer& s, std::set<T>& x) {
 	std::size_t num;
 	s >> num;
+	dbg_deserialize_container(x, num);
 	for(std::size_t i = 0; i < num; ++i)
 	{
 		T elem;
@@ -246,7 +292,8 @@ deserializer& operator>>(deserializer& s, std::set<T>& x) {
 
 template<class T>
 serializer& operator<<(serializer& s, const std::vector<T>& x) {
-	s << (std::size_t)x.size();
+	dbg_serialize_container(x);
+	s << (std::size_t)x.size(); // todo: use fixed uint64_t
 	for(const T& elem : x)
 	 s << elem; // TODO: serialize all in one!
 	return s;
@@ -256,6 +303,7 @@ template<class T>
 deserializer& operator>>(deserializer& s, std::vector<T>& x) {
 	std::size_t num;
 	s >> num;
+	dbg_deserialize_container(x, num);
 	x.reserve(num);
 	for(std::size_t i = 0; i < num; ++i)
 	{
@@ -266,6 +314,18 @@ deserializer& operator>>(deserializer& s, std::vector<T>& x) {
 	return s;
 }
 
+
+//! experimental
+template<class T>
+serializer& operator<<(serializer& s, const T* x) {
+	return s << *x;
+}
+
+//! experimental
+template<class T>
+deserializer& operator>>(deserializer& s, T* x) {
+	return s >> *x;
+}
 
 // TODO: make simple shortenings for tuples?
 

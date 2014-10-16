@@ -428,6 +428,12 @@ public:
 		return s << p._area << p._conf << p._conf_before; }
 	friend io::deserializer& operator>>(io::deserializer& s, _patch_t& p) {
 		return s >> p._area >> p._conf >> p._conf_before; }
+
+	friend std::string to_string(const _patch_t& p) {
+		std::ostringstream oss;
+		oss << p;
+		return std::move(oss.str());
+	}
 };
 
 //!
