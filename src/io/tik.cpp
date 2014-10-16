@@ -121,21 +121,8 @@ class MyProgram : public Program
 			rowsize = std::min(max_possible_rowsize, max_pathlen);
 		}
 
-		sca::io::color_formula_t color(
+		sca::io::color_formula_t main_color(
 			gridfile.value<std::string>("rgb32").c_str());
-		std::set<int32_t> color_table; // collection of all colors
-		for(std::size_t i = 0; i < grids.max(); ++i)
-		{
-			const grid_t& g = grids.value<grid_t>(i);
-			for(const point& p : g.points())
-			 color_table.insert(color(g, p));
-		}
-
-		for(const int32_t& i : color_table)
-		out << "\t\\definecolor{rgb" << i << "}{RGB}{"
-			<< ((i>>16) & 255) << ", "
-			<< ((i>>8) & 255) << ", "
-			<< (i & (255)) << "}\n";
 
 
 		out << "\\begin{figure}\n";
@@ -163,12 +150,39 @@ class MyProgram : public Program
 
 			std::size_t col = 0;
 
-
 			for(const auto& pr : path.numbered_values<sca::io::path_node>())
 			{
 				//std::cerr << node.key() << " --> " << node.value().description << std::endl;
 
 			//	out << "\\begin{figure}\n\\begin{tikzpicture}\n";
+
+				const sca::io::path_node& node = pr.value();
+				const grid_t& grid = grids.value<grid_t>(pr.key());
+
+				bool special_color = !node.cur_color.empty();
+
+				sca::io::color_formula_t cur_color(
+					special_color ? node.cur_color.c_str() : "v"
+				);
+				sca::io::color_formula_t& the_color = special_color ? cur_color : main_color;
+
+
+
+				std::set<int32_t> color_table; // collection of all colors
+				//for(std::size_t i = 0; i < grids.max(); ++i)
+				{
+					const grid_t& g = grid;
+					for(const point& p : g.points())
+					 color_table.insert(the_color(g, p));
+				}
+
+				for(const int32_t& i : color_table)
+				out << "\t\\definecolor{rgb" << i << "}{RGB}{"
+					<< ((i>>16) & 255) << ", "
+					<< ((i>>8) & 255) << ", "
+					<< (i & (255)) << "}\n";
+
+
 				out << "\\begin{tikzpicture}\n[\n";
 				for(const int32_t& i : color_table) {
 					out << "\ts_" << i << "/.style={top color=rgb" << i << ", bottom color = rgb" << i << "},\n";
@@ -176,10 +190,7 @@ class MyProgram : public Program
 				out << "\tdummy/.style={}";
 				out << "]\n";
 
-				const sca::io::path_node& node = pr.value();
-				const grid_t& grid = grids.value<grid_t>(pr.key());
-
-				dump_grid_as_tikz(grid, color, out);
+				dump_grid_as_tikz(grid, the_color, out);
 				for(const sca::io::path_node::arrow ar : node.arrow_list)
 				{
 					point tp1 = to_tikz(ar.p1, grid.human_dim()),
@@ -241,6 +252,7 @@ class MyProgram : public Program
 			try {
 				sca::io::gridfile_t gridfile;
 				while(inf >> gridfile) {
+					std::cerr << "READIT"<< std::endl;
 					make_tikz_content(tt, gridfile);
 					gridfile.clear();
 				}

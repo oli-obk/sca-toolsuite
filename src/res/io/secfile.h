@@ -125,7 +125,7 @@ class leaf_template_t : public leaf_base_t
 	T t;
 public:
 	void parse(secfile_t& inf) { inf.stream >> t; std::cerr << "Read object via cin: " << t << std::endl;
-
+		inf.read_newline();
 	}
 	void dump(std::ostream& stream) const { stream << t; }
 	operator T&() noexcept { return t; }

@@ -68,6 +68,8 @@ bool sca::io::path_node::parse(sca::io::secfile_t &inf)
 		 markup_list.emplace_back(str.data() + 5);
 		else if(!str.compare(0, 5, "arrow"))
 		 arrow_list.emplace_back(str.data() + 6);
+		else if(!str.compare(0, 9, "cur_rgb32"))
+		 cur_color = str.data() + 10;
 		else
 		{
 			assert(description.empty());

@@ -88,6 +88,7 @@ public:
 
 	std::vector<markup> markup_list;
 	std::vector<arrow> arrow_list;
+	std::string cur_color;
 
 	bool parse(secfile_t& inf);
 
