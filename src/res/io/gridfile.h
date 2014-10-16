@@ -126,6 +126,7 @@ class gridfile_t : public supersection_t // TODO: public?
 public:
 	gridfile_t() : supersection_t(type_t::batch)
 	{
+		init_leaf<leaf_template_t<int>>("rowsize");
 		init_leaf<leaf_template_t<std::string>>("rgb32");
 		init_leaf<leaf_template_t<std::string>>("name"); // TODO: init_leafs ;)
 		init_leaf<leaf_template_t<std::string>>("description");

@@ -49,7 +49,10 @@ struct secfile_t
 	constexpr static std::size_t READ_BUF_SIZE = 128;
 	char read_buffer[READ_BUF_SIZE] = { 0 };
 	std::istream& stream;
+	bool good = true;
 public:
+	operator bool() { return good; }
+	void set_bad() { good = false; }
 
 	struct error_t
 	{
@@ -102,12 +105,19 @@ public:
 	}
 	virtual void parse(secfile_t& inf) = 0;
 	virtual void dump(std::ostream& stream) const = 0;
+	void clear() { read = false; }
 	friend std::ostream& operator<<(std::ostream& stream, const leaf_base_t& l);
 	template<class T>
 	const leaf_template_t<T>& as() { return dynamic_cast<
 		const leaf_template_t<T>&>(*this); }
 //	virtual const leaf_base_t& cast() const = 0;
 };
+
+inline secfile_t& operator>>(secfile_t& s, leaf_base_t& l)
+{
+	l.parse(s);
+	return s;
+}
 
 template<class T>
 class leaf_template_t : public leaf_base_t
@@ -239,6 +249,11 @@ protected:
 	}
 
 public:
+	void clear() {
+		leaf_base_t::clear();
+		multi_sections.clear();
+	}
+
 	//! multi-container size
 	std::size_t max() const { return multi_sections.size(); }
 
@@ -372,7 +387,7 @@ public:
 
 	void dump(std::ostream& stream) const;
 
-	void parse (secfile_t& inf);
+	void parse(secfile_t& inf);
 
 	supersection_t(type_t type = type_t::sections, bool required = true) :
 		type(type),

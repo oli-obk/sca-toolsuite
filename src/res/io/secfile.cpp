@@ -148,7 +148,7 @@ void supersection_t::parse(secfile_t &inf)
 		}
 
 	}
-	std::cerr << "Aborted on reading: " << s << ":" << std::endl
+	std::cerr << "Left on reading: " << s << ":" << std::endl
 		<< " - `" << s << "' is no known super section or leaf" << std::endl;
 	if(type == type_t::multi)
 	{
@@ -160,7 +160,8 @@ void supersection_t::parse(secfile_t &inf)
 	}
 	std::cerr << std::endl;
 
-	check_required();
+	if(!check_required() || inf.stream.eof())
+	 inf.set_bad();
 }
 
 

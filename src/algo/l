@@ -1,0 +1,3 @@
+#!/bin/sh
+# give no ids for output since relax only handles one single avalanche
+algo/fix l $2 | io/avalanches_bin2human $1 
