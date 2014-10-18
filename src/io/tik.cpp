@@ -26,7 +26,7 @@
 const char* tex_header =
 	"% created by sca toolsuite's io/tik\n"
 	"% https://github.com/JohannesLorenz/sca-toolsuite\n\n"
-	"\\documentclass{article}\n";
+	"\\documentclass{scrreprt} % has wide borders\n";
 const char* tex_includes =
 	"\\usepackage{tikz}\n"
 	"\\usetikzlibrary{matrix}\n"
@@ -51,18 +51,31 @@ constexpr const sca::util::name_type_map_t<
 
 class MyProgram : public Program
 {
+	constexpr static const std::size_t page_mm = 197, cell_mm = 3;
 
 	static void dump_grid_as_tikz(const grid_t& g,
 		const sca::io::color_formula_t& color_f,
 		std::ostream& out = std::cout)
 	{
-		out << "\\draw[step=0.5cm,color=gray] (0, 0) grid ("
-			<< ((float)g.dx()/2.0f) << ", " << ((float)g.dy()/2.0f) << ");\n";
-			// note: >> 1 because of .5 cm
+		// draw grid
+		out << "\\draw[step=0." << cell_mm << "cm,color=gray] (0, 0) grid ("
+			<< ((float)g.dx()*(float)cell_mm/10.0f) << ", "
+			<< ((float)g.dy()*(float)cell_mm/10.0f) << ");\n";
+
+		// draw nodes, incl values and colors
 		out << "\\matrix[matrix of nodes,\n"
 			<< "inner sep=0pt, anchor=south west,\n"
-			<< "\tnodes={inner sep=0pt, text width=.5cm,\n"
-			<< "\t\talign=center, minimum height=.5cm}]{\n";
+			<< "\tnodes={inner sep=0pt, text width=." << cell_mm << "cm,\n"
+			<< "\t\talign=center, minimum height=."  << cell_mm << "cm}";
+	/*	for(const grid_t::line& l : g.lines())
+		{
+			for(const point& p : l)
+			{
+
+			}
+		}*/
+
+		out <<"]{\n";
 		const auto draw_node = [&](std::size_t x, std::size_t y){
 			out << "\\node[s_" << color_f(g, point(x, y)) << "]{" << g[point(x, y)] << "};";
 		};
@@ -79,7 +92,7 @@ class MyProgram : public Program
 	// returns point in tenth of mm
 	static point to_tikz(const point& p, const dimension& dim) {
 		const auto shift = [](const int x) { return ((x << 1) + 1) * 25; };
-		return point(shift(p.x), dim.dy() * 50 - shift(p.y));
+		return point(shift(p.x), dim.dy() * cell_mm * 10 - shift(p.y));
 	}
 
 	// returns point in mm
@@ -108,8 +121,6 @@ class MyProgram : public Program
 			for(std::size_t i = 0; i < grids.max(); ++i)
 			 max_width = std::max(max_width, (std::size_t)grids.value<grid_t>(i).dx());
 
-			constexpr const std::size_t page_mm = 197, cell_mm = 5;
-
 			const std::size_t max_possible_rowsize = page_mm / ((max_width + 3) * cell_mm);
 
 			std::size_t max_pathlen = 0;
@@ -119,6 +130,11 @@ class MyProgram : public Program
 			}
 
 			rowsize = std::min(max_possible_rowsize, max_pathlen);
+			if(!rowsize)
+			{
+				std::cerr << "WARNING: grid is probably to large." << std::endl;
+				rowsize = 1;
+			}
 		}
 
 		sca::io::color_formula_t main_color(
@@ -136,6 +152,7 @@ class MyProgram : public Program
 		for(std::size_t i = 0; i < gridfile.max(); ++i)
 		{
 			const sca::io::supersection_t& path = gridfile[i];
+			std::cerr << "NEW PATH" << std::endl;
 		/*
 			const std::size_t factor = path.max() / rowsize;
 			const std::size_t colsize = factor + ((path.max() - rowsize * factor) > 0);*/
@@ -177,7 +194,7 @@ class MyProgram : public Program
 				}
 
 				for(const int32_t& i : color_table)
-				out << "\t\\definecolor{rgb" << i << "}{RGB}{"
+				out << "\\definecolor{rgb" << i << "}{RGB}{"
 					<< ((i>>16) & 255) << ", "
 					<< ((i>>8) & 255) << ", "
 					<< (i & (255)) << "}\n";
