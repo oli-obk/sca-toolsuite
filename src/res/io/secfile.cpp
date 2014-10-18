@@ -167,6 +167,10 @@ void supersection_t::parse(secfile_t &inf)
 
 void leaf_template_t<std::string>::parse(secfile_t &inf) { t = inf.read_string_newline();  std::cerr << "Read string: " << t << std::endl; }
 
+void leaf_template_t<grid_t>::parse(secfile_t& inf) {
+	inf.stream >> t; std::cerr << "Read object via cin: " << t << std::endl;
+	// no newline to read here!
+}
 
 std::ostream &operator<<(std::ostream &stream, const leaf_base_t &l) {
 	return l.dump(stream), stream;
@@ -174,7 +178,7 @@ std::ostream &operator<<(std::ostream &stream, const leaf_base_t &l) {
 
 
 secfile_t::error_t secfile_t::mk_error(const char *err) const {
-	std::cerr << "parsing stopped after: " << read_buffer << std::endl;
+	std::cerr << "parsing aborted after: " << read_buffer << std::endl;
 	return error_t { line, err };
 }
 
@@ -191,7 +195,7 @@ bool secfile_t::m_atoi(int &res, const char *str) {
 		? res = atoi(str), true
 		: false;
 }
-
+#if 0
 bool secfile_t::read_int(int &i)
 {
 	const char* buf = get_next_line();
@@ -203,7 +207,7 @@ bool secfile_t::read_int(int &i)
 		? clear_buffer(), true
 		: false;
 }
-
+#endif
 const char *secfile_t::get_next_line()
 {
 	const char* result = read_buffer;

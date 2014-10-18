@@ -24,6 +24,7 @@
 #include <string>
 #include <iostream>
 #include <map>
+#include "grid.h" // TODO: avoid this!
 
 namespace sca { namespace io {
 
@@ -71,7 +72,7 @@ public:
 
 	static bool m_atoi(int& res, const char* str);
 
-	bool read_int(int& i);
+//	bool read_int(int& i);
 
 	const char* get_next_line();
 
@@ -134,14 +135,28 @@ public:
 	T& value() noexcept { return t; }
 };
 
+// TODO: not sure why this is needed:
 template<>
 class leaf_template_t<std::string> : public leaf_base_t
 {
 	using T = std::string;
-	std::string t;
+	T t;
 public:
 	void parse(secfile_t& inf);
 	void dump(std::ostream& stream) const { stream << t; }
+	const T& value() const noexcept { return t; }
+	T& value() noexcept { return t; }
+};
+
+template<>
+class leaf_template_t<grid_t> : public leaf_base_t
+{
+	using T = grid_t;
+	T t;
+public:
+	void parse(secfile_t& inf);
+	void dump(std::ostream& stream) const { stream << t; }
+	operator const T&() const noexcept { return t; }
 	const T& value() const noexcept { return t; }
 	T& value() noexcept { return t; }
 };
