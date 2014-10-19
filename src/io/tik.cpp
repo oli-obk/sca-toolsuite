@@ -18,6 +18,7 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
+#include <iomanip>
 #include <algorithm>
 #include "general.h"
 #include "io/gridfile.h"
@@ -28,9 +29,18 @@ const char* tex_header =
 	"% https://github.com/JohannesLorenz/sca-toolsuite\n\n"
 	"\\documentclass{scrreprt} % has wide borders\n";
 const char* tex_includes =
+#ifdef USE_TIKZ
 	"\\usepackage{tikz}\n"
 	"\\usetikzlibrary{matrix}\n"
-	"\\usepackage{xr}\n"; // cross refs for external docs
+#else
+	"\\usepackage[table]{xcolor} % http://ctan.org/pkg/xcolor\n"
+#endif
+	"\\usepackage{xr}\n" // cross refs for external docs
+	//"\\newcolumntype{C}[1]{>{\\raggedright\\let\\newline\\\\\\arraybackslash\\hspace{0pt}}m{#1}}"
+	"\\usepackage{array}"
+	"\\newcommand{\\mcl}[1]{\\cellcolor[HTML]{#1}}"
+
+	;
 const char* tex_footer = "\\end{document}\n";
 
 enum class tex_type
@@ -57,6 +67,7 @@ class MyProgram : public Program
 		const sca::io::color_formula_t& color_f,
 		std::ostream& out = std::cout)
 	{
+#if 0
 		// draw grid
 		out << "\\draw[step=0." << cell_mm << "cm,color=gray] (0, 0) grid ("
 			<< ((float)g.dx()*(float)cell_mm/10.0f) << ", "
@@ -87,6 +98,30 @@ class MyProgram : public Program
 			draw_node(g.dx()-1, y), out << " \\\\" << std::endl;
 		}
 		out << "};\n";
+#else
+		const auto draw_node = [&](std::size_t x, std::size_t y){
+			out << "\\mcl{"
+				<< std::hex << std::setfill('0') << std::setw(6) << std::uppercase
+				<< ((color_f(g, point(x, y))) & (0xFFFFFF))
+				<< std::dec
+				<< "} " << g[point(x, y)] << "";
+		};
+		out << "\\small\\tabcolsep=0.00cm\\begin{tabular}{";
+		for(std::size_t x = 0; x < g.dx(); ++x)
+		 //out << "C{3mm}";
+		 out << ">{\\centering\\arraybackslash}p{3mm} ";
+		out << "}\n";
+		for(std::size_t y = 0; y < g.dy(); ++y)
+		{
+			out << "\t";
+			for(std::size_t x = 0; x < g.dx() - 1; ++x)
+			 draw_node(x, y), out << " & ";
+			draw_node(g.dx()-1, y), out << " \\\\" << std::endl;
+		}
+		out << "\\end{tabular}";
+#endif
+
+
 	}
 
 	// returns point in tenth of mm
@@ -193,6 +228,7 @@ class MyProgram : public Program
 					 color_table.insert(the_color(g, p));
 				}
 
+#if 0
 				for(const int32_t& i : color_table)
 				out << "\\definecolor{rgb" << i << "}{RGB}{"
 					<< ((i>>16) & 255) << ", "
@@ -222,9 +258,9 @@ class MyProgram : public Program
 
 			//	out << "\\end{tikzpicture}\n\\caption{TODO TODO TODO}\n\\end{figure}\n";
 				out << "\\end{tikzpicture}";
-
-				bool linebreak = (!(++col%rowsize));
-				out << (linebreak ? " \\\\\n" : " &\n"); // TODO: in one line?
+#else
+				dump_grid_as_tikz(grid, the_color, out);
+#endif
 			}
 		}
 
