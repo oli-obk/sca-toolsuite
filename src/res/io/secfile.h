@@ -24,6 +24,7 @@
 #include <string>
 #include <iostream>
 #include <map>
+#include "util.h"
 #include "grid.h" // TODO: avoid this!
 
 namespace sca { namespace io {
@@ -124,15 +125,30 @@ template<class T>
 class leaf_template_t : public leaf_base_t
 {
 	T t;
+
+	template<class T2> class knowledge {};
+
+	template<class T2>
+	constexpr static bool read_newline(const knowledge<T2>&) { return true; }
+	template<class... Args>
+	constexpr static bool read_newline(const knowledge<_grid_t<Args...>>&) { return false; }
+
 public:
 	void parse(secfile_t& inf) { inf.stream >> t; std::cerr << "Read object via cin: " << t << std::endl;
-		inf.read_newline(); inf.read_newline();
+		const knowledge<T> k{};
+		if(read_newline(k)) {
+			inf.read_newline();
+			inf.read_newline();
+		}
 	}
 	void dump(std::ostream& stream) const { stream << t; } /* TODO: might need 1 or 2 newlines */
 	operator T&() noexcept { return t; }
 	operator const T&() const noexcept { return t; }
 	const T& value() const noexcept { return t; }
 	T& value() noexcept { return t; }
+
+	template<class ...A> leaf_template_t(const A&... a) : t(a...) {
+	}
 };
 
 // TODO: not sure why this is needed:
@@ -148,6 +164,7 @@ public:
 	T& value() noexcept { return t; }
 };
 
+/*
 template<>
 class leaf_template_t<grid_t> : public leaf_base_t
 {
@@ -159,7 +176,8 @@ public:
 	operator const T&() const noexcept { return t; }
 	const T& value() const noexcept { return t; }
 	T& value() noexcept { return t; }
-};
+	template<class ...A> leaf_template_t(A... a) : t(a...) {}
+};*/
 
 template<>
 class leaf_template_t<void> : public leaf_base_t
@@ -167,19 +185,6 @@ class leaf_template_t<void> : public leaf_base_t
 public:
 	void parse(secfile_t& ) noexcept {}
 	void dump(std::ostream& ) const noexcept {}
-};
-
-class factory_base
-{
-public:
-	virtual leaf_base_t* make() = 0;
-};
-
-template<class T>
-class factory : public factory_base
-{
-public:
-	virtual T* make() { return new T(); }
 };
 
 class supersection_t : public leaf_base_t
@@ -195,9 +200,30 @@ public:
 	};
 	type_t type;
 
+	typedef void (supersection_t::* hook_func_t)(void);
+
 private:
 	const bool required;
 	std::string batch_str;
+
+	class factory_base
+	{
+	public:
+		virtual leaf_base_t* make() const = 0;
+	};
+
+	template<class T, class ...Args>
+	class factory : public factory_base
+	{
+		const std::tuple<const Args& ...> args;
+		template<std::size_t... Ids>
+		T* _make(util::seq<Ids...>) const {
+			return new T(std::get<Ids>(args)...);
+		}
+	public:
+		factory(const Args&... args) : args(args...) {}
+		virtual T* make() const { return _make(util::make_seq<sizeof...(Args)>{}); }
+	};
 
 	factory_base* leaf_factory;
 
@@ -206,6 +232,8 @@ private:
 	std::map<std::size_t, leaf_base_t*> multi_sections;
 	std::map<std::string, leaf_base_t*> leafs;
 
+	std::map<leaf_base_t*, hook_func_t> hooks;
+
 	bool check_required()
 	{
 		(void)required; // TODO
@@ -213,17 +241,30 @@ private:
 	}
 
 protected:
-	template<class T>
-	void init_subsection(const char* sec_name) {
-		supersections[sec_name] = new T();
+
+	template<class T, class ...Args>
+	void init_subsection(const char* sec_name, const Args& ...args) {
+		supersections[sec_name] = new T(args...);
 	}
-	template<class T>
-	void init_leaf(const char* leaf_name) {
-		leafs[leaf_name] = new T();
+	template<class T, class ...Args>
+	void init_subsection_cb(const char* sec_name, const hook_func_t& on_finished, const Args& ...args) {
+		init_subsection<T, Args...>(sec_name, args...); // TODO: use ret val
+		hooks.emplace(supersections[sec_name], on_finished);
 	}
-	template<class T>
-	void init_factory() {
-		leaf_factory = new factory<T>();
+
+	template<class T, class ...Args>
+	void init_leaf(const char* leaf_name, const Args& ...args) {
+		leafs[leaf_name] = new T(args...);
+	}
+	template<class T, class ...Args>
+	void init_leaf_cb(const char* leaf_name, const hook_func_t& on_finished, const Args& ...args) {
+		init_leaf<T, Args...>(leaf_name, args...); // TODO: use ret val
+		hooks.emplace(leafs[leaf_name], on_finished);
+	}
+
+	template<class T, class ...Args>
+	void init_factory(const Args&... args) {
+		leaf_factory = new factory<T, Args...>(args...);
 	}
 	void set_batch_str(const char* str) {
 		batch_str = str;
@@ -262,6 +303,8 @@ protected:
 	leaf_base_t& numbered(std::size_t id) {
 		return save_map_find(multi_sections, id);
 	}
+
+	virtual void process() {}
 
 public:
 	void clear() {

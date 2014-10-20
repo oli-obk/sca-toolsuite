@@ -846,6 +846,7 @@ public:
 	}
 
 	std::size_t size() const { return _data.size(); }
+	bool empty() const { return _data.empty(); }
 	// TODO: the following returns a reference for vector<bool>
 	const cell_t& operator[](unsigned id) const { return _data[id]; }
 	cell_t& operator[](unsigned id) { return _data[id]; }
@@ -867,8 +868,11 @@ public:
 	using const_iterator = typename std::vector<cell_t>::const_iterator;
 	iterator begin() { return _data.begin(); }
 	iterator end() { return _data.end(); }
+	const_iterator begin() const { return _data.begin(); }
+	const_iterator end() const { return _data.end(); }
 	const_iterator cbegin() const { return _data.cbegin(); }
 	const_iterator cend() const { return _data.cend(); }
+	using value_type = typename std::vector<cell_t>::value_type;
 
 	void clear() { _data.clear(); }
 

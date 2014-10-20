@@ -112,7 +112,7 @@ void supersection_t::parse(secfile_t &inf)
 
 	while(cur_type_t::unknown != (cur = check_string(inf, s))) // TODO: while type = inf.read_string_no_clear() ...
 	{
-		std::cerr << "Trying to parse section: " << s << std::endl;
+		std::cerr << "Trying to parse section/leaf: " << s << std::endl;
 
 		switch(cur)
 		{
@@ -136,10 +136,20 @@ void supersection_t::parse(secfile_t &inf)
 
 		case cur_type_t::super:
 			super_itr->second->_parse(inf);
+			{
+				const auto pr = hooks.find(super_itr->second);
+				if(pr != hooks.end())
+				 (this->*(pr->second))();
+			}
 			break;
 
 		case cur_type_t::leaf:
 			leaf_itr->second->_parse(inf);
+			{
+				const auto pr = hooks.find(leaf_itr->second);
+				if(pr != hooks.end())
+				 (this->*(pr->second))();
+			}
 			break;
 
 		default:
@@ -162,15 +172,17 @@ void supersection_t::parse(secfile_t &inf)
 
 	if(!check_required() || inf.stream.eof())
 	 inf.set_bad();
+
+	process();
 }
 
 
 void leaf_template_t<std::string>::parse(secfile_t &inf) { t = inf.read_string_newline();  std::cerr << "Read string: " << t << std::endl; }
-
+/*
 void leaf_template_t<grid_t>::parse(secfile_t& inf) {
 	inf.stream >> t; std::cerr << "Read object via cin: " << t << std::endl;
 	// no newline to read here!
-}
+}*/
 
 std::ostream &operator<<(std::ostream &stream, const leaf_base_t &l) {
 	return l.dump(stream), stream;

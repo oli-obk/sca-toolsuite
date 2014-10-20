@@ -38,6 +38,10 @@ class dont_instantiate_me_id {
 	static_assert(falsify_id<T, Arg>::value, "This should not be instantiated.");
 };
 
+template<std::size_t... Is> struct seq {};
+template<std::size_t N, std::size_t... Is> struct make_seq : make_seq<N-1, N-1, Is...> {};
+template<std::size_t... Is> struct make_seq<0, Is...> : seq<Is...> {};
+
 }}
 
 #endif // UTILITY_H

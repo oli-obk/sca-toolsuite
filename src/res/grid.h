@@ -166,7 +166,7 @@ public:
 		border_width(border_width)
 	{
 	}*/
-
+	_dim_cont<Traits> internal_points() const { return _dim.points(0); }
 	_dim_cont<Traits> points() const { return _dim.points(bw); }
 
 	//! returns whether p is in the human rectangle, i.e. (0,0) to ...
