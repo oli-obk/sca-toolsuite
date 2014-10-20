@@ -260,6 +260,7 @@ class MyProgram : public Program
 				out << "\\end{tikzpicture}";
 #else
 				dump_grid_as_tikz(grid, the_color, out);
+				out << ((!(++col%rowsize)) ? " \\\\\n" : " &\n");
 #endif
 			}
 		}
