@@ -98,7 +98,8 @@ SOURCES += algo/relax.cpp \
     io/tik.cpp \
     res/io/gridfile.cpp \
     io/replace.cpp \
-    res/utils/strings.cpp
+    res/utils/strings.cpp \
+    io/fmt_tf.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL.txt \
 	../README.txt \

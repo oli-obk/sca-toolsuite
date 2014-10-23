@@ -6,6 +6,7 @@ compile("convert.cpp")
 compile("to_tga.cpp")
 compile("tik.cpp")
 compile("replace.cpp")
+compile("fmt_tf.cpp")
 
 cp_script(to_image)
 cp_script(to_ods)

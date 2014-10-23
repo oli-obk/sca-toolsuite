@@ -26,6 +26,7 @@
 #include <map>
 #include "util.h"
 #include "grid.h" // TODO: avoid this!
+#include "ca_basics.h"
 
 namespace sca { namespace io {
 
@@ -132,6 +133,8 @@ class leaf_template_t : public leaf_base_t
 	constexpr static bool read_newline(const knowledge<T2>&) { return true; }
 	template<class... Args>
 	constexpr static bool read_newline(const knowledge<_grid_t<Args...>>&) { return false; }
+	template<class... Args>
+	constexpr static bool read_newline(const knowledge<ca::_n_t<Args...>>&) { return false; }
 
 public:
 	void parse(secfile_t& inf) { inf.stream >> t; std::cerr << "Read object via cin: " << t << std::endl;
@@ -146,6 +149,9 @@ public:
 	operator const T&() const noexcept { return t; }
 	const T& value() const noexcept { return t; }
 	T& value() noexcept { return t; }
+
+	const T& value(const T& def) const noexcept { return is_read() ? t : def; }
+	T& value(T& def) noexcept { return is_read() ? t : def; }
 
 	template<class ...A> leaf_template_t(const A&... a) : t(a...) {
 	}
@@ -162,6 +168,8 @@ public:
 	void dump(std::ostream& stream) const { stream << t; }
 	const T& value() const noexcept { return t; }
 	T& value() noexcept { return t; }
+	const T& value(const T& def) const noexcept { return is_read() ? t : def; }
+	T& value(T& def) noexcept { return is_read() ? t : def; }
 };
 
 /*
@@ -373,6 +381,30 @@ public:
 	template<class T>
 	T& value(std::size_t id) {
 		return dynamic_cast<leaf_template_t<T>&>(numbered(id)).value();
+	}
+
+	//! named value + default
+	template<class T>
+	const T& value(const char* name, const T& def) const {
+		return leaf<T>(name).value(def);
+	}
+
+	//! named value + default
+	template<class T>
+	T& value(const char* name, T& def) {
+		return leaf<T>(name).value(def);
+	}
+
+	//! numbered value + default
+	template<class T>
+	const T& value(std::size_t id, const T& def) const {
+		return dynamic_cast<const leaf_template_t<T>&>(numbered(id)).value(def);
+	}
+
+	//! numbered value + default
+	template<class T>
+	T& value(std::size_t id, T& def) {
+		return dynamic_cast<leaf_template_t<T>&>(numbered(id)).value(def);
 	}
 
 	template<class KeyT>

@@ -76,9 +76,11 @@ public:
 		init_factory<grid_group_t>();
 		set_batch_str("group");
 
+		init_leaf<io::leaf_template_t<std::string>>("name");
 		init_leaf<io::leaf_template_t<grid_t>>("n_in");
 		init_leaf<io::leaf_template_t<grid_t>>("n_out");
 		init_leaf<io::leaf_template_t<grid_t>>("center");
+		init_leaf<io::leaf_template_t<std::string>>("rgb32");
 	}
 };
 

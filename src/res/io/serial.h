@@ -24,6 +24,7 @@
 #include <tuple>
 #include <set>
 #include <vector>
+#include <string>
 #include <ostream>
 #include <typeinfo>
 
@@ -135,7 +136,7 @@ public:
 };
 #endif
 
-
+// TODO: cpp file?
 //#define SERIAL_DEBUG
 
 #ifdef SERIAL_DEBUG
@@ -194,6 +195,10 @@ public:
 		s.stream.write((const char*)&x, sizeof(T));
 		return dbg(s, x);
 	}
+
+	void raw(const char* data, std::size_t length) {
+		stream.write(data, length);
+	}
 };
 
 
@@ -246,7 +251,6 @@ public:
 		s.stream.read((char*)&x, sizeof(T));
 		return dbg(s, x);
 	}
-
 };
 
 template<class T>
@@ -314,6 +318,21 @@ deserializer& operator>>(deserializer& s, std::vector<T>& x) {
 	return s;
 }
 
+
+inline serializer& operator<<(serializer& s, const std::string& str) {
+	dbg_serialize_container(str);
+	s.raw(str.data(), str.length() + 1); // +1 for \0
+	return s;
+}
+
+inline deserializer& operator>>(deserializer& s, std::string& str) {
+	dbg_deserialize_container(str, 0);
+	char c;
+	while(s >> c, c) {
+		str.push_back(c);
+	}
+	return s;
+}
 
 //! experimental
 template<class T>

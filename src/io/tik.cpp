@@ -35,10 +35,11 @@ const char* tex_includes =
 #else
 	"\\usepackage[table]{xcolor} % http://ctan.org/pkg/xcolor\n"
 #endif
+	"\\usepackage[ngerman]{babel}\n"
 	"\\usepackage{xr}\n" // cross refs for external docs
 	//"\\newcolumntype{C}[1]{>{\\raggedright\\let\\newline\\\\\\arraybackslash\\hspace{0pt}}m{#1}}"
-	"\\usepackage{array}"
-	"\\newcommand{\\mcl}[1]{\\cellcolor[HTML]{#1}}"
+	"\\usepackage{array}\n"
+	"\\newcommand{\\mcl}[1]{\\cellcolor[HTML]{#1}}\n"
 
 	;
 const char* tex_footer = "\\end{document}\n";
@@ -118,6 +119,7 @@ class MyProgram : public Program
 			 draw_node(x, y), out << " & ";
 			draw_node(g.dx()-1, y), out << " \\\\" << std::endl;
 		}
+	//	out << "\\caption{" << "xy" << "}\n";
 		out << "\\end{tabular}";
 #endif
 
@@ -136,7 +138,26 @@ class MyProgram : public Program
 			<< (float) p.y / 100.0f << ")";
 	}
 
-	static void make_tikz_content(const tex_type& tt, const sca::io::gridfile_t& gridfile,
+	class tex_str
+	{
+		const std::string& str;
+	public:
+		tex_str(const std::string& str) : str(str) {}
+		friend std::ostream& operator<<(std::ostream& stream, const tex_str& src)
+		{
+			std::size_t num = 0;
+			for(const char& c : src.str)
+			{
+				if(c == '"')
+				 stream << (((++num)%2) ? "\\glqq{}" : "\\grqq{}");
+				else
+				 stream << c;
+			}
+			return stream;
+		}
+	};
+
+	static void make_tikz_content(const sca::io::gridfile_t& gridfile,
 		std::ostream& out = std::cout)
 	{
 	//	out << gridfile.value<std::string>("description");
@@ -167,10 +188,13 @@ class MyProgram : public Program
 			rowsize = std::min(max_possible_rowsize, max_pathlen);
 			if(!rowsize)
 			{
-				std::cerr << "WARNING: grid is probably to large." << std::endl;
+				std::cerr << "WARNING: grid is probably too large." << std::endl;
 				rowsize = 1;
 			}
 		}
+
+		rowsize -= rowsize % gridfile.value<int>("rowsize_mod", 1);
+		const bool borders = gridfile.leaf<void>("border").is_read();
 
 		sca::io::color_formula_t main_color(
 			gridfile.value<std::string>("rgb32").c_str());
@@ -179,10 +203,17 @@ class MyProgram : public Program
 		out << "\\begin{figure}\n";
 		out << "\\centering\n";
 		out << "\\begin{tabular}{";
-		for(std::size_t i = 0; i < rowsize; ++i)
+		if(borders) {
+			out << '|';
+			for(std::size_t i = 0; i < rowsize; ++i) out << "c|";
+		}
+		else for(std::size_t i = 0; i < rowsize; ++i)
 		 out << 'c';
+
 		out << "}\n";
 
+		if(borders)
+		 out << "\\hline\n";
 
 		for(std::size_t i = 0; i < gridfile.max(); ++i)
 		{
@@ -259,15 +290,35 @@ class MyProgram : public Program
 			//	out << "\\end{tikzpicture}\n\\caption{TODO TODO TODO}\n\\end{figure}\n";
 				out << "\\end{tikzpicture}";
 #else
+
+			//	out << "\\begin{figure}\n";
+	//			out << "\\centering\n";
+			//	out << "\\begin{table}\n";
 				dump_grid_as_tikz(grid, the_color, out);
-				out << ((!(++col%rowsize)) ? " \\\\\n" : " &\n");
+
+			//	out << "\\captionof{table}{" << "xy" << "}\\label{xy}\n";
+
+			//	out << "\\end{table}\n";
+
+			//	out << "\\label{" << "xy" << /*'_' << i <<*/ "}\n";
+			//	out << "\\end{figure}\n";
+
+			/*	if(node.description.size())
+				{
+					out << "\\\\\n" << node.description;
+				}*/
+
+				bool linebreak = !(++col%rowsize);
+				out << (linebreak ? " \\\\\n" : " &\n");
+				if(borders && linebreak)
+				 out << "\\hline\n";
 #endif
 			}
 		}
 
 		out << "\\end{tabular}\n";
-		out << "\\caption{" << gridfile.value<std::string>("description") << "}\n";
-		out << "\\label{" << gridfile.value<std::string>("name") << /*'_' << i <<*/ "}\n";
+		out << "\\caption{" << tex_str(gridfile.value<std::string>("description")) << "}\n";
+		out << "\\label{" << tex_str(gridfile.value<std::string>("name")) << /*'_' << i <<*/ "}\n";
 		out << "\\end{figure}\n";
 	}
 
@@ -284,6 +335,8 @@ class MyProgram : public Program
 			default:
 				return exit_usage();
 		}
+
+		exit_t exit_code = exit_t::success;
 
 		if(tt == tex_type::invalid)
 		{
@@ -307,19 +360,20 @@ class MyProgram : public Program
 				sca::io::gridfile_t gridfile;
 				while(inf >> gridfile) {
 					std::cerr << "READIT"<< std::endl;
-					make_tikz_content(tt, gridfile);
+					make_tikz_content(gridfile);
 					gridfile.clear();
 				}
 			} catch(sca::io::secfile_t::error_t ife) {
 				std::cout << "infile line " << ife.line
 					<< ": "	 << ife.msg << std::endl;
+				exit_code = exit_t::failure;
 			}
 
 			if(tt == tex_type::complete)
 			 std::cout << tex_footer;
 		}
 
-		return exit_t::success;
+		return exit_code;
 	}
 };
 
