@@ -207,19 +207,19 @@ bool secfile_t::m_atoi(int &res, const char *str) {
 		? res = atoi(str), true
 		: false;
 }
-#if 0
+
 bool secfile_t::read_int(int &i)
 {
 	const char* buf = get_next_line();
 	/*if(!*buf) {
 			throw mk_error("Expected a non-empty number");
 		}*/
-	++line;
+	++line; // ??
 	return (m_atoi(i, buf))
 		? clear_buffer(), true
 		: false;
 }
-#endif
+
 const char *secfile_t::get_next_line()
 {
 	const char* result = read_buffer;

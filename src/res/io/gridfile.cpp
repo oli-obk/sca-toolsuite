@@ -61,22 +61,30 @@ bool sca::io::path_node::parse(sca::io::secfile_t &inf)
 	/*if(inf.read_int(grid_id))
 		{
 			inf.read_newline();*/
-	std::string str;
-	while((str = inf.read_string()).size())
+
+	bool can_read = inf.read_int(grid_id);
+
+	if(can_read)
 	{
-		if(!str.compare(0, 4, "mark"))
-		 markup_list.emplace_back(str.data() + 5);
-		else if(!str.compare(0, 5, "arrow"))
-		 arrow_list.emplace_back(str.data() + 6);
-		else if(!str.compare(0, 9, "cur_rgb32"))
-		 cur_color = str.data() + 10;
-		else
+		inf.read_newline();
+		std::string str;
+		while((str = inf.read_string()).size())
 		{
-			assert(description.empty());
-			description = str;
+			if(!str.compare(0, 4, "mark"))
+			 markup_list.emplace_back(str.data() + 5);
+			else if(!str.compare(0, 5, "arrow"))
+			 arrow_list.emplace_back(str.data() + 6);
+			else if(!str.compare(0, 9, "cur_rgb32"))
+			 cur_color = str.data() + 10;
+			else
+			{
+				assert(description.empty());
+				description = str;
+			}
 		}
 	}
-	return true;
+
+	return can_read;
 	//}
 	//else return false;
 }

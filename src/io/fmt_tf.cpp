@@ -110,7 +110,7 @@ class MyProgram : public Program
 				gridfile.clear();
 			}
 		} catch(sca::io::secfile_t::error_t ife) {
-			std::cout << "infile line " << ife.line
+			std::cerr << "infile line " << ife.line
 				<< ": "	 << ife.msg << std::endl;
 			return exit_t::failure;
 		}

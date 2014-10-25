@@ -86,6 +86,7 @@ public:
 		arrow(const char* str);
 	};
 
+	int grid_id;
 	std::vector<markup> markup_list;
 	std::vector<arrow> arrow_list;
 	std::string cur_color;
@@ -94,6 +95,7 @@ public:
 
 	void dump(std::ostream& stream) const { (void)stream; /*TODO*/ }
 };
+
 
 template<> // TODO: abstract case of path_node? enable_if?
 class leaf_template_t<path_node> : public leaf_base_t
@@ -113,14 +115,72 @@ public:
 	}
 };
 
-class scene_path_t : public supersection_t
+class scene_text_t : public supersection_t
+{
+public:
+	scene_text_t() : supersection_t(type_t::multi) {
+		init_factory<leaf_template_t<std::string>>();
+	}
+};
+
+/*class scene_path_t : public supersection_t
 {
 public:
 	scene_path_t() : supersection_t(type_t::multi) {
 		init_factory<leaf_template_t<path_node>>();
 	}
+};*/
+
+template<class T> // TODO: abstract case of path_node? enable_if?
+class leaf_template_t<std::vector<T>> : public leaf_base_t
+{
+	using V = std::vector<T>;
+	V v;
+public:
+	void parse(secfile_t& inf)
+	{
+		/*int next_id;
+		while(inf.read_int(next_id))
+		{
+			path_node node;
+			node.parse(inf);
+			node.grid_id = next_id;
+			t.push_back(std::move(node));
+		}*/
+		T dummy;
+		while(dummy.parse(inf))
+		{
+			v.push_back(dummy); // TODO: std::move?
+		}
+	}
+	void dump(std::ostream& stream) const { /*t.dump(stream);*/ for(const T& t : v) { t.dump(stream); } }
+	const V& value() const { return v; }
 };
 
+
+#if 0
+
+template<> // TODO: abstract case of path_node? enable_if?
+class leaf_template_t<path_node> : public leaf_base_t
+{
+	std::vector<path_node> t;
+public:
+	void parse(secfile_t& inf)
+	{
+		int next_id;
+		while(inf.read_int(next_id))
+		{
+			path_node node;
+			node.parse(inf);
+			node.grid_id = next_id;
+			t.push_back(std::move(node));
+		}
+	}
+	void dump(std::ostream& stream) const { /*t.dump(stream);*/ for(const path_node& p : t) { p.dump(stream); } }
+	const path_node& value() { return t; }
+};
+
+#endif
 
 class gridfile_t : public supersection_t // TODO: public?
 {
@@ -135,8 +195,9 @@ public:
 		init_leaf<leaf_template_t<std::string>>("description");
 		init_leaf<leaf_template_t<ca::n_t>>("n");
 		init_subsection<scene_grids_t>("grids");
+		init_subsection<scene_text_t>("text");
 
-		init_factory<scene_path_t>();
+		init_factory<leaf_template_t<std::vector<path_node>>>();
 		set_batch_str("path");
 	}
 

@@ -74,7 +74,7 @@ public:
 
 	static bool m_atoi(int& res, const char* str);
 
-//	bool read_int(int& i);
+	bool read_int(int& i);
 
 	const char* get_next_line();
 
@@ -312,6 +312,16 @@ protected:
 		return save_map_find(multi_sections, id);
 	}
 
+	template<class Res, class T> static Res m_cast(T& t) {
+	//	std::cerr << "cast: " << typeid(T).name() << " to " << typeid(Res).name() << std::endl;
+		return dynamic_cast<Res>(t);
+	}
+
+	template<class Res, class T> static const Res m_cast(const T& t) {
+	//	std::cerr << "cast: " << typeid(T).name() << " to " << typeid(Res).name() << std::endl;
+		return dynamic_cast<Res>(t);
+	}
+
 	virtual void process() {}
 
 public:
@@ -325,37 +335,37 @@ public:
 
 	//! named supersection
 	const supersection_t& operator[](const char* name) const {
-		return dynamic_cast<const supersection_t&>(
+		return m_cast<const supersection_t&>(
 			save_map_find(supersections, name));
 	}
 
 	//! named supersection
 	supersection_t& operator[](const char* name) {
-		return dynamic_cast<supersection_t&>(
+		return m_cast<supersection_t&>(
 			save_map_find(supersections, name));
 	}
 
 	//! numbered supersection
 	const supersection_t& operator[](std::size_t id) const {
-		return dynamic_cast<const supersection_t&>(numbered(id));
+		return m_cast<const supersection_t&>(numbered(id));
 	}
 
 	//! numbered supersection
 	supersection_t& operator[](std::size_t id) {
-		return dynamic_cast<supersection_t&>(numbered(id));
+		return m_cast<supersection_t&>(numbered(id));
 	}
 
 	//! access for the leaf itself. probably useless
 	template<class T>
 	leaf_template_t<T>& leaf(const char* name) {
-		return dynamic_cast<leaf_template_t<T>&>(
+		return m_cast<leaf_template_t<T>&>(
 			save_map_find(leafs, name));
 	}
 
 	//! access for the leaf itself. probably useless
 	template<class T> // TODO: -> private
 	const leaf_template_t<T>& leaf(const char* name) const {
-		return dynamic_cast<const leaf_template_t<T>&>(
+		return m_cast<const leaf_template_t<T>&>(
 			save_map_find(leafs, name));
 	}
 
@@ -374,13 +384,13 @@ public:
 	//! numbered value
 	template<class T>
 	const T& value(std::size_t id) const {
-		return dynamic_cast<const leaf_template_t<T>&>(numbered(id)).value();
+		return m_cast<const leaf_template_t<T>&>(numbered(id)).value();
 	}
 
 	//! numbered value
 	template<class T>
 	T& value(std::size_t id) {
-		return dynamic_cast<leaf_template_t<T>&>(numbered(id)).value();
+		return m_cast<leaf_template_t<T>&>(numbered(id)).value();
 	}
 
 	//! named value + default
@@ -398,13 +408,13 @@ public:
 	//! numbered value + default
 	template<class T>
 	const T& value(std::size_t id, const T& def) const {
-		return dynamic_cast<const leaf_template_t<T>&>(numbered(id)).value(def);
+		return m_cast<const leaf_template_t<T>&>(numbered(id)).value(def);
 	}
 
 	//! numbered value + default
 	template<class T>
 	T& value(std::size_t id, T& def) {
-		return dynamic_cast<leaf_template_t<T>&>(numbered(id)).value(def);
+		return m_cast<leaf_template_t<T>&>(numbered(id)).value(def);
 	}
 
 	template<class KeyT>
@@ -435,15 +445,14 @@ public:
 	template<class T, class KeyT>
 	class val_cont
 	{
-		std::map<KeyT, leaf_base_t*> map;
+		const std::map<KeyT, leaf_base_t*>& map;
 	public:
 		using iterator = val_itr<T, KeyT>;
 		iterator begin() { return { map.cbegin() }; }
 		iterator end() { return { map.cend() }; }
+		iterator find(const KeyT& key) { return { map.find(key) }; }
 		val_cont(const std::map<KeyT, leaf_base_t*>& map) : map(map) {}
 	};
-
-
 
 
 	template<class T>

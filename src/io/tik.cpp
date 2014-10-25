@@ -35,6 +35,7 @@ const char* tex_includes =
 #else
 	"\\usepackage[table]{xcolor} % http://ctan.org/pkg/xcolor\n"
 #endif
+	"\\usepackage{subcaption}\n"
 	"\\usepackage[ngerman]{babel}\n"
 	"\\usepackage{xr}\n" // cross refs for external docs
 	//"\\newcolumntype{C}[1]{>{\\raggedright\\let\\newline\\\\\\arraybackslash\\hspace{0pt}}m{#1}}"
@@ -107,6 +108,11 @@ class MyProgram : public Program
 				<< std::dec
 				<< "} " << g[point(x, y)] << "";
 		};
+		out << "\\centering\n";
+		out << "\\begingroup\n";
+		out << "\\centering\n";
+		out << "\\renewcommand{\\arraystretch}{1.0}\n";
+		out << "\\centering\n";
 		out << "\\small\\tabcolsep=0.00cm\\begin{tabular}{";
 		for(std::size_t x = 0; x < g.dx(); ++x)
 		 //out << "C{3mm}";
@@ -120,7 +126,8 @@ class MyProgram : public Program
 			draw_node(g.dx()-1, y), out << " \\\\" << std::endl;
 		}
 	//	out << "\\caption{" << "xy" << "}\n";
-		out << "\\end{tabular}";
+		out << "\\end{tabular}\n";
+		out << "\\endgroup\n";
 #endif
 
 
@@ -171,26 +178,30 @@ class MyProgram : public Program
 		{
 			rowsize = rowsize_hint.value();
 		}
-		else
+
+		std::size_t max_possible_rowsize, max_width = 0;
 		{
-			std::size_t max_width = 0;
 			for(std::size_t i = 0; i < grids.max(); ++i)
 			 max_width = std::max(max_width, (std::size_t)grids.value<grid_t>(i).dx());
 
-			const std::size_t max_possible_rowsize = page_mm / ((max_width + 3) * cell_mm);
+			max_possible_rowsize = page_mm / ((max_width + 1) * cell_mm);
 
 			std::size_t max_pathlen = 0;
 			for(std::size_t i = 0; i < gridfile.max(); ++i)
 			{
-				max_pathlen = std::max(max_pathlen, gridfile[i].max());
+				max_pathlen = std::max(max_pathlen, gridfile.value<std::vector<sca::io::path_node>>(i).size());
 			}
 
-			rowsize = std::min(max_possible_rowsize, max_pathlen);
-			if(!rowsize)
+			if(!rowsize_hint.is_read())
 			{
-				std::cerr << "WARNING: grid is probably too large." << std::endl;
-				rowsize = 1;
+				rowsize = std::min(max_possible_rowsize, max_pathlen);
+				if(!rowsize)
+				{
+					std::cerr << "WARNING: grid is probably too large." << std::endl;
+					rowsize = 1;
+				}
 			}
+
 		}
 
 		rowsize -= rowsize % gridfile.value<int>("rowsize_mod", 1);
@@ -200,7 +211,9 @@ class MyProgram : public Program
 			gridfile.value<std::string>("rgb32").c_str());
 
 
-		out << "\\begin{figure}\n";
+		//out << "\\begin{figure}\n";
+		out << "\\begin{table}\n";
+		out << "\\renewcommand{\\arraystretch}{3.0}\n";
 		out << "\\centering\n";
 		out << "\\begin{tabular}{";
 		if(borders) {
@@ -215,10 +228,11 @@ class MyProgram : public Program
 		if(borders)
 		 out << "\\hline\n";
 
+		const float rowsize_inv = 1.0f / (float) rowsize;
+
 		for(std::size_t i = 0; i < gridfile.max(); ++i)
 		{
-			const sca::io::supersection_t& path = gridfile[i];
-			std::cerr << "NEW PATH" << std::endl;
+			const std::vector<sca::io::path_node>& path = gridfile.value<std::vector<sca::io::path_node>>(i);
 		/*
 			const std::size_t factor = path.max() / rowsize;
 			const std::size_t colsize = factor + ((path.max() - rowsize * factor) > 0);*/
@@ -232,17 +246,18 @@ class MyProgram : public Program
 			}*/
 
 			std::size_t col = 0;
+			int node_id = 0;
 
-			for(const auto& pr : path.numbered_values<sca::io::path_node>())
+			for(const sca::io::path_node& node : path)
 			{
 				//std::cerr << node.key() << " --> " << node.value().description << std::endl;
 
 			//	out << "\\begin{figure}\n\\begin{tikzpicture}\n";
 
-				const sca::io::path_node& node = pr.value();
-				const grid_t& grid = grids.value<grid_t>(pr.key());
 
-				bool special_color = !node.cur_color.empty();
+				const bool has_grid = grids.numbered_values<grid_t>().find(node.grid_id) != grids.numbered_values<grid_t>().end();
+				const grid_t& grid = has_grid ? grids.value<grid_t>(node.grid_id) : grid_t();
+				const bool special_color = !node.cur_color.empty();
 
 				sca::io::color_formula_t cur_color(
 					special_color ? node.cur_color.c_str() : "v"
@@ -250,9 +265,9 @@ class MyProgram : public Program
 				sca::io::color_formula_t& the_color = special_color ? cur_color : main_color;
 
 
-
 				std::set<int32_t> color_table; // collection of all colors
 				//for(std::size_t i = 0; i < grids.max(); ++i)
+				if(has_grid)
 				{
 					const grid_t& g = grid;
 					for(const point& p : g.points())
@@ -292,9 +307,23 @@ class MyProgram : public Program
 #else
 
 			//	out << "\\begin{figure}\n";
-	//			out << "\\centering\n";
 			//	out << "\\begin{table}\n";
-				dump_grid_as_tikz(grid, the_color, out);
+
+				if(has_grid) // (TODO: hack)
+				{
+					out << "\\begin{subtable}[c]{" << (max_width * cell_mm + 2) << "mm}\n";
+					dump_grid_as_tikz(grid, the_color, out);
+					if(node.description.size())
+					 out << "\\caption{" << node.description << "}\n";
+					out << "\\label{" << tex_str(gridfile.value<std::string>("name"))
+						<< "_grid_" << i << '_' << node_id << "}\n";
+					out << "\\end{subtable}";
+				}
+				else
+				{
+					out << gridfile["text"].value<std::string>(node.grid_id) << "\n";
+				}
+
 
 			//	out << "\\captionof{table}{" << "xy" << "}\\label{xy}\n";
 
@@ -312,6 +341,8 @@ class MyProgram : public Program
 				out << (linebreak ? " \\\\\n" : " &\n");
 				if(borders && linebreak)
 				 out << "\\hline\n";
+
+				++node_id;
 #endif
 			}
 		}
@@ -319,7 +350,8 @@ class MyProgram : public Program
 		out << "\\end{tabular}\n";
 		out << "\\caption{" << tex_str(gridfile.value<std::string>("description")) << "}\n";
 		out << "\\label{" << tex_str(gridfile.value<std::string>("name")) << /*'_' << i <<*/ "}\n";
-		out << "\\end{figure}\n";
+		out << "\\end{table}\n";
+		//out << "\\end{figure}\n";
 	}
 
 	exit_t main()
@@ -359,12 +391,12 @@ class MyProgram : public Program
 			try {
 				sca::io::gridfile_t gridfile;
 				while(inf >> gridfile) {
-					std::cerr << "READIT"<< std::endl;
+					std::cerr << "... read one gridfile."<< std::endl;
 					make_tikz_content(gridfile);
 					gridfile.clear();
 				}
 			} catch(sca::io::secfile_t::error_t ife) {
-				std::cout << "infile line " << ife.line
+				std::cerr << "infile line " << ife.line
 					<< ": "	 << ife.msg << std::endl;
 				exit_code = exit_t::failure;
 			}
