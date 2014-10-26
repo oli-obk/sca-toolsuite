@@ -50,6 +50,12 @@ public:
 			def_coord_traits, def_cell_traits
 			>(&g[p], p, g.human_dim());
 	}
+
+	static bool text_black(int32_t val) {
+		// this should be done using hsv, but nvm
+		int sum = val & 0xFF + ((val >> 8) & 0xFF) + ((val >> 16) & 0xFF);
+		return (sum >= 3*0xFF>>1); // high values mean white background
+	}
 };
 
 class path_node
@@ -187,6 +193,7 @@ class gridfile_t : public supersection_t // TODO: public?
 public:
 	gridfile_t() : supersection_t(type_t::batch)
 	{
+		init_leaf<leaf_template_t<void>>("paths_close");
 		init_leaf<leaf_template_t<void>>("border");
 		init_leaf<leaf_template_t<int>>("rowsize_mod");
 		init_leaf<leaf_template_t<int>>("rowsize");

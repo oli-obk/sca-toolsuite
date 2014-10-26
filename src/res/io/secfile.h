@@ -49,7 +49,7 @@ public:
 
 struct secfile_t
 {
-	constexpr static std::size_t READ_BUF_SIZE = 128;
+	constexpr static std::size_t READ_BUF_SIZE = 256;
 	char read_buffer[READ_BUF_SIZE] = { 0 };
 	std::istream& stream;
 	bool good = true;

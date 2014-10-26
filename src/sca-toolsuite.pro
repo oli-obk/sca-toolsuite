@@ -44,7 +44,8 @@ HEADERS += res/io.h res/stack_algorithm.h \
     res/io/secfile.h \
     res/io/serial.h \
     res/io/gridfile.h \
-    res/utils/strings.h
+    res/utils/strings.h \
+    res/io/latex.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \

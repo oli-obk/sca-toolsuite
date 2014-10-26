@@ -23,6 +23,7 @@
 #include "general.h"
 #include "io/gridfile.h"
 #include "utils/name_type_map.h"
+#include "io/latex.h"
 
 const char* tex_header =
 	"% created by sca toolsuite's io/tik\n"
@@ -37,10 +38,10 @@ const char* tex_includes =
 #endif
 	"\\usepackage{subcaption}\n"
 	"\\usepackage[ngerman]{babel}\n"
-	"\\usepackage{xr}\n" // cross refs for external docs
 	//"\\newcolumntype{C}[1]{>{\\raggedright\\let\\newline\\\\\\arraybackslash\\hspace{0pt}}m{#1}}"
 	"\\usepackage{array}\n"
-	"\\newcommand{\\mcl}[1]{\\cellcolor[HTML]{#1}}\n"
+	"\\newcommand{\\cb}[1]{\\cellcolor[HTML]{#1}\\textcolor{black}}\n"
+	"\\newcommand{\\cw}[1]{\\cellcolor[HTML]{#1}\\textcolor{white}}\n"
 
 	;
 const char* tex_footer = "\\end{document}\n";
@@ -63,8 +64,6 @@ constexpr const sca::util::name_type_map_t<
 
 class MyProgram : public Program
 {
-	constexpr static const std::size_t page_mm = 197, cell_mm = 3;
-
 	static void dump_grid_as_tikz(const grid_t& g,
 		const sca::io::color_formula_t& color_f,
 		std::ostream& out = std::cout)
@@ -101,12 +100,20 @@ class MyProgram : public Program
 		}
 		out << "};\n";
 #else
-		const auto draw_node = [&](std::size_t x, std::size_t y){
-			out << "\\mcl{"
+		const auto draw_node = [&](std::size_t x, std::size_t y) {
+			int32_t color_val = ((color_f(g, point(x, y))) & (0xFFFFFF));
+			auto number = g[point(x, y)];
+			if(color_val)
+			out << (sca::io::color_formula_t::text_black(color_val) ? "\\cb{" : "\\cw{")
 				<< std::hex << std::setfill('0') << std::setw(6) << std::uppercase
-				<< ((color_f(g, point(x, y))) & (0xFFFFFF))
+				<< color_val
 				<< std::dec
-				<< "} " << g[point(x, y)] << "";
+				<< "} ";
+			if(number < 0 || number > 9)
+			 out << '{';
+			out << g[point(x, y)];
+			if(number < 0 || number > 9)
+			 out << '}';
 		};
 		out << "\\centering\n";
 		out << "\\begingroup\n";
@@ -172,12 +179,25 @@ class MyProgram : public Program
 		const auto& grids = gridfile["grids"];
 
 		std::size_t rowsize;
+		std::size_t mod_val = gridfile.value<int>("rowsize_mod", 1);
+
+		const auto lower_to_rowsize_mod = [&mod_val](std::size_t& val) {
+			val -= val % mod_val;
+		};
+
+		const auto upper_to_rowsize_mod = [&](std::size_t& val) {
+			lower_to_rowsize_mod(val);
+			val += ((val % mod_val) != 0) * mod_val;
+		};
 
 		const auto rowsize_hint = gridfile.leaf<int>("rowsize");
 		if(rowsize_hint.is_read())
 		{
 			rowsize = rowsize_hint.value();
+			lower_to_rowsize_mod(rowsize);
 		}
+
+		const bool paths_close = gridfile.leaf<void>("paths_close").is_read();
 
 		std::size_t max_possible_rowsize, max_width = 0;
 		{
@@ -185,6 +205,7 @@ class MyProgram : public Program
 			 max_width = std::max(max_width, (std::size_t)grids.value<grid_t>(i).dx());
 
 			max_possible_rowsize = page_mm / ((max_width + 1) * cell_mm);
+			lower_to_rowsize_mod(max_possible_rowsize);
 
 			std::size_t max_pathlen = 0;
 			for(std::size_t i = 0; i < gridfile.max(); ++i)
@@ -194,41 +215,93 @@ class MyProgram : public Program
 
 			if(!rowsize_hint.is_read())
 			{
-				rowsize = std::min(max_possible_rowsize, max_pathlen);
+				rowsize = max_possible_rowsize;
+				if(paths_close)
+				{
+					std::size_t cur_max_x = 0;
+					std::size_t cur_x = 0;
+					for(std::size_t i = 0; i < gridfile.max(); ++i)
+					{
+						std::size_t path_len = gridfile.value<std::vector<sca::io::path_node>>(i).size();
+						std::size_t theor_pos = (cur_x + path_len);
+						if(theor_pos >= cur_max_x)
+						{
+							cur_max_x = std::max(cur_max_x, cur_x);
+							cur_x = path_len;
+						}
+						else
+						 cur_x = theor_pos;
+					}
+					upper_to_rowsize_mod(cur_max_x);
+					max_possible_rowsize = cur_max_x;
+				}
+				else
+				{
+					std::size_t tmp = max_pathlen;
+					upper_to_rowsize_mod(tmp);
+					rowsize = std::min(rowsize, max_pathlen);
+				}
 				if(!rowsize)
 				{
-					std::cerr << "WARNING: grid is probably too large." << std::endl;
-					rowsize = 1;
+					std::cerr << "WARNING: grid is probably too width." << std::endl;
+					std::cerr << "max_possible_rowsize: " << max_possible_rowsize << std::endl;
+					std::cerr << "max_pathlen: " << max_pathlen << std::endl;
+					rowsize = mod_val;
 				}
 			}
-
 		}
 
-		rowsize -= rowsize % gridfile.value<int>("rowsize_mod", 1);
 		const bool borders = gridfile.leaf<void>("border").is_read();
 
 		sca::io::color_formula_t main_color(
 			gridfile.value<std::string>("rgb32").c_str());
 
+		const auto new_tbl_hdr = [&]()
+		{
+			out << "\\begin{table}\n";
+			out << "\\renewcommand{\\arraystretch}{2.0}\n";
+			out << "\\centering\n";
 
-		//out << "\\begin{figure}\n";
-		out << "\\begin{table}\n";
-		out << "\\renewcommand{\\arraystretch}{3.0}\n";
-		out << "\\centering\n";
-		out << "\\begin{tabular}{";
-		if(borders) {
-			out << '|';
-			for(std::size_t i = 0; i < rowsize; ++i) out << "c|";
-		}
-		else for(std::size_t i = 0; i < rowsize; ++i)
-		 out << 'c';
+			out << "\\begin{tabular}{";
+			if(borders) {
+				out << '|';
+				for(std::size_t i = 0; i < rowsize; ++i) out << "c|";
+			}
+			else for(std::size_t i = 0; i < rowsize; ++i)
+			 out << 'c';
+			out << "}\n";
 
-		out << "}\n";
+			if(borders)
+			 out << "\\hline\n";
+		};
 
-		if(borders)
-		 out << "\\hline\n";
+		const auto new_tbl_ftr = [&](std::size_t page_no)
+		{
+			if(borders)
+			 out << " \\\\\n\\hline\n";
 
-		const float rowsize_inv = 1.0f / (float) rowsize;
+			out << "\\end{tabular}\n";
+			if(page_no) {
+				out << "\\caption{Fortsetzung von Tabelle \\ref{" << tex_str(gridfile.value<std::string>("name"));
+				if(page_no > 1)
+				 out << "_" << page_no - 1;
+				out << "}.}";
+			}
+			else
+			 out << "\\caption{" << tex_str(gridfile.value<std::string>("description")) << "}\n";
+
+			out << "\\label{" << tex_str(gridfile.value<std::string>("name"));
+			if(page_no)
+				out << "_" << page_no;
+			out << "}\n";
+
+			out << "\\end{table}\n";
+		};
+
+		new_tbl_hdr();
+
+		std::size_t max_rows = 1 << 3; // TODO
+		std::size_t col = 0, row = 0, page = 0;
 
 		for(std::size_t i = 0; i < gridfile.max(); ++i)
 		{
@@ -245,11 +318,33 @@ class MyProgram : public Program
 
 			}*/
 
-			std::size_t col = 0;
 			int node_id = 0;
+
+			if(!paths_close || (col + path.size() >= rowsize))
+			 col = 0;
 
 			for(const sca::io::path_node& node : path)
 			{
+				if(i || col) // no linebreak before start
+				{
+					std::cerr << "col: " << col << std::endl;
+					bool linebreak = (col == 0);
+					out << (linebreak ? " \\\\\n" : " &\n");
+					if(borders && linebreak)
+					 out << "\\hline\n";
+
+					row += linebreak;
+					bool pagebreak = (row >= max_rows);
+					if(pagebreak)
+					{
+						new_tbl_ftr(page);
+						row = 0;
+						++page;
+						new_tbl_hdr();
+					}
+				}
+
+
 				//std::cerr << node.key() << " --> " << node.value().description << std::endl;
 
 			//	out << "\\begin{figure}\n\\begin{tikzpicture}\n";
@@ -311,10 +406,10 @@ class MyProgram : public Program
 
 				if(has_grid) // (TODO: hack)
 				{
-					out << "\\begin{subtable}[c]{" << (max_width * cell_mm + 2) << "mm}\n";
+					out << "\\begin{subtable}[c]{" << (grid.dx() * cell_mm + 2) << "mm}\n";
 					dump_grid_as_tikz(grid, the_color, out);
 					if(node.description.size())
-					 out << "\\caption{" << node.description << "}\n";
+					 out << "\\small\\caption*{" << node.description << "} \\ \n"; // force newline for more distance
 					out << "\\label{" << tex_str(gridfile.value<std::string>("name"))
 						<< "_grid_" << i << '_' << node_id << "}\n";
 					out << "\\end{subtable}";
@@ -337,21 +432,15 @@ class MyProgram : public Program
 					out << "\\\\\n" << node.description;
 				}*/
 
-				bool linebreak = !(++col%rowsize);
-				out << (linebreak ? " \\\\\n" : " &\n");
-				if(borders && linebreak)
-				 out << "\\hline\n";
-
 				++node_id;
 #endif
+				++col;
 			}
 		}
 
-		out << "\\end{tabular}\n";
-		out << "\\caption{" << tex_str(gridfile.value<std::string>("description")) << "}\n";
-		out << "\\label{" << tex_str(gridfile.value<std::string>("name")) << /*'_' << i <<*/ "}\n";
-		out << "\\end{table}\n";
-		//out << "\\end{figure}\n";
+		new_tbl_ftr(page);
+
+
 	}
 
 	exit_t main()
