@@ -40,11 +40,6 @@ std::string stl_style_name(const std::string& src) {
 
 class MyProgram : public Program
 {
-
-
-
-
-
 	void make_new_gridfile(const sca::grid_io::gridfile_t& data)
 	{
 		std::ostream& o = std::cout;

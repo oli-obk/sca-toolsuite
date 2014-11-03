@@ -47,6 +47,7 @@ public:
 
 	enum states
 	{
+		cell_active = -1,
 		cell_default = 0,
 		cell_passive = 1,
 		cell_dead = 2,
@@ -79,13 +80,14 @@ public:
 			cell_default, cell_dead_state);
 
 		const u_coord_t bw = calc.border_width();
-		const point max = point(src.human_dim().dx() - bw, src.human_dim().dy() - bw);
-		rect inner_rect(point(bw, bw), max);
+		//const point max = point(src.human_dim().dx() - bw, src.human_dim().dy() - bw);
+		const point max = point(src.human_dim().dx(), src.human_dim().dy());
+		rect inner_rect(/*point(bw, bw), max*/point::zero(), max);
 
 		std::vector<point> killed[2];
 
 		// step 2: mark dead states + inner border dead states
-		for(const point& p : src.human_dim())
+		for(const point& p : src.internal_dim())
 		{
 			const auto mark_killed = [&](const point& p) {
 				killed[1].push_back(p);
@@ -148,6 +150,14 @@ public:
 			}
 
 		} while(killed[(round + 1) & 1].size()) ;
+
+		for(const point& p : src.points())
+		{
+			if(dead[p] < cell_passive && calc.is_cell_active(src, p))
+			{
+				dead[p] = -1;
+			}
+		}
 
 		return dead;
 
