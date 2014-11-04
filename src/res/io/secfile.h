@@ -328,6 +328,12 @@ public:
 	void clear() {
 		leaf_base_t::clear();
 		multi_sections.clear();
+		for(const auto& pr : supersections) {
+			m_cast<supersection_t&>(*pr.second).clear();
+		}
+		for(const auto& pr : leafs) {
+			pr.second->clear();
+		}
 	}
 
 	//! multi-container size

@@ -111,7 +111,13 @@ class MyProgram : public Program
 				<< "} ";
 			if(number < 0 || number > 9)
 			 out << '{';
-			out << g[point(x, y)];
+			if(number >= 0)
+			 out << number;
+			else
+			{
+				out << "\\scalebox{0.25}[1.0]{\\(-\\)}";
+				out << -number;
+			}
 			if(number < 0 || number > 9)
 			 out << '}';
 		};
@@ -482,7 +488,7 @@ class MyProgram : public Program
 				while(inf >> gridfile) {
 					std::cerr << "... read one gridfile."<< std::endl;
 					make_tikz_content(gridfile);
-					gridfile.clear();
+					gridfile.clear(); // TODO
 				}
 			} catch(sca::io::secfile_t::error_t ife) {
 				std::cerr << "infile line " << ife.line
