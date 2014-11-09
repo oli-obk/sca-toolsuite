@@ -1,6 +1,6 @@
 name
 
-Cbc3
+bc3
 
 rgb32
 

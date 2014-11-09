@@ -36,6 +36,7 @@ const char* tex_includes =
 #else
 	"\\usepackage[table]{xcolor} % http://ctan.org/pkg/xcolor\n"
 #endif
+	"\\usepackage{graphicx} % \\scalebox\n"
 	"\\usepackage{subcaption}\n"
 	"\\usepackage[ngerman]{babel}\n"
 	//"\\newcolumntype{C}[1]{>{\\raggedright\\let\\newline\\\\\\arraybackslash\\hspace{0pt}}m{#1}}"
@@ -264,7 +265,7 @@ class MyProgram : public Program
 
 		const auto new_tbl_hdr = [&]()
 		{
-			out << "\\begin{table}\n";
+			out << "\\begin{table}[H]\n";
 			out << "\\renewcommand{\\arraystretch}{2.0}\n";
 			out << "\\centering\n";
 

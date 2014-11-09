@@ -63,12 +63,7 @@ class MyProgram : public Program
 			if(r_used && m_used)
 			 o << ", ";
 			if(m_used)
-			{
-				o << "$|$ ";
-				if(!r_used)
-				 o << "bedeutet ";
-				o << "Spiegelsymmetrie";
-			}
+			 o << "$|$ bedeutet Spiegelsymmetrie";
 			o << '.';
 		}
 		o	<<"\n\n"
