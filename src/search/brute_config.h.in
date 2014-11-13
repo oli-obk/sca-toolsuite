@@ -1,0 +1,7 @@
+#cmakedefine VERBOSE_OUTPUT
+#cmakedefine NO_BOOST_GRAPH
+#cmakedefine DEBUG_GRAPH
+#cmakedefine USE_LABELS
+#cmakedefine ADD_SO2
+#cmakedefine ADD_SO1
+

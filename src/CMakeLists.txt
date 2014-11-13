@@ -7,6 +7,7 @@ add_subdirectory(ca)
 add_subdirectory(io)
 add_subdirectory(img)
 add_subdirectory(rotor)
+add_subdirectory(search)
 
 if(BUILD_QT_GUI)
 	add_subdirectory(gui_qt)

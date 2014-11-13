@@ -530,7 +530,7 @@ public:
 	friend std::istream& operator>> (std::istream& stream,
 		_grid_t& g) {
 		read_grid(stream, g._data, g._dim, g.bw,
-			std::numeric_limits<cell_t>::min());
+			std::numeric_limits<int>::min());
 		return stream;
 	}
 

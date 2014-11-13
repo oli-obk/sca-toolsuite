@@ -26,26 +26,40 @@ HEADERS += res/io.h res/stack_algorithm.h \
 	res/geometry.h \
 	res/eqs_internal.h \
 	res/eqs_functions.h \
-    gui_qt/CaSelector.h \
-    gui_qt/labeled_widget.h \
-    res/grid.h \
-    res/patch.h \
-    res/print.h \
-    res/simulate.h \
-    res/ca_convert.h \
-    res/ca_table.h \
-    res/bitgrid.h \
-    res/ca_eqs.h \
-    res/traits.h \
-    res/util.h \
-    res/ca/dead_cells.h \
-    res/utils/exceptions.h \
-    res/utils/name_type_map.h \
-    res/io/secfile.h \
-    res/io/serial.h \
-    res/io/gridfile.h \
-    res/utils/strings.h \
-    res/io/latex.h
+	gui_qt/CaSelector.h \
+	gui_qt/labeled_widget.h \
+	res/grid.h \
+	res/patch.h \
+	res/print.h \
+	res/simulate.h \
+	res/ca_convert.h \
+	res/ca_table.h \
+	res/bitgrid.h \
+	res/ca_eqs.h \
+	res/traits.h \
+	res/util.h \
+	res/ca/dead_cells.h \
+	res/utils/exceptions.h \
+	res/utils/name_type_map.h \
+	res/io/secfile.h \
+	res/io/serial.h \
+	res/io/gridfile.h \
+	res/utils/strings.h \
+	res/io/latex.h \
+	search/base.h \
+	search/brute_force.h \
+	search/common_macros.h \
+	search/dep_graph.h \
+	search/greedy.h \
+	search/results.h \
+	search/stats.h \
+	search/types.h \
+	res/graph/graph.h \
+	res/graph/detail.h \
+	res/disjoint_sets.h \
+	res/odometer.h \
+	res/scc_algo.h \
+	search/old_dep_graph.h
 SOURCES += algo/relax.cpp \
 	core/create.cpp \
 	io/avalanches_bin2human.cpp \
@@ -87,20 +101,28 @@ SOURCES += algo/relax.cpp \
 	res/eqs_functions.cpp \
 	gui_qt/CaSelector.cpp \
 	img/transform.cpp \
-    ca/dump.cpp \
-    res/simulate.cpp \
-    res/ca.cpp \
-    ca/scene.cpp \
-    res/ca_table.cpp \
-    ca/converter.cpp \
-    ca/dead_cells.cpp \
-    test/sca_test.cpp \
-    res/io/secfile.cpp \
-    io/tik.cpp \
-    res/io/gridfile.cpp \
-    io/replace.cpp \
-    res/utils/strings.cpp \
-    io/fmt_tf.cpp
+	ca/dump.cpp \
+	res/simulate.cpp \
+	res/ca.cpp \
+	ca/scene.cpp \
+	res/ca_table.cpp \
+	ca/converter.cpp \
+	ca/dead_cells.cpp \
+	test/sca_test.cpp \
+	res/io/secfile.cpp \
+	io/tik.cpp \
+	res/io/gridfile.cpp \
+	io/replace.cpp \
+	res/utils/strings.cpp \
+	io/fmt_tf.cpp \
+	search/base.cpp \
+	search/base_io.cpp \
+	search/brute_force.cpp \
+	search/eval.cpp \
+	search/greedy.cpp \
+	search/results.cpp \
+	search/search.cpp \
+	search/stats.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL.txt \
 	../README.txt \
@@ -118,4 +140,5 @@ OTHER_FILES += ../DOCUMENTATION \
 	gui_qt/CMakeLists.txt \
 	test/CMakeLists.txt \
 	img/CMakeLists.txt \
-    res/CMakeLists.txt
+	res/CMakeLists.txt \
+	search/CMakeLists.txt

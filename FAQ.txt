@@ -14,8 +14,7 @@ CONTENTS
 :::::::::
 
 Q: Are there any other COPYING restrictions than GPL3?
-A: None. This code was made by me in my free time, and I did not copy any line
-   of code from other projects. This code was not written for any institution.
+A: None.
 
 Q: I miss the ternary operator in the equation solver...
 A: We have added it now. If you still miss it, please update your local

@@ -1,0 +1,17 @@
+cp_script(crossing_small.txt)
+cp_script(crossing.txt)
+cp_script(fork.txt)
+cp_script(join.txt)
+#cp_script(line.txt)
+#cp_script(long_line.txt)
+#cp_script(merge_small.txt)
+cp_script(merge.txt)
+#cp_script(multi.txt)
+#cp_script(mini_cycle.txt)
+cp_script(rsj.txt)
+cp_script(simple_line.txt)
+cp_script(universal.txt)
+
+cp_script(stca_rt_irt_a.txt)
+cp_script(stca_fork_and_join.txt)
+
