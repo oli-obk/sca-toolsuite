@@ -46,7 +46,7 @@ class stats_t : public types
 	std::size_t extra_nodes = 0, extra_stack = 0,
 		 movable_nodes = 0, isolated = 0;
 	bool has_extra_nodes;
-	static constexpr std::size_t dump_interval() { return 100; }
+	static constexpr std::size_t dump_interval() { return 1000; }
 	int cur_vertex;
 	std::size_t tree_depth = 0;
 #if 0

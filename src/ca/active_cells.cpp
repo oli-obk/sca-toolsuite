@@ -18,47 +18,60 @@
 /* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA  */
 /*************************************************************************/
 
-#include "stats.h"
+#include "general.h"
+#include "grid.h"
+#include "ca/dead_cells.h"
+#include "ca_table.h"
 
-#define DUMP_STATS
-//#define STATS_DUMP_USED_GRID
+using namespace sca;
 
-void stats_t::dump() const
+class MyProgram : public Program
 {
-#ifdef DUMP_STATS
-	std::cerr << "STATS:" << std::endl;
-	std::cerr << "current vertex id:" << cur_vertex << std::endl;
-	std::cerr << "number of vertices: " << n_verts << std::endl;
-	std::cerr << "movable nodes (=cuts): " << movable_nodes << std::endl;
-	std::cerr << "isolated points (=cuts): " << isolated << std::endl;
-	std::cerr << "extra nodes from stack (=cuts): " << extra_stack << std::endl;
-	std::cerr << "extra nodes global: ";
-	if(has_extra_nodes)
-		std::cerr <<  extra_nodes << std::endl;
-	else
-		std::cerr << "(not counted)" << std::endl;
-	bounding_box bb; // TODO: ctor from point container
-	for(const point& p : super_area)
-		bb.add_point(p);
-#ifdef STATS_DUMP_USED_GRID
-	grid_t g(dimension(bb.lr().x, bb.lr().y), 0);
-	g[super_area] = 1;
-	std::cerr << "all used cells:" << std::endl << g << std::endl;
-#endif
+	exit_t main()
 	{
-#if 0
-		std::size_t nodes_done;
-		double nodes_to_do = 1;
-		for(const depth_wise_t& dw : at_depth)
+		const char *tbl_name = nullptr;
+
+		switch(argc)
 		{
-			/*std::size_t
-			nodes_to_do *= */
-//			std::cerr << dw.nodes << " <-> " << dw.waiting_nodes << std::endl;
+			case 2: tbl_name = argv[1];
+				break;
+			case 1:
+			default:
+				exit_usage();
 		}
-#endif
+
+		std::ifstream in(tbl_name);
+		using calc_t =
+		ca::_calculator_t<ca::table_t, def_coord_traits,
+			def_cell_traits>;
+		calc_t ca(in);
+
+		grid_t input(std::cin, ca.border_width());
+
+		grid_t result = input;
+
+		for(const point& p : input.points()) {
+			result[p] = ca.is_cell_active(input, p);
+		}
+		std::cout << result;
+
+		return exit_t::success;
 	}
+};
 
+int main(int argc, char** argv)
+{
+	HelpStruct help;
+	help.syntax = "ca/active_cells <ca-table-file>"
+		"";
+	help.description = "TODO: ...\n"
+		"...";
+	help.add_param("<ca-table-file>", "path to ca in table format");
+	help.input = "the input configuration";
+	help.output = "the dead cells grid";
 
-	//std::cerr << "progress: ";
-#endif // DUMP_STATS
+	MyProgram p;
+	return p.run(argc, argv, &help);
 }
+
+

@@ -141,7 +141,7 @@ public:
 	{
 		s << r.id << r.vid << r.scc_size << r.exactness << r.local_patch;
 		s << (uint64_t)r.children.size();
-		std::cerr << "r.id: " << r.id << ", ch: " << r.children.size() << std::endl;
+		//std::cerr << "r.id: " << r.id << ", ch: " << r.children.size() << std::endl;
 		for(const result_t* res : r.children)
 		{
 			s << res->id;

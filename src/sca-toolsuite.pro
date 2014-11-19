@@ -122,7 +122,8 @@ SOURCES += algo/relax.cpp \
 	search/greedy.cpp \
 	search/results.cpp \
 	search/search.cpp \
-	search/stats.cpp
+	search/stats.cpp \
+    ca/active_cells.cpp
 OTHER_FILES += ../DOCUMENTATION \
 	../INSTALL.txt \
 	../README.txt \

@@ -116,7 +116,9 @@ public:
 			auto& src = find(v_src);
 			const auto& tar = find(v_tar);
 			src.lowlink = std::min(src.lowlink, tar.index);
+#ifdef SCC_ALGO_DEBUG
 			std::cerr << "found back edge: " << v_src << " -> " << v_tar << std::endl;
+#endif
 			return true;
 		}
 		else return false;

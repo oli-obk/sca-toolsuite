@@ -62,26 +62,29 @@ bool algo::has_one_isolated_point(const std::vector<point>& used_points, const s
 		if(!cur_isolated) // => no candidate
 		 break;
 
-		/*
-		 * condition 2: no new in-edges from N(N(u)) to N(u)
-		 */
-
 		auto nnu = writers_to(nu);
 		for(const point& p : nu)
 		 nnu.erase(p);
 
+		/*
+		 * condition 2: no new in-edges from N(N(u)) \ N(u) to N(u)
+		 */
 		for(const point& p : nnu)
 		{
 			const auto oe = dep_graph.out_edges(p);
 
 			if(sim_grid.contains(p)) // p can be on the border
 			for(auto e_out = oe.begin(); e_out!= oe.end(); ++e_out)
-			if((dep_graph.get(*e_out).time >= src_id) &&
+			{
+//			std::cerr << "isolated: " << e_out.source() << " -> " << e_out.target() << " (time: " << (*e_out)->time << ")" << std::endl;
+			if((dep_graph.get(*e_out).time > src_id) &&
 				(nu_no_u.find(e_out.target()) != nu_no_u.end()))
 			{
+//				std::cerr << " -> not " << std::endl;
 				// => found edge from outside N(p)
 				cur_isolated = false;
 				break;
+			}
 			}
 		}
 
@@ -102,7 +105,7 @@ bool algo::has_one_isolated_point(const std::vector<point>& used_points, const s
 			{
 				has_one_isolated = true;
 #ifdef VERBOSE_OUTPUT
-				std::cerr << "Isolated SCC: " << mk_print(p_not_used) << std::endl;
+				std::cerr << "Isolated SCC: " << mk_print(p_not_used) << " at node after " << src_id << std::endl;
 #endif
 				break;
 			}

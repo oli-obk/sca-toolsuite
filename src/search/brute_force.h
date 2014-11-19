@@ -363,6 +363,11 @@ protected:
 					const m_dep_graph_t::edge_t e_new =
 						dep_graph.try_add_edge(changed, p).first;
 					dep_graph.get(e_new).set_time(stack_data::next_id());
+/*					std::cerr << "DEPGRAPH AT NODE: " << cur.id << std::endl;
+					for(auto eitr = dep_graph.edges().begin(); eitr != dep_graph.edges().end(); ++eitr)
+					{
+						std::cerr << " " << eitr.source() << " -> " << eitr.target() << " (time: " << (*eitr)->time << ")" << std::endl;
+					}*/
 				}
 			}
 		}
@@ -616,6 +621,11 @@ protected:
 					else
 					{
 						stats.inform_new_vertex(cur.patch.area());
+						static int cntr = 0;
+						if(!(++cntr % 1000))
+						{
+							std::cerr << cur.patch << std::endl;
+						}
 
 #ifdef DEBUG_GRAPH
 						{
