@@ -17,9 +17,11 @@ You will need the following libraries, headers and tools:
 
   g++>=4.8 or clang>=3.3 (clang is suggested)
   C++ 4.8 or higher
-  boost
+  boost (libboost-graph-dev)
   cmake
-  Qt (if you want to build the GUI)
+  Qt (if you want to build the GUI, libqt4-dev)
+  imagemagick++ (libmagick++-dev)
+  graphviz (for displaying dependency graphs)
 
 1 Installation of the commandline interface
 :::::::::::::::::::::::::::::::::::::::::::
@@ -28,7 +30,7 @@ In this directory, type:
 
   mkdir build
   cd build
-  cmake .. # TODO: define SCA_DEBUG, -Wall, -g
+  cmake .. -DCOMPILER=clang -DCMAKE_BUILD_TYPE=Debug # TODO: define SCA_DEBUG, -Wall, -g
 
 2 Installation of the Qt GUI
 ::::::::::::::::::::::::::::
